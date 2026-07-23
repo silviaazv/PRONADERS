@@ -2,13 +2,13 @@
 <FKIndexAssociation class="oracle.dbtools.crest.model.design.relational.FKIndexAssociation" directorySegmentName="seg_0" id="8972EE09-F912-58ED-B0BD-B4A5AE164F79" containerWithKeyObject="FB39FD67-AA70-47CF-94CB-2723CD57DD75" localFKIndex="9A1FFB29-D36A-8F77-853A-1A3EFE9DE84A" name="TBL_ARCHIVOS_TBL_SOLS_FK">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 20:12:01 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <referredTableLongName>TBL_SOLICITUDES</referredTableLongName>
 <deleteRule>NO ACTION</deleteRule>
 <referredTableID>54805C77-D54D-DA00-4B07-A2335AE8F813</referredTableID>
 <keyObject>A659E007-4448-B545-6E81-591965F5C151</keyObject>
 <referredKeyID>A659E007-4448-B545-6E81-591965F5C151</referredKeyID>
-<mandatory>true</mandatory>
+<mandatory>false</mandatory>
 <refColNames>ID_SOLICITUD</refColNames>
 <transferable>true</transferable>
 <rely>false</rely>

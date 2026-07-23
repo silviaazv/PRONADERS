@@ -2,7 +2,7 @@
 <Table class="oracle.dbtools.crest.model.design.relational.Table" directorySegmentName="seg_0" id="54805C77-D54D-DA00-4B07-A2335AE8F813" name="TBL_SOLICITUDES">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 19:34:00 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <ordsAlias>table_10</ordsAlias>
 <allowColumnReorder>false</allowColumnReorder>
 <existDependencyGenerateInDDl>true</existDependencyGenerateInDDl>
@@ -11,7 +11,7 @@
 <Column name="ID_SOLICITUD" id="DC458F8F-BD72-1101-E493-77E18E429A0B">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 19:35:02 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
 <logicalDatatype>LOGDT019</logicalDatatype>
@@ -21,7 +21,7 @@
 <Column name="ID_PROYECTO" id="63AB9B9E-6CF3-6118-E3BA-2E09D25DBBC8">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 19:35:31 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
 <logicalDatatype>LOGDT019</logicalDatatype>
@@ -35,7 +35,7 @@
 <Column name="ID_USUARIO" id="79BD7C0D-AD2F-EDF9-04EB-4B70828D7BD4">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 19:35:39 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
 <logicalDatatype>LOGDT019</logicalDatatype>
@@ -49,7 +49,7 @@
 <Column name="ESTADO_SOLICITUD" id="647A0DEB-7621-7522-2256-19D61839FE34">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 19:36:30 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
 <logicalDatatype>LOGDT024</logicalDatatype>
@@ -61,7 +61,7 @@
 <Column name="FECHA_SOLICITUD" id="29E1907B-85A8-AEAC-351D-DD683B4DCC99">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 19:35:02 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
 <logicalDatatype>LOGDT015</logicalDatatype>
@@ -71,7 +71,7 @@
 <Column name="JUSTIFICACION" id="7FB6A17E-1CFA-2FD2-970D-03973A267F76">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 19:41:57 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <nullsAllowed>true</nullsAllowed>
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
@@ -82,7 +82,7 @@
 <Column name="FECHA_REVISION_SOLICITUD" id="74A831B2-ADB1-211E-8157-BA07CFCAD179">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 19:41:57 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <nullsAllowed>true</nullsAllowed>
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
@@ -93,7 +93,7 @@
 <Column name="MOTIVO_RECHAZO" id="25A8EF18-1E78-C763-851B-A0A0A80B3298">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 21:45:37 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <nullsAllowed>true</nullsAllowed>
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
@@ -104,7 +104,7 @@
 <Column name="ID_EQUIPO_LOG" id="33619260-D9E5-F6BE-C97C-F015A33D1FDC">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-23 05:31:47 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <nullsAllowed>true</nullsAllowed>
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
@@ -121,7 +121,7 @@
 <ind_PK_UK id="A659E007-4448-B545-6E81-591965F5C151" name="TBL_SOLICITUDES_PK">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 19:35:02 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <pk>true</pk>
 <indexState>Primary Constraint</indexState>
 <isSurrogateKey>false</isSurrogateKey>
@@ -132,7 +132,7 @@
 <ind_PK_UK id="F4FE0188-508B-B557-244F-02AA221DC0F6" name="TBL_SOL_TBL_PROYECTOS_FK">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 19:35:31 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <indexState>Foreign Key</indexState>
 <isSurrogateKey>false</isSurrogateKey>
 <indexColumnUsage>
@@ -142,7 +142,7 @@
 <ind_PK_UK id="0D847CD5-18F4-20F9-D5C9-2E81D61128C9" name="TBL_SOL_TBL_USUARIOS_FK">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 19:35:39 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <indexState>Foreign Key</indexState>
 <isSurrogateKey>false</isSurrogateKey>
 <indexColumnUsage>
@@ -152,7 +152,7 @@
 <ind_PK_UK id="18A14E80-D5F2-2D33-54B6-EF2992CA041D" name="TBL_SOL_TBL_EQUIPOS_FK">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-23 05:31:47 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <indexState>Foreign Key</indexState>
 <isSurrogateKey>false</isSurrogateKey>
 <indexColumnUsage>
@@ -165,15 +165,14 @@
 <createdBy>salej</createdBy>
 <createdTime>2026-07-23 04:53:50 UTC</createdTime>
 <ownerDesignName>bdpronaders</ownerDesignName>
-<rule><![CDATA[CHECK (estado_solicitud IN ('PENDIENTE', 'APROBADA', 'RECHAZADA', 'EN DESPACHO', 'ENTREGADA', 'CONFIRMADA', 'CANCELADA'))]]></rule>
+<rule><![CDATA[estado_solicitud IN ('PENDIENTE', 'APROBADA', 'RECHAZADA', 'EN DESPACHO', 'ENTREGADA', 'CONFIRMADA', 'CANCELADA')]]></rule>
 </tableCheckConstraint>
 <tableCheckConstraint name="CHK_SOLICITUDES_FECHAS" directorySegmentName="seg_0" id="ADEE4F25-66E5-FD18-AB0D-369EE1C2C048">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-23 05:13:06 UTC</createdTime>
 <ownerDesignName>bdpronaders</ownerDesignName>
-<rule><![CDATA[CHECK (
-        fecha_revision_solicitud >= fecha_solicitud OR fecha_revision_solicitud IS NULL
-    )]]></rule>
+<rule><![CDATA[fecha_revision_solicitud >= fecha_solicitud OR fecha_revision_solicitud IS NULL
+    ]]></rule>
 </tableCheckConstraint>
 </tableCheckConstraints>
 </Table>

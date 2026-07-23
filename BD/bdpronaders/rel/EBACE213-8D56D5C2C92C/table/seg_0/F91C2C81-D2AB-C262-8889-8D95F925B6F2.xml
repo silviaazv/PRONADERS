@@ -2,7 +2,7 @@
 <Table class="oracle.dbtools.crest.model.design.relational.Table" directorySegmentName="seg_0" id="F91C2C81-D2AB-C262-8889-8D95F925B6F2" name="TBL_MUNICIPIOS">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 19:15:26 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <ordsAlias>table_5</ordsAlias>
 <allowColumnReorder>false</allowColumnReorder>
 <existDependencyGenerateInDDl>true</existDependencyGenerateInDDl>
@@ -11,7 +11,7 @@
 <Column name="ID_MUNICIPIO" id="76FDD8CB-CBA0-76B1-24F8-40C62EFA6165">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 19:16:04 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
 <logicalDatatype>LOGDT019</logicalDatatype>
@@ -21,7 +21,7 @@
 <Column name="ID_DEPARTAMENTO" id="03BAF3B8-EE73-F997-0E9F-977D8518BC7C">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 19:16:28 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
 <logicalDatatype>LOGDT019</logicalDatatype>
@@ -35,7 +35,7 @@
 <Column name="NOMBRE_MUNICIPIO" id="A4F37678-356D-6F4C-A80D-A05462FCBC9E">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 19:16:04 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
 <logicalDatatype>LOGDT024</logicalDatatype>
@@ -48,7 +48,7 @@
 <ind_PK_UK id="24515D55-932D-A6D8-D75F-90BBDBB14983" name="TBL_MUNICIPIOS_PK">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 19:16:04 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <pk>true</pk>
 <indexState>Primary Constraint</indexState>
 <isSurrogateKey>false</isSurrogateKey>
@@ -59,7 +59,7 @@
 <ind_PK_UK id="B5172234-E92E-8C36-8A2D-9B1D014562B9" name="TBL_MUN_TBL_DPT_FK">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 19:16:28 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <indexState>Foreign Key</indexState>
 <isSurrogateKey>false</isSurrogateKey>
 <indexColumnUsage>

@@ -1,5 +1,5 @@
 -- Generado por Oracle SQL Developer Data Modeler 24.3.1.347.1153
---   en:        2026-07-22 23:33:31 CST
+--   en:        2026-07-23 13:05:00 CST
 --   sitio:      Oracle Database 11g
 --   tipo:      Oracle Database 11g
 
@@ -11,45 +11,48 @@
 
 CREATE TABLE tbl_archivos (
     id_archivo          NUMBER NOT NULL,
-    id_proyecto         NUMBER NOT NULL,
-    id_solicitud        NUMBER NOT NULL,
     id_usuario          NUMBER NOT NULL,
-    id_reporte          NUMBER NOT NULL,
+    id_proyecto         NUMBER,
+    id_solicitud        NUMBER,
+    id_reporte          NUMBER,
     nombre_archivo      VARCHAR2(255) NOT NULL,
     ruta_archivo        VARCHAR2(500),
     descripcion_archivo CLOB,
     tamano_bytes        NUMBER
 );
 
-ALTER TABLE TBL_ARCHIVOS 
-    ADD CONSTRAINT CHK_ARCHIVOS_EXTENSION CHECK ( check(regexp_like(nombre_archivo_evidencia, '\.(pdf|doc|docx|xls|xlsx|ppt|pptx|jpg|jpeg|png|gif|bmp|txt|csv|zip|rar|7z)$'
-, 'i'))
-;
+ALTER TABLE tbl_archivos
+    ADD CONSTRAINT chk_archivos_extension
+        CHECK ( REGEXP_LIKE ( nombre_archivo,
+                              '\.(pdf|doc|docx|xls|xlsx|ppt|pptx|jpg|jpeg|png|gif|bmp|txt|csv|zip|rar|7z)$',
+                              'i' ) );
 
+ALTER TABLE tbl_archivos ADD CONSTRAINT chk_archivos_tamano CHECK ( tamano_bytes > 0 );
 
-ALTER TABLE TBL_ARCHIVOS 
-    ADD CONSTRAINT CHK_ARCHIVOS_TAMANO 
-    CHECK (CHECK (tamano_bytes > 0),)
-;
 ALTER TABLE tbl_archivos
     ADD CONSTRAINT chk_archivos_origen
-        CHECK ( check((
+        CHECK ( (
             CASE
                 WHEN id_reporte IS NOT NULL THEN
                     1
-                ELSE 0
+                ELSE
+                    0
             END
             +
             CASE
                 WHEN id_solicitud IS NOT NULL THEN
                     1
-                ELSE 0
+                ELSE
+                    0
             END
-            + CASE
-            WHEN id_proyecto IS NOT NULL THEN
-                1
-            ELSE 0
-        END) <= 1) );
+            +
+            CASE
+                WHEN id_proyecto IS NOT NULL THEN
+                    1
+                ELSE
+                    0
+            END
+        ) <= 1 );
 
 ALTER TABLE tbl_archivos ADD CONSTRAINT tbl_evidencias_pk PRIMARY KEY ( id_archivo );
 
@@ -64,26 +67,30 @@ CREATE TABLE tbl_bitacora (
 
 ALTER TABLE TBL_BITACORA 
     ADD CONSTRAINT CHK_BITACORA_TIPO_ACCION 
-    CHECK (CHECK (tipo_accion IN ( 'INSERT',
-                                                                                                  'UPDATE',
-                                                                                                  'DELETE',
-                                                                                                  'REVISION',
-                                                                                                  'EMISION',
-                                                                                                  'APROBACION',
-                                                                                                  'RECHAZO'
-        'LOGIN', 'LOGOUT'
-    )))
+    CHECK ((tipo_accion IN ( 'INSERT',
+                                                                                            'UPDATE',
+                                                                                            'DELETE',
+                                                                                            'REVISION',
+                                                                                            'EMISION',
+                                                                                            'APROBACION',
+                                                                                            'RECHAZO',
+    ) and tipo_objeto IS NOT NULL and id_objeto IS NOT NULL)
+OR 
+(
+        tipo_accion IN ('LOGIN', 'LOGOUT')
+        AND tipo_objeto IS NULL
+        AND id_objeto IS NULL
+    ))
 ;
 ALTER TABLE tbl_bitacora
     ADD CONSTRAINT chk_bitacora_tipo_objeto
-        CHECK ( check(tipo_objeto IN('USUARIO', 'PROYECTO', 'SOLICITUD', 'REPORTE', 'EVIDENCIA')) );
+        CHECK ( tipo_objeto IS NULL
+                OR tipo_objeto IN ( 'USUARIO', 'PROYECTO', 'SOLICITUD', 'REPORTE', 'ARCHIVO' ) );
 
 ALTER TABLE tbl_bitacora
     ADD CONSTRAINT chk_bitacora_sesion
-        CHECK ( check(NOT(
-            tipo_objeto = 'SESION'
-            AND id_objeto IS NOT NULL
-        )) );
+        CHECK ( NOT ( tipo_objeto = 'SESION'
+                      AND id_objeto IS NOT NULL ) );
 
 ALTER TABLE tbl_bitacora ADD CONSTRAINT tbl_bitacora_pk PRIMARY KEY ( id_registro );
 
@@ -104,17 +111,16 @@ ALTER TABLE tbl_equipos ADD CONSTRAINT tbl_equipos_pk PRIMARY KEY ( id_equipo_lo
 CREATE TABLE tbl_fila_solicitud (
     id_fila             NUMBER NOT NULL,
     id_solicitud        NUMBER NOT NULL,
-    tipo_recurso        NUMBER NOT NULL,
+    tipo_recurso        VARCHAR2(20) NOT NULL,
     descripcion_recurso VARCHAR2(255) NOT NULL,
     cantidad_recurso    NUMBER NOT NULL
 );
 
-ALTER TABLE tbl_fila_solicitud
-    ADD CONSTRAINT chk_fila_cantidad CHECK ( check(cantidad_recurso > 0) );
+ALTER TABLE tbl_fila_solicitud ADD CONSTRAINT chk_fila_cantidad CHECK ( cantidad_recurso > 0 );
 
 ALTER TABLE tbl_fila_solicitud
     ADD CONSTRAINT chk_fila_tipo
-        CHECK ( check(tipo_recurso IN('MATERIAL', 'EQUIPO', 'FINANCIERO')) );
+        CHECK ( tipo_recurso IN ( 'MATERIAL', 'EQUIPO', 'FINANCIERO' ) );
 
 ALTER TABLE tbl_fila_solicitud ADD CONSTRAINT tbl_fila_solicitud_pk PRIMARY KEY ( id_fila );
 
@@ -141,11 +147,15 @@ CREATE TABLE tbl_proyectos (
 
 ALTER TABLE tbl_proyectos
     ADD CONSTRAINT chk_proyectos_tipo
-        CHECK ( check(tipo_proyecto IN('AGRICOLA', 'INFRAESTRUCTURA', 'SOCIAL')) );
+        CHECK ( tipo_proyecto IN ( 'AGRICOLA', 'INFRAESTRUCTURA', 'SOCIAL' ) );
 
 ALTER TABLE tbl_proyectos
     ADD CONSTRAINT chk_proyectos_estado
-        CHECK ( check(estado_proyecto IN('ACTIVO', 'RETRASADO', 'FINALIZADO', 'CANCELADO')) );
+        CHECK ( estado_proyecto IN ( 'ACTIVO', 'RETRASADO', 'FINALIZADO', 'CANCELADO' ) );
+
+ALTER TABLE tbl_proyectos ADD CONSTRAINT chk_proyectos_presup CHECK ( presupuesto_ejecutado >= 0 );
+
+ALTER TABLE tbl_proyectos ADD CONSTRAINT chk_proyectos_fechas CHECK ( fecha_fin >= fecha_inicio );
 
 ALTER TABLE tbl_proyectos ADD CONSTRAINT tbl_proyectos_pk PRIMARY KEY ( id_proyecto );
 
@@ -169,12 +179,11 @@ CREATE TABLE tbl_reportes (
 
 ALTER TABLE tbl_reportes
     ADD CONSTRAINT chk_reportes_fechas
-        CHECK ( check(fecha_revision_reporte >= fecha_reporte
-        OR fecha_revision_reporte IS NULL) );
+        CHECK ( fecha_revision_reporte >= fecha_reporte
+                OR fecha_revision_reporte IS NULL );
 
 ALTER TABLE tbl_reportes
-    ADD CONSTRAINT chk_reportes_estado
-        CHECK ( check(estado_reporte IN(0, 1)) );
+    ADD CONSTRAINT chk_reportes_estado CHECK ( estado_reporte IN ( 0, 1 ) );
 
 ALTER TABLE tbl_reportes ADD CONSTRAINT tbl_reportes_pk PRIMARY KEY ( id_reporte );
 
@@ -199,13 +208,13 @@ CREATE TABLE tbl_solicitudes (
 
 ALTER TABLE tbl_solicitudes
     ADD CONSTRAINT chk_solicitudes_estado
-        CHECK ( check(estado_solicitud IN('PENDIENTE', 'APROBADA', 'RECHAZADA', 'EN DESPACHO', 'ENTREGADA',
-                                          'CONFIRMADA', 'CANCELADA')) );
+        CHECK ( estado_solicitud IN ( 'PENDIENTE', 'APROBADA', 'RECHAZADA', 'EN DESPACHO', 'ENTREGADA',
+                                      'CONFIRMADA', 'CANCELADA' ) );
 
 ALTER TABLE tbl_solicitudes
     ADD CONSTRAINT chk_solicitudes_fechas
-        CHECK ( check(fecha_revision_solicitud >= fecha_solicitud
-        OR fecha_revision_solicitud IS NULL) );
+        CHECK ( fecha_revision_solicitud >= fecha_solicitud
+                OR fecha_revision_solicitud IS NULL );
 
 ALTER TABLE tbl_solicitudes ADD CONSTRAINT tbl_solicitudes_pk PRIMARY KEY ( id_solicitud );
 
@@ -221,12 +230,15 @@ CREATE TABLE tbl_usuarios (
 );
 
 ALTER TABLE tbl_usuarios
-    ADD CONSTRAINT chk_usuarios_estado
-        CHECK ( check(estado_usuario IN(0, 1)) );
+    ADD CONSTRAINT chk_usuarios_estado CHECK ( estado_usuario IN ( 0, 1 ) );
 
 ALTER TABLE tbl_usuarios
-    ADD CONSTRAINT chk_usuarios_correo
-        CHECK ( check(regexp_like(correo, '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')) );
+    ADD CONSTRAINT chk_usuarios_correo CHECK ( REGEXP_LIKE ( correo,
+                                                             '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' ) );
+
+ALTER TABLE tbl_usuarios
+    ADD CONSTRAINT chk_usuarios_telefono CHECK ( REGEXP_LIKE ( telefono,
+                                                               '^[0-9]{8,15}$' ) );
 
 ALTER TABLE tbl_usuarios ADD CONSTRAINT tbl_usuarios_pk PRIMARY KEY ( id_usuario );
 
@@ -302,7 +314,7 @@ ALTER TABLE tbl_usuarios
 -- 
 -- CREATE TABLE                            12
 -- CREATE INDEX                             0
--- ALTER TABLE                             45
+-- ALTER TABLE                             48
 -- CREATE VIEW                              0
 -- ALTER VIEW                               0
 -- CREATE PACKAGE                           0

@@ -2,7 +2,7 @@
 <Table class="oracle.dbtools.crest.model.design.relational.Table" directorySegmentName="seg_0" id="7FA392FC-9476-0A77-FBB4-00E506EA30BE" name="TBL_BITACORA">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 20:19:09 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <ordsAlias>table_18</ordsAlias>
 <allowColumnReorder>false</allowColumnReorder>
 <existDependencyGenerateInDDl>true</existDependencyGenerateInDDl>
@@ -11,7 +11,7 @@
 <Column name="ID_REGISTRO" id="7A704D83-0C43-B6C3-5F19-35845C79C8BE">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 20:20:35 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
 <logicalDatatype>LOGDT019</logicalDatatype>
@@ -21,7 +21,7 @@
 <Column name="ID_USUARIO" id="CEBC7791-C8E8-CD56-C1E8-21F9E32B182E">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 20:20:40 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
 <logicalDatatype>LOGDT019</logicalDatatype>
@@ -35,7 +35,7 @@
 <Column name="TIPO_ACCION" id="19E47FA5-9201-8F27-0A4D-81218EAD224B">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 20:53:57 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
 <logicalDatatype>LOGDT024</logicalDatatype>
@@ -47,7 +47,7 @@
 <Column name="TIPO_OBJETO" id="B53444DE-E8AF-55EF-E5FD-9A9A1C1E476A">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-23 04:14:32 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <nullsAllowed>true</nullsAllowed>
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
@@ -59,7 +59,7 @@
 <Column name="ID_OBJETO" id="623C335E-D9FC-DEF9-94DF-768F936CC5E1">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-23 04:14:32 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <nullsAllowed>true</nullsAllowed>
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
@@ -70,7 +70,7 @@
 <Column name="FECHA_ACCION" id="734A1023-1877-3D67-AE5D-B38235D23B8D">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 20:20:35 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
 <logicalDatatype>LOGDT015</logicalDatatype>
@@ -82,7 +82,7 @@
 <ind_PK_UK id="70515C73-3BA5-045C-64EC-F4BEC3008F03" name="TBL_BITACORA_PK">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 20:20:35 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <pk>true</pk>
 <indexState>Primary Constraint</indexState>
 <isSurrogateKey>false</isSurrogateKey>
@@ -93,7 +93,7 @@
 <ind_PK_UK id="00E29C7D-CC43-12F9-3A9D-BAFCCC2A8D0C" name="TBL_BITACORA_TBL_USUARIOS_FK">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 20:20:40 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <indexState>Foreign Key</indexState>
 <isSurrogateKey>false</isSurrogateKey>
 <indexColumnUsage>
@@ -106,23 +106,28 @@
 <createdBy>salej</createdBy>
 <createdTime>2026-07-23 04:22:57 UTC</createdTime>
 <ownerDesignName>bdpronaders</ownerDesignName>
-<rule><![CDATA[CHECK (tipo_accion IN (
+<rule><![CDATA[(tipo_accion IN (
         'INSERT', 'UPDATE', 'DELETE',
-        'REVISION', 'EMISION', 'APROBACION', 'RECHAZO'
-        'LOGIN', 'LOGOUT'
-    ))]]></rule>
+        'REVISION', 'EMISION', 'APROBACION', 'RECHAZO',
+    ) and tipo_objeto IS NOT NULL and id_objeto IS NOT NULL)
+OR 
+(
+        tipo_accion IN ('LOGIN', 'LOGOUT')
+        AND tipo_objeto IS NULL
+        AND id_objeto IS NULL
+    )]]></rule>
 </tableCheckConstraint>
 <tableCheckConstraint name="CHK_BITACORA_TIPO_OBJETO" directorySegmentName="seg_0" id="A7613D1B-BF33-05E0-EBE0-7AC1F3125055">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-23 04:24:53 UTC</createdTime>
 <ownerDesignName>bdpronaders</ownerDesignName>
-<rule><![CDATA[CHECK (tipo_objeto IN ('USUARIO', 'PROYECTO', 'SOLICITUD', 'REPORTE', 'EVIDENCIA'))]]></rule>
+<rule><![CDATA[tipo_objeto IS NULL or tipo_objeto IN ('USUARIO', 'PROYECTO', 'SOLICITUD', 'REPORTE', 'ARCHIVO')]]></rule>
 </tableCheckConstraint>
 <tableCheckConstraint name="CHK_BITACORA_SESION" directorySegmentName="seg_0" id="714745AE-FFC4-B77C-810C-1030284DC6E7">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-23 04:35:43 UTC</createdTime>
 <ownerDesignName>bdpronaders</ownerDesignName>
-<rule><![CDATA[CHECK (NOT (tipo_objeto = 'SESION' AND id_objeto IS NOT NULL))]]></rule>
+<rule><![CDATA[NOT (tipo_objeto = 'SESION' AND id_objeto IS NOT NULL)]]></rule>
 </tableCheckConstraint>
 </tableCheckConstraints>
 </Table>

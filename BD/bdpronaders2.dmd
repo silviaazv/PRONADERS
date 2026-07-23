@@ -1,8 +1,0 @@
-<?xml version = '1.0' encoding = 'UTF-8'?>
-<OSDM_Design class="oracle.dbtools.crest.model.design.Design" name="bdpronaders2" id="F16E0902-EAC9-5E38-CB55-797418F55DDC" version="3.5">
-<createdBy>salej</createdBy>
-<createdTime>2026-07-21 22:11:56 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
-<capitalNames>false</capitalNames>
-<designId>F16E0902-EAC9-5E38-CB55-797418F55DDC</designId>
-</OSDM_Design>

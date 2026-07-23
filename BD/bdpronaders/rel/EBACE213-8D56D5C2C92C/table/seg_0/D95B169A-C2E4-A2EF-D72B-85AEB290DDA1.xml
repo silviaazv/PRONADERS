@@ -2,7 +2,7 @@
 <Table class="oracle.dbtools.crest.model.design.relational.Table" directorySegmentName="seg_0" id="D95B169A-C2E4-A2EF-D72B-85AEB290DDA1" name="TBL_PROYECTOS_USUARIOS">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 19:20:05 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <ordsAlias>table_8</ordsAlias>
 <allowColumnReorder>false</allowColumnReorder>
 <existDependencyGenerateInDDl>true</existDependencyGenerateInDDl>
@@ -11,7 +11,7 @@
 <Column name="ID_USUARIO" id="5D62A202-FFB1-E22C-1B70-4EAE010D77F9">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 19:20:33 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
 <logicalDatatype>LOGDT019</logicalDatatype>
@@ -25,7 +25,7 @@
 <Column name="ID_PROYECTO" id="12C3683A-5B99-ECC5-038E-5CEC62CDD339">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 19:20:39 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
 <logicalDatatype>LOGDT019</logicalDatatype>
@@ -41,7 +41,7 @@
 <ind_PK_UK id="BE10DD32-2A0F-A3E4-3669-120D6E1C81C6" name="TBL_PROYECTOS_USUARIOS_PK">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 19:21:27 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <pk>true</pk>
 <indexState>Primary Constraint</indexState>
 <isSurrogateKey>false</isSurrogateKey>
@@ -53,7 +53,7 @@
 <ind_PK_UK id="D5BA3C85-C006-E290-B209-2BF24919F021" name="TBL_PRY_USR_TBL_USR_FK">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 19:20:33 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <indexState>Foreign Key</indexState>
 <isSurrogateKey>false</isSurrogateKey>
 <indexColumnUsage>
@@ -63,7 +63,7 @@
 <ind_PK_UK id="80C4E0DA-6D9D-C274-9644-FF1AA7317BBD" name="TBL_PRY_USR_TBL_PRY_FK">
 <createdBy>salej</createdBy>
 <createdTime>2026-07-22 19:20:39 UTC</createdTime>
-<ownerDesignName>bdpronaders</ownerDesignName>
+<ownerDesignName>bdpronaders2</ownerDesignName>
 <indexState>Foreign Key</indexState>
 <isSurrogateKey>false</isSurrogateKey>
 <indexColumnUsage>
