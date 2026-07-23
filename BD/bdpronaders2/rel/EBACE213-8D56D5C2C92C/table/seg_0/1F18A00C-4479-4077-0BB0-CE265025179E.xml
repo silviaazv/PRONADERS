@@ -1,0 +1,46 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<Table class="oracle.dbtools.crest.model.design.relational.Table" directorySegmentName="seg_0" id="1F18A00C-4479-4077-0BB0-CE265025179E" name="TBL_DEPARTAMENTOS">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:14:46 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<ordsAlias>table_4</ordsAlias>
+<allowColumnReorder>false</allowColumnReorder>
+<existDependencyGenerateInDDl>true</existDependencyGenerateInDDl>
+<parsed>true</parsed>
+<columns itemClass="oracle.dbtools.crest.model.design.relational.Column">
+<Column name="ID_DEPARTAMENTO" id="16F93822-019F-31A7-199D-0EF97C70325E">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:15:22 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="NOMBRE_DEPARTAMENTO" id="B44386C9-81E8-06A2-63D4-8D115BFBD9AF">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:15:22 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>255</dataTypeSize>
+<ownDataTypeParameters>255,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+</columns>
+<indexes itemClass="oracle.dbtools.crest.model.design.relational.Index">
+<ind_PK_UK id="93738796-A11D-B319-A48E-7E4D9FD57B15" name="TBL_DEPARTAMENTOS_PK">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:15:22 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<pk>true</pk>
+<indexState>Primary Constraint</indexState>
+<isSurrogateKey>false</isSurrogateKey>
+<indexColumnUsage>
+<colUsage columnID="16F93822-019F-31A7-199D-0EF97C70325E"/>
+</indexColumnUsage>
+</ind_PK_UK>
+</indexes>
+</Table>

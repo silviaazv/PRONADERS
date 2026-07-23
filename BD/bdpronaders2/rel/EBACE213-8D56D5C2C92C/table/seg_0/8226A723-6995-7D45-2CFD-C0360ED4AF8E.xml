@@ -1,0 +1,106 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<Table class="oracle.dbtools.crest.model.design.relational.Table" directorySegmentName="seg_0" id="8226A723-6995-7D45-2CFD-C0360ED4AF8E" name="TBL_FILA_SOLICITUD">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:37:27 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<ordsAlias>table_12</ordsAlias>
+<allowColumnReorder>false</allowColumnReorder>
+<existDependencyGenerateInDDl>true</existDependencyGenerateInDDl>
+<parsed>true</parsed>
+<columns itemClass="oracle.dbtools.crest.model.design.relational.Column">
+<Column name="ID_FILA" id="F79FBC9A-ACC6-83A8-C719-BBF2B1FDB3FC">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:39:10 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="ID_SOLICITUD" id="934D05B1-2960-669E-0206-F5714C2C61A8">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:39:18 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<previousColumn>false</previousColumn>
+<autoIncrementCycle>false</autoIncrementCycle>
+<associations>
+<colAssociation fkAssociation="6F395B44-01CD-2818-0B9F-2901E5525F2A" referredColumn="DC458F8F-BD72-1101-E493-77E18E429A0B"/>
+</associations>
+</Column>
+<Column name="TIPO_RECURSO" id="E0CFE3A4-C468-4621-89EB-CCE1C6EA22C7">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:40:28 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>20</dataTypeSize>
+<ownDataTypeParameters>20,,</ownDataTypeParameters>
+<previousColumn>false</previousColumn>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="DESCRIPCION_RECURSO" id="116693CA-3A6C-6A2B-ECAE-5A33F01AF1CE">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:39:10 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>255</dataTypeSize>
+<ownDataTypeParameters>255,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="CANTIDAD_RECURSO" id="EF21DA93-AB3D-A7E1-42EF-9E8F5F60C3EF">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:39:10 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+</columns>
+<indexes itemClass="oracle.dbtools.crest.model.design.relational.Index">
+<ind_PK_UK id="A7113390-5501-15C4-0EB0-723EE0473F90" name="TBL_FILA_SOLICITUD_PK">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:39:10 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<pk>true</pk>
+<indexState>Primary Constraint</indexState>
+<isSurrogateKey>false</isSurrogateKey>
+<indexColumnUsage>
+<colUsage columnID="F79FBC9A-ACC6-83A8-C719-BBF2B1FDB3FC"/>
+</indexColumnUsage>
+</ind_PK_UK>
+<ind_PK_UK id="C7B716F5-639F-30BA-9E12-26E24FCE0BB9" name="TBL_FILA_SOL_TBL_SOL_FK">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:39:18 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<indexState>Foreign Key</indexState>
+<isSurrogateKey>false</isSurrogateKey>
+<indexColumnUsage>
+<colUsage columnID="934D05B1-2960-669E-0206-F5714C2C61A8"/>
+</indexColumnUsage>
+</ind_PK_UK>
+</indexes>
+<tableCheckConstraints itemClass="oracle.dbtools.crest.model.design.constraint.TableLevelConstraint">
+<tableCheckConstraint name="CHK_FILA_CANTIDAD" directorySegmentName="seg_0" id="88D53307-BCEE-112D-2BA1-A4D7A16A11D7">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-23 04:58:14 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<rule><![CDATA[cantidad_recurso > 0]]></rule>
+</tableCheckConstraint>
+<tableCheckConstraint name="CHK_FILA_TIPO" directorySegmentName="seg_0" id="8D15C2E6-92FF-C076-B1FD-5AD92D9F90F3">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-23 05:00:17 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<rule><![CDATA[TIPO_RECURSO in ('MATERIAL', 'EQUIPO', 'FINANCIERO')]]></rule>
+</tableCheckConstraint>
+</tableCheckConstraints>
+</Table>

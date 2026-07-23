@@ -1,0 +1,177 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<Table class="oracle.dbtools.crest.model.design.relational.Table" directorySegmentName="seg_0" id="128DCD9A-FB7F-1D6A-9476-1DEC67D8B45A" name="TBL_PROYECTOS">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:16:47 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<ordsAlias>table_6</ordsAlias>
+<allowColumnReorder>false</allowColumnReorder>
+<existDependencyGenerateInDDl>true</existDependencyGenerateInDDl>
+<parsed>true</parsed>
+<columns itemClass="oracle.dbtools.crest.model.design.relational.Column">
+<Column name="ID_PROYECTO" id="F6E01A48-6F42-02F4-2EA0-655C0029562D">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:17:15 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="TIPO_PROYECTO" id="29B4FD7A-59C2-6739-8590-98F2E07E6357">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:18:56 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>100</dataTypeSize>
+<ownDataTypeParameters>100,,</ownDataTypeParameters>
+<previousColumn>false</previousColumn>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="ESTADO_PROYECTO" id="5EFF9993-85B9-5BF4-F603-2F7DE7356A86">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:24:11 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>100</dataTypeSize>
+<ownDataTypeParameters>100,,</ownDataTypeParameters>
+<previousColumn>false</previousColumn>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="ID_UBICACION" id="AF1D6060-9C93-4C2C-64FD-AD20849578F3">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:19:46 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<previousColumn>false</previousColumn>
+<autoIncrementCycle>false</autoIncrementCycle>
+<associations>
+<colAssociation fkAssociation="4243A7CF-C3AA-CB8D-7889-457995FDF062" referredColumn="76FDD8CB-CBA0-76B1-24F8-40C62EFA6165"/>
+</associations>
+</Column>
+<Column name="NOMBRE_PROYECTO" id="0D1D116A-C30C-0635-8F69-EDC6896959B9">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:17:15 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>255</dataTypeSize>
+<ownDataTypeParameters>255,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="DESCRIPCION_PROYECTO" id="CF27577F-21D3-631D-5C7E-F0C6E92129AF">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:26:17 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT028</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="FECHA_INICIO" id="3FA15C37-FD40-E69D-8AD7-F065EE727ACC">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:26:17 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT007</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="FECHA_FIN" id="CB86C5B4-94C0-AD3F-F45D-A4DEA5C1D426">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:26:17 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT007</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="PRESUPUESTO_INICIAL" id="199D59C3-5E8E-CB06-54EF-62939B244D9E">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:26:17 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT026</logicalDatatype>
+<dataTypePrecision>18</dataTypePrecision>
+<dataTypeScale>2</dataTypeScale>
+<ownDataTypeParameters>,18,2</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="PRESUPUESTO_EJECUTADO" id="F502C729-C696-0947-4676-900DE3065D0A">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:26:17 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT026</logicalDatatype>
+<dataTypePrecision>18</dataTypePrecision>
+<dataTypeScale>2</dataTypeScale>
+<ownDataTypeParameters>,18,2</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+</columns>
+<indexes itemClass="oracle.dbtools.crest.model.design.relational.Index">
+<ind_PK_UK id="5B5322C5-0F28-55F2-B4E0-9C1D5443594C" name="TBL_PROYECTOS_PK">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:17:15 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<pk>true</pk>
+<indexState>Primary Constraint</indexState>
+<isSurrogateKey>false</isSurrogateKey>
+<indexColumnUsage>
+<colUsage columnID="F6E01A48-6F42-02F4-2EA0-655C0029562D"/>
+</indexColumnUsage>
+</ind_PK_UK>
+<ind_PK_UK id="BB8D2641-917D-9797-2031-A4391B3F5037" name="TBL_PROYECTOS_TBL_MUN_FK">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:19:46 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<indexState>Foreign Key</indexState>
+<isSurrogateKey>false</isSurrogateKey>
+<indexColumnUsage>
+<colUsage columnID="AF1D6060-9C93-4C2C-64FD-AD20849578F3"/>
+</indexColumnUsage>
+</ind_PK_UK>
+</indexes>
+<tableCheckConstraints itemClass="oracle.dbtools.crest.model.design.constraint.TableLevelConstraint">
+<tableCheckConstraint name="CHK_PROYECTOS_TIPO" directorySegmentName="seg_0" id="65A0E8B2-9A4C-EBAF-39C7-F428423F8DC2">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-23 04:34:30 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<rule><![CDATA[TIPO_PROYECTO IN ('AGRICOLA', 'INFRAESTRUCTURA', 'SOCIAL')]]></rule>
+</tableCheckConstraint>
+<tableCheckConstraint name="CHK_PROYECTOS_ESTADO" directorySegmentName="seg_0" id="DA35F7A8-CA11-2B59-4DC8-E60765297B2A">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-23 04:34:30 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<rule><![CDATA[ESTADO_PROYECTO IN ('ACTIVO','RETRASADO', 'FINALIZADO', 'CANCELADO')]]></rule>
+</tableCheckConstraint>
+<tableCheckConstraint name="CHK_PROYECTOS_PRESUP" directorySegmentName="seg_0" id="5B551056-AC1A-6D87-1EB5-091F7B1D36F5">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-23 18:55:18 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<rule><![CDATA[presupuesto_ejecutado >= 0]]></rule>
+</tableCheckConstraint>
+<tableCheckConstraint name="CHK_PROYECTOS_FECHAS" directorySegmentName="seg_0" id="5DDFDD90-37E3-D3D8-EE78-DBC516D30669">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-23 18:55:58 UTC</createdTime>
+<ownerDesignName>bdpronaders2</ownerDesignName>
+<rule><![CDATA[fecha_fin >= fecha_inicio]]></rule>
+</tableCheckConstraint>
+</tableCheckConstraints>
+</Table>
