@@ -1,0 +1,140 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<Table class="oracle.dbtools.crest.model.design.relational.Table" directorySegmentName="seg_0" id="DF43FE30-97B7-B84E-96C0-7A63229280AD" name="TBL_REPORTES">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:43:37 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<ordsAlias>table_14</ordsAlias>
+<allowColumnReorder>false</allowColumnReorder>
+<existDependencyGenerateInDDl>true</existDependencyGenerateInDDl>
+<parsed>true</parsed>
+<columns itemClass="oracle.dbtools.crest.model.design.relational.Column">
+<Column name="ID_REPORTE" id="F2373721-522A-8FF7-DA6D-569EF7174E14">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:45:11 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="ID_PROYECTO" id="80B3F143-0076-DD6A-11ED-6B8A14520ACA">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:45:31 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<previousColumn>false</previousColumn>
+<autoIncrementCycle>false</autoIncrementCycle>
+<associations>
+<colAssociation fkAssociation="E422D0EE-5C6F-B46E-9A67-37A798384223" referredColumn="F6E01A48-6F42-02F4-2EA0-655C0029562D"/>
+</associations>
+</Column>
+<Column name="ID_USUARIO" id="FB637B17-705D-71E2-FC23-E9B940C23F64">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:45:38 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<previousColumn>false</previousColumn>
+<autoIncrementCycle>false</autoIncrementCycle>
+<associations>
+<colAssociation fkAssociation="DB75FB54-637E-1382-D03A-97A3995EAAF7" referredColumn="CF98B54D-7609-92BE-464F-70F0309E2020"/>
+</associations>
+</Column>
+<Column name="DESCRIPCION_REPORTE" id="AC1EF058-F86E-84D0-DE6B-7E16A881CD19">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:45:11 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT028</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="FECHA_REPORTE" id="5FAFC6D0-9677-EB46-EF52-E015A2E0599E">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:45:11 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT015</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="ESTADO_REPORTE" id="20710D6D-5744-40C5-32D2-CB00EC0FE5E7">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:45:11 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<dataTypePrecision>1</dataTypePrecision>
+<ownDataTypeParameters>,1,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="FECHA_REVISION_REPORTE" id="34AFF9B9-45AC-618E-97A9-B43925807FB1">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:45:11 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT015</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+</columns>
+<indexes itemClass="oracle.dbtools.crest.model.design.relational.Index">
+<ind_PK_UK id="A7AA0720-5D9D-C3F2-7B25-59D53AA16D4D" name="TBL_REPORTES_PK">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 20:11:45 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<pk>true</pk>
+<indexState>Primary Constraint</indexState>
+<isSurrogateKey>false</isSurrogateKey>
+<indexColumnUsage>
+<colUsage columnID="F2373721-522A-8FF7-DA6D-569EF7174E14"/>
+</indexColumnUsage>
+</ind_PK_UK>
+<ind_PK_UK id="D2755DC0-ADFE-5C37-9387-3CCA1DD26051" name="TBL_REPORTES_TBL_PROYECTOS_FK">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:45:31 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<indexState>Foreign Key</indexState>
+<isSurrogateKey>false</isSurrogateKey>
+<indexColumnUsage>
+<colUsage columnID="80B3F143-0076-DD6A-11ED-6B8A14520ACA"/>
+</indexColumnUsage>
+</ind_PK_UK>
+<ind_PK_UK id="DA1CC6D7-EAC2-34CC-0616-F23C7F5EA9DF" name="TBL_REPORTES_TBL_USUARIOS_FK">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:45:38 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<indexState>Foreign Key</indexState>
+<isSurrogateKey>false</isSurrogateKey>
+<indexColumnUsage>
+<colUsage columnID="FB637B17-705D-71E2-FC23-E9B940C23F64"/>
+</indexColumnUsage>
+</ind_PK_UK>
+</indexes>
+<tableCheckConstraints itemClass="oracle.dbtools.crest.model.design.constraint.TableLevelConstraint">
+<tableCheckConstraint name="CHK_REPORTES_FECHAS" directorySegmentName="seg_0" id="01DFFC6D-D672-690F-07DF-8277D4822AC2">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-23 04:40:13 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<rule><![CDATA[CHECK (fecha_revision_reporte >= fecha_reporte OR fecha_revision_reporte IS NULL)]]></rule>
+</tableCheckConstraint>
+<tableCheckConstraint name="CHK_REPORTES_ESTADO" directorySegmentName="seg_0" id="E5CC5635-B806-657B-561B-61FADA78E9B6">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-23 04:40:13 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<rule><![CDATA[CHECK (estado_reporte IN (0, 1))]]></rule>
+</tableCheckConstraint>
+</tableCheckConstraints>
+</Table>

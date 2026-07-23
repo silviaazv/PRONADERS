@@ -1,0 +1,201 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<Table class="oracle.dbtools.crest.model.design.relational.Table" directorySegmentName="seg_0" id="FB39FD67-AA70-47CF-94CB-2723CD57DD75" name="TBL_ARCHIVOS">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 20:10:09 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<ordsAlias>table_16</ordsAlias>
+<allowColumnReorder>false</allowColumnReorder>
+<existDependencyGenerateInDDl>true</existDependencyGenerateInDDl>
+<parsed>true</parsed>
+<columns itemClass="oracle.dbtools.crest.model.design.relational.Column">
+<Column name="ID_ARCHIVO" id="08C21F34-1B38-7F6C-F5B5-1E88E84C9777">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 20:11:19 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="ID_PROYECTO" id="F1876471-24A3-CC7B-541D-9EA2F9E643ED">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-23 05:05:14 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<previousColumn>false</previousColumn>
+<autoIncrementCycle>false</autoIncrementCycle>
+<associations>
+<colAssociation fkAssociation="CC2A4125-294C-AC4E-69E1-478D98E70FBD" referredColumn="F6E01A48-6F42-02F4-2EA0-655C0029562D"/>
+</associations>
+</Column>
+<Column name="ID_SOLICITUD" id="1522DDAF-28FD-F325-3A35-422796DD9F5C">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 20:12:01 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<previousColumn>false</previousColumn>
+<autoIncrementCycle>false</autoIncrementCycle>
+<associations>
+<colAssociation fkAssociation="8972EE09-F912-58ED-B0BD-B4A5AE164F79" referredColumn="DC458F8F-BD72-1101-E493-77E18E429A0B"/>
+</associations>
+</Column>
+<Column name="ID_USUARIO" id="4103AE20-F13D-E2C9-EDE8-82F9C0D5054B">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-23 04:48:53 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<previousColumn>false</previousColumn>
+<autoIncrementCycle>false</autoIncrementCycle>
+<associations>
+<colAssociation fkAssociation="56F8BF5F-E4CB-586A-94AE-BC3446E73FB9" referredColumn="CF98B54D-7609-92BE-464F-70F0309E2020"/>
+</associations>
+</Column>
+<Column name="ID_REPORTE" id="2F0732E7-E174-1F1F-C358-19BAB2E7E953">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 20:11:53 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<previousColumn>false</previousColumn>
+<autoIncrementCycle>false</autoIncrementCycle>
+<associations>
+<colAssociation fkAssociation="49BE309A-3E95-D5D6-5B27-8C7AF1579088" referredColumn="F2373721-522A-8FF7-DA6D-569EF7174E14"/>
+</associations>
+</Column>
+<Column name="NOMBRE_ARCHIVO" id="F0451D70-3C55-0742-C84A-D202425EB960">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 20:11:19 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>255</dataTypeSize>
+<ownDataTypeParameters>255,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="RUTA_ARCHIVO" id="E79B8E9E-9B84-E411-7804-27B247BFCD9F">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 20:11:19 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>500</dataTypeSize>
+<ownDataTypeParameters>500,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="DESCRIPCION_ARCHIVO" id="B31786C5-F27C-1A8D-80FC-68C0660F328B">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 20:11:19 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT028</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="TAMANO_BYTES" id="C3486C71-909F-FDA0-4F03-791FE9BE700E">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-23 04:48:30 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+</columns>
+<indexes itemClass="oracle.dbtools.crest.model.design.relational.Index">
+<ind_PK_UK id="49782F99-5711-777E-016A-F389BE937118" name="TBL_EVIDENCIAS_PK">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 20:11:19 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<pk>true</pk>
+<indexState>Primary Constraint</indexState>
+<isSurrogateKey>false</isSurrogateKey>
+<indexColumnUsage>
+<colUsage columnID="08C21F34-1B38-7F6C-F5B5-1E88E84C9777"/>
+</indexColumnUsage>
+</ind_PK_UK>
+<ind_PK_UK id="D4D847A7-AE3C-FA09-125C-F0EBDC0DA615" name="TBL_ARCHIVOS_TBL_REPS_FK">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 20:11:53 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<indexState>Foreign Key</indexState>
+<isSurrogateKey>false</isSurrogateKey>
+<indexColumnUsage>
+<colUsage columnID="2F0732E7-E174-1F1F-C358-19BAB2E7E953"/>
+</indexColumnUsage>
+</ind_PK_UK>
+<ind_PK_UK id="9A1FFB29-D36A-8F77-853A-1A3EFE9DE84A" name="TBL_ARCHIVOS_TBL_SOLS_FK">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 20:12:01 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<indexState>Foreign Key</indexState>
+<isSurrogateKey>false</isSurrogateKey>
+<indexColumnUsage>
+<colUsage columnID="1522DDAF-28FD-F325-3A35-422796DD9F5C"/>
+</indexColumnUsage>
+</ind_PK_UK>
+<ind_PK_UK id="B5371059-C66A-F57C-E47B-6F48F15E2B90" name="TBL_ARCHIVOS_TBL_USRS_FK">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-23 04:48:53 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<indexState>Foreign Key</indexState>
+<isSurrogateKey>false</isSurrogateKey>
+<indexColumnUsage>
+<colUsage columnID="4103AE20-F13D-E2C9-EDE8-82F9C0D5054B"/>
+</indexColumnUsage>
+</ind_PK_UK>
+<ind_PK_UK id="EB74C406-731C-5BD9-339E-422DEFD5325F" name="TBL_ARCHIVOS_TBL_PRYS_FK">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-23 05:05:14 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<indexState>Foreign Key</indexState>
+<isSurrogateKey>false</isSurrogateKey>
+<indexColumnUsage>
+<colUsage columnID="F1876471-24A3-CC7B-541D-9EA2F9E643ED"/>
+</indexColumnUsage>
+</ind_PK_UK>
+</indexes>
+<tableCheckConstraints itemClass="oracle.dbtools.crest.model.design.constraint.TableLevelConstraint">
+<tableCheckConstraint name="CHK_ARCHIVOS_EXTENSION" directorySegmentName="seg_0" id="0353BC58-2A7B-54D5-6416-2F22F5A1F0EF">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-23 04:43:28 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<rule><![CDATA[CHECK (
+        REGEXP_LIKE(nombre_archivo_evidencia, '\.(pdf|doc|docx|xls|xlsx|ppt|pptx|jpg|jpeg|png|gif|bmp|txt|csv|zip|rar|7z)$', 'i')]]></rule>
+</tableCheckConstraint>
+<tableCheckConstraint name="CHK_ARCHIVOS_TAMANO" directorySegmentName="seg_0" id="4459900B-BD99-31A6-0FC6-31597BFD1253">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-23 04:51:22 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<rule><![CDATA[CHECK (tamano_bytes > 0),]]></rule>
+</tableCheckConstraint>
+<tableCheckConstraint name="CHK_ARCHIVOS_ORIGEN" directorySegmentName="seg_0" id="87EC25A3-44B0-A4E7-16EF-AB74AA2279A2">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-23 05:10:55 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<rule><![CDATA[CHECK (
+        (CASE WHEN id_reporte IS NOT NULL THEN 1 ELSE 0 END +
+         CASE WHEN id_solicitud IS NOT NULL THEN 1 ELSE 0 END +
+         CASE WHEN id_proyecto IS NOT NULL THEN 1 ELSE 0 END) <= 1
+    )]]></rule>
+</tableCheckConstraint>
+</tableCheckConstraints>
+</Table>

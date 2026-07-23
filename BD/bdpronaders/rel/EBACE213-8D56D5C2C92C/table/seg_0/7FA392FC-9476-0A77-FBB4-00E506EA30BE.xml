@@ -1,0 +1,128 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<Table class="oracle.dbtools.crest.model.design.relational.Table" directorySegmentName="seg_0" id="7FA392FC-9476-0A77-FBB4-00E506EA30BE" name="TBL_BITACORA">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 20:19:09 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<ordsAlias>table_18</ordsAlias>
+<allowColumnReorder>false</allowColumnReorder>
+<existDependencyGenerateInDDl>true</existDependencyGenerateInDDl>
+<parsed>true</parsed>
+<columns itemClass="oracle.dbtools.crest.model.design.relational.Column">
+<Column name="ID_REGISTRO" id="7A704D83-0C43-B6C3-5F19-35845C79C8BE">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 20:20:35 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="ID_USUARIO" id="CEBC7791-C8E8-CD56-C1E8-21F9E32B182E">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 20:20:40 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<previousColumn>false</previousColumn>
+<autoIncrementCycle>false</autoIncrementCycle>
+<associations>
+<colAssociation fkAssociation="360C1D70-A3A2-5C77-74E7-FD24360A24D1" referredColumn="CF98B54D-7609-92BE-464F-70F0309E2020"/>
+</associations>
+</Column>
+<Column name="TIPO_ACCION" id="19E47FA5-9201-8F27-0A4D-81218EAD224B">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 20:53:57 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>50</dataTypeSize>
+<ownDataTypeParameters>50,,</ownDataTypeParameters>
+<previousColumn>false</previousColumn>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="TIPO_OBJETO" id="B53444DE-E8AF-55EF-E5FD-9A9A1C1E476A">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-23 04:14:32 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>20</dataTypeSize>
+<ownDataTypeParameters>20,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="ID_OBJETO" id="623C335E-D9FC-DEF9-94DF-768F936CC5E1">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-23 04:14:32 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="FECHA_ACCION" id="734A1023-1877-3D67-AE5D-B38235D23B8D">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 20:20:35 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT015</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+</columns>
+<indexes itemClass="oracle.dbtools.crest.model.design.relational.Index">
+<ind_PK_UK id="70515C73-3BA5-045C-64EC-F4BEC3008F03" name="TBL_BITACORA_PK">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 20:20:35 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<pk>true</pk>
+<indexState>Primary Constraint</indexState>
+<isSurrogateKey>false</isSurrogateKey>
+<indexColumnUsage>
+<colUsage columnID="7A704D83-0C43-B6C3-5F19-35845C79C8BE"/>
+</indexColumnUsage>
+</ind_PK_UK>
+<ind_PK_UK id="00E29C7D-CC43-12F9-3A9D-BAFCCC2A8D0C" name="TBL_BITACORA_TBL_USUARIOS_FK">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 20:20:40 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<indexState>Foreign Key</indexState>
+<isSurrogateKey>false</isSurrogateKey>
+<indexColumnUsage>
+<colUsage columnID="CEBC7791-C8E8-CD56-C1E8-21F9E32B182E"/>
+</indexColumnUsage>
+</ind_PK_UK>
+</indexes>
+<tableCheckConstraints itemClass="oracle.dbtools.crest.model.design.constraint.TableLevelConstraint">
+<tableCheckConstraint name="CHK_BITACORA_TIPO_ACCION" directorySegmentName="seg_0" id="073BC8B5-6FB6-D55C-2395-37AA9614FB73">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-23 04:22:57 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<rule><![CDATA[CHECK (tipo_accion IN (
+        'INSERT', 'UPDATE', 'DELETE',
+        'REVISION', 'EMISION', 'APROBACION', 'RECHAZO'
+        'LOGIN', 'LOGOUT'
+    ))]]></rule>
+</tableCheckConstraint>
+<tableCheckConstraint name="CHK_BITACORA_TIPO_OBJETO" directorySegmentName="seg_0" id="A7613D1B-BF33-05E0-EBE0-7AC1F3125055">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-23 04:24:53 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<rule><![CDATA[CHECK (tipo_objeto IN ('USUARIO', 'PROYECTO', 'SOLICITUD', 'REPORTE', 'EVIDENCIA'))]]></rule>
+</tableCheckConstraint>
+<tableCheckConstraint name="CHK_BITACORA_SESION" directorySegmentName="seg_0" id="714745AE-FFC4-B77C-810C-1030284DC6E7">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-23 04:35:43 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<rule><![CDATA[CHECK (NOT (tipo_objeto = 'SESION' AND id_objeto IS NOT NULL))]]></rule>
+</tableCheckConstraint>
+</tableCheckConstraints>
+</Table>

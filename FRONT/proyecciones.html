@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PRONADERS — Proyecciones</title>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+
+<link rel="stylesheet" href="proyecciones.css">
+</head>
+<body>
+
+
+<main class="main">
+
+  <div class="flex-between mb-24 fade-up fade-up-1">
+    <div class="section-head" style="margin-bottom:0">
+      <h2>Proyecciones de <em style="font-style:italic">Finalización</em></h2>
+      <p>Estimaciones automáticas basadas en el ritmo de avance registrado</p>
+    </div>
+    <div style="background:var(--info-bg);border-radius:var(--radius);padding:10px 16px;font-size:12.5px;color:var(--info);display:flex;align-items:center;gap:8px;">
+      <span class="material-symbols-rounded" style="font-size:16px">info</span>
+      Calculado al: 15 abr 2026
+    </div>
+  </div>
+
+  <!-- FORMULA BOX -->
+  <div class="card mb-24 fade-up fade-up-1" style="border-left:3px solid var(--gold);background:linear-gradient(135deg,#fffdf8,var(--white))">
+    <div class="flex-between">
+      <div>
+        <div class="card-title">Fórmula de Proyección Automática</div>
+        <div class="card-subtitle">Aplicada a cada reporte de avance registrado</div>
+      </div>
+      <span class="material-symbols-rounded" style="font-size:32px;color:var(--cream-dark)">functions</span>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:24px;flex-wrap:wrap">
+      <div style="font-family:monospace;background:var(--cream);border-radius:8px;padding:12px 18px;font-size:13px;color:var(--navy)">
+        <span style="color:var(--muted)">tasa_diaria</span> = % avance / días transcurridos<br>
+        <span style="color:var(--muted)">días_restantes</span> = (100 − % avance) / tasa_diaria<br>
+        <span style="color:var(--muted)">fecha_fin_proyectada</span> = hoy + días_restantes<br>
+        <span style="color:var(--muted)">variación</span> = fecha_fin_proyectada − fecha_fin_plan
+      </div>
+    </div>
+  </div>
+
+  <!-- PROYECCIONES POR PROYECTO -->
+  <div style="display:flex;flex-direction:column;gap:20px;">
+
+    <!-- PROYECTO 1 -->
+    <div class="proj-card fade-up fade-up-2">
+      <div class="flex-between mb-16">
+        <div>
+          <span class="badge badge-success mb-8" style="display:inline-flex">Infraestructura</span>
+          <div style="font-size:16px;font-weight:600;">Puente Choluteca</div>
+          <div class="text-xs text-muted mt-4">Supervisor: Josue Vasquez · Inicio: 10 ene 2026</div>
+        </div>
+        <div style="text-align:right">
+          <div class="text-xs text-muted">Fecha fin planificada</div>
+          <div class="fw-600" style="font-size:15px">12 jul 2026</div>
+          <div style="color:var(--success);font-size:12px;margin-top:2px;display:flex;align-items:center;gap:4px;justify-content:flex-end">
+            <span class="material-symbols-rounded" style="font-size:14px">trending_up</span>
+            3 días de adelanto
+          </div>
+        </div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="val">68%</div><div class="lbl">Avance actual</div></div>
+        <div class="stat-box"><div class="val">95</div><div class="lbl">Días transcurridos</div></div>
+        <div class="stat-box"><div class="val">0.72%</div><div class="lbl">Tasa diaria</div></div>
+      </div>
+      <div class="timeline-bar">
+        <div class="tl-fill" style="width:68%;background:linear-gradient(90deg,var(--success),#52c4a0)">
+          <div class="tl-marker" style="right:0;border-color:var(--success)"></div>
+        </div>
+      </div>
+      <!-- (Fila de fechas inferior eliminada por corrección de la Gerencia) -->
+      <div style="margin-top:14px;background:var(--success-bg);border-radius:8px;padding:10px 14px;font-size:12.5px;color:var(--success)">
+        ✓ El proyecto avanza a buen ritmo. Se estima finalización 3 días antes de lo planificado.
+      </div>
+    </div>
+
+    <!-- PROYECTO 2 -->
+    <div class="proj-card fade-up fade-up-3">
+      <div class="flex-between mb-16">
+        <div>
+          <span class="badge badge-info mb-8" style="display:inline-flex">Agrícola</span>
+          <div style="font-size:16px;font-weight:600;">Riego Comunitario El Paraíso</div>
+          <div class="text-xs text-muted mt-4">Supervisor: Isaac Carranza · Inicio: 05 feb 2026</div>
+        </div>
+        <div style="text-align:right">
+          <div class="text-xs text-muted">Fecha fin planificada</div>
+          <div class="fw-600" style="font-size:15px">30 sep 2026</div>
+          <div style="color:var(--danger);font-size:12px;margin-top:2px;display:flex;align-items:center;gap:4px;justify-content:flex-end">
+            <span class="material-symbols-rounded" style="font-size:14px">trending_down</span>
+            22 días de retraso
+          </div>
+        </div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="val">41%</div><div class="lbl">Avance actual</div></div>
+        <div class="stat-box"><div class="val">69</div><div class="lbl">Días transcurridos</div></div>
+        <div class="stat-box"><div class="val">0.59%</div><div class="lbl">Tasa diaria</div></div>
+      </div>
+      <div class="timeline-bar">
+        <div class="tl-fill" style="width:41%;background:linear-gradient(90deg,var(--danger),#e88080)">
+          <div class="tl-marker" style="right:0;border-color:var(--danger)"></div>
+        </div>
+      </div>
+      <!-- (Fila de fechas inferior eliminada por corrección de la Gerencia) -->
+      <div style="margin-top:14px;background:var(--danger-bg);border-radius:8px;padding:10px 14px;font-size:12.5px;color:var(--danger)">
+        ⚠ Retraso por lluvias. Se recomienda asignar recursos adicionales para recuperar el ritmo.
+      </div>
+    </div>
+
+    <!-- PROYECTO 3 -->
+    <div class="proj-card fade-up fade-up-4">
+      <div class="flex-between mb-16">
+        <div>
+          <span class="badge badge-warning mb-8" style="display:inline-flex">Social</span>
+          <div style="font-size:16px;font-weight:600;">Centro Comunitario San Pedro</div>
+          <div class="text-xs text-muted mt-4">Supervisor: Andrea Amador · Inicio: 15 nov 2025</div>
+        </div>
+        <div style="text-align:right">
+          <div class="text-xs text-muted">Fecha fin planificada</div>
+          <div class="fw-600" style="font-size:15px">28 may 2026</div>
+          <div style="color:var(--gold);font-size:12px;margin-top:2px">En tiempo estimado</div>
+        </div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="val">85%</div><div class="lbl">Avance actual</div></div>
+        <div class="stat-box"><div class="val">151</div><div class="lbl">Días transcurridos</div></div>
+        <div class="stat-box"><div class="val">0.56%</div><div class="lbl">Tasa diaria</div></div>
+      </div>
+      <div class="timeline-bar">
+        <div class="tl-fill" style="width:85%;background:linear-gradient(90deg,var(--gold),var(--gold-light))">
+          <div class="tl-marker" style="right:0;border-color:var(--gold)"></div>
+        </div>
+      </div>
+      <!-- (Fila de fechas inferior eliminada por corrección de la Gerencia) -->
+      <div style="margin-top:14px;background:var(--warning-bg);border-radius:8px;padding:10px 14px;font-size:12.5px;color:var(--warning)">
+        → Proyecto muy cerca de su finalización. Quedan aprox. 27 días de trabajo.
+      </div>
+    </div>
+
+    <!-- PROYECTO 4 -->
+    <div class="proj-card fade-up fade-up-5">
+      <div class="flex-between mb-16">
+        <div>
+          <span class="badge badge-muted mb-8" style="display:inline-flex">Social</span>
+          <div style="font-size:16px;font-weight:600;">Escuela Rural Comayagua</div>
+          <div class="text-xs text-muted mt-4">Supervisor: Jose Luis Montero · Inicio: 20 mar 2026</div>
+        </div>
+        <div style="text-align:right">
+          <div class="text-xs text-muted">Fecha fin planificada</div>
+          <div class="fw-600" style="font-size:15px">15 dic 2026</div>
+          <div class="text-xs text-muted mt-4">En tiempo</div>
+        </div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="val">29%</div><div class="lbl">Avance actual</div></div>
+        <div class="stat-box"><div class="val">26</div><div class="lbl">Días transcurridos</div></div>
+        <div class="stat-box"><div class="val">1.12%</div><div class="lbl">Tasa diaria</div></div>
+      </div>
+      <div class="timeline-bar">
+        <div class="tl-fill" style="width:29%;background:linear-gradient(90deg,var(--navy),var(--navy-light))">
+          <div class="tl-marker" style="right:0;border-color:var(--navy)"></div>
+        </div>
+      </div>
+      <!-- (Fila de fechas inferior eliminada por corrección de la Gerencia) -->
+      <div style="margin-top:14px;background:var(--success-bg);border-radius:8px;padding:10px 14px;font-size:12.5px;color:var(--success)">
+        ✓ Ritmo de avance positivo. Se proyecta finalizar 5 días antes del plazo.
+      </div>
+    </div>
+
+  </div>
+</main>
+<script src="shared.js"></script>
+<script src="proyecciones.js"></script>
+</body>
+</html>

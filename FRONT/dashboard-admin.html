@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PRONADERS — Dashboard</title>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+<link rel="stylesheet" href="dashboard-admin.css">
+</head>
+<body>
+
+
+<main class="main">
+
+  <div class="flex-between mb-24 fade-up fade-up-1">
+    <div>
+      <div class="section-head" style="margin-bottom:4px">
+        <h2>Panel <em style="font-style:italic;color:var(--gold)">Administrativo</em></h2>
+      </div>
+      <p class="text-muted text-sm">Administrador de Oficina</p>
+    </div>
+    <div style="display:flex;gap:10px">
+      <!-- Acceso directo: abre el MODAL de creación al llegar al módulo -->
+      <a href="usuarios.html" class="btn btn-outline" onclick="sessionStorage.setItem('pron_abrir_modal_usuario','1')"><span class="material-symbols-rounded">person_add</span> Nuevo Usuario</a>
+      <a href="proyectos.html" class="btn btn-gold" onclick="sessionStorage.setItem('pron_abrir_modal_proyecto','1')"><span class="material-symbols-rounded">add</span> Nuevo Proyecto</a>
+    </div>
+  </div>
+
+  <!-- METRICS -->
+  <div class="grid-4 mb-24">
+    <div class="metric-card fade-up fade-up-1">
+      <div class="metric-icon" style="background:var(--info-bg)">
+        <span class="material-symbols-rounded" style="color:var(--info)">folder_open</span>
+      </div>
+      <div class="metric-label">Total Proyectos</div>
+      <div class="metric-value">18</div>
+      <div class="metric-change"><span class="text-muted text-xs">12 activos · 6 finalizados</span></div>
+    </div>
+    <div class="metric-card fade-up fade-up-2">
+      <div class="metric-icon" style="background:var(--success-bg)">
+        <span class="material-symbols-rounded" style="color:var(--success)">manage_accounts</span>
+      </div>
+      <div class="metric-label">Usuarios Activos</div>
+      <div class="metric-value">24</div>
+      <div class="metric-change change-up"><span class="material-symbols-rounded" style="font-size:14px">trending_up</span>3 nuevos</div>
+    </div>
+    <div class="metric-card fade-up fade-up-3">
+      <div class="metric-icon" style="background:var(--warning-bg)">
+        <span class="material-symbols-rounded" style="color:var(--warning)">bar_chart</span>
+      </div>
+      <div class="metric-label">Avance Global</div>
+      <div class="metric-value">63%</div>
+      <div class="metric-change change-up"><span class="material-symbols-rounded" style="font-size:14px">trending_up</span>+8% este mes</div>
+    </div>
+    <div class="metric-card fade-up fade-up-4">
+      <div class="metric-icon" style="background:var(--danger-bg)">
+        <span class="material-symbols-rounded" style="color:var(--danger)">warning</span>
+      </div>
+      <div class="metric-label">Proyectos en Riesgo</div>
+      <div class="metric-value">3</div>
+      <div class="metric-change change-down">Retraso mayor a 15 días</div>
+    </div>
+  </div>
+
+  <div class="grid-mixed mb-24">
+
+    <!-- PROYECTOS ACTIVOS (con "ojito" para abrir el detalle del proyecto) -->
+    <div class="card fade-up fade-up-2">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Proyectos Activos</div>
+        </div>
+        <a href="proyectos.html" class="btn btn-outline btn-sm">Gestionar</a>
+      </div>
+      <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Proyecto</th><th>Departamento</th><th>Avance</th><th>Estado</th><th>Info.</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+              <td><div class="fw-500">Puente Choluteca</div><div class="text-xs text-muted">Infraestructura</div></td>
+              <td><span class="text-sm">Choluteca</span></td>
+              <td><div class="progress-bar" style="width:80px"><div class="progress-fill success" style="width:68%"></div></div></td>
+              <td><span class="badge badge-success">68%</span></td>
+              <td><a href="proyectos.html" onclick="sessionStorage.setItem('pron_open_proyecto','PRY-001')" title="Ver detalles del proyecto" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;background:var(--cream);border:1px solid var(--cream-dark);color:var(--navy);text-decoration:none" onmouseover="this.style.background='var(--navy)';this.style.color='var(--white)'" onmouseout="this.style.background='var(--cream)';this.style.color='var(--navy)'"><span class="material-symbols-rounded" style="font-size:16px">visibility</span></a></td>
+            </tr>
+            <tr>
+              <td><div class="fw-500">Riego El Paraíso</div><div class="text-xs text-muted">Agrícola</div></td>
+              <td><span class="text-sm">El Paraíso</span></td>
+              <td><div class="progress-bar" style="width:80px"><div class="progress-fill danger" style="width:41%"></div></div></td>
+              <td><span class="badge badge-danger">41%</span></td>
+              <td><a href="proyectos.html" onclick="sessionStorage.setItem('pron_open_proyecto','PRY-002')" title="Ver detalles del proyecto" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;background:var(--cream);border:1px solid var(--cream-dark);color:var(--navy);text-decoration:none" onmouseover="this.style.background='var(--navy)';this.style.color='var(--white)'" onmouseout="this.style.background='var(--cream)';this.style.color='var(--navy)'"><span class="material-symbols-rounded" style="font-size:16px">visibility</span></a></td>
+            </tr>
+            <tr>
+              <td><div class="fw-500">Centro San Pedro</div><div class="text-xs text-muted">Social</div></td>
+              <td><span class="text-sm">Santa Bárbara</span></td>
+              <td><div class="progress-bar" style="width:80px"><div class="progress-fill gold" style="width:85%"></div></div></td>
+              <td><span class="badge badge-info">85%</span></td>
+              <td><a href="proyectos.html" onclick="sessionStorage.setItem('pron_open_proyecto','PRY-003')" title="Ver detalles del proyecto" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;background:var(--cream);border:1px solid var(--cream-dark);color:var(--navy);text-decoration:none" onmouseover="this.style.background='var(--navy)';this.style.color='var(--white)'" onmouseout="this.style.background='var(--cream)';this.style.color='var(--navy)'"><span class="material-symbols-rounded" style="font-size:16px">visibility</span></a></td>
+            </tr>
+            <tr>
+              <td><div class="fw-500">Escuela Comayagua</div><div class="text-xs text-muted">Social</div></td>
+              <td><span class="text-sm">Comayagua</span></td>
+              <td><div class="progress-bar" style="width:80px"><div class="progress-fill " style="width:29%"></div></div></td>
+              <td><span class="badge badge-warning">29%</span></td>
+              <td><a href="proyectos.html" onclick="sessionStorage.setItem('pron_open_proyecto','PRY-004')" title="Ver detalles del proyecto" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;background:var(--cream);border:1px solid var(--cream-dark);color:var(--navy);text-decoration:none" onmouseover="this.style.background='var(--navy)';this.style.color='var(--white)'" onmouseout="this.style.background='var(--cream)';this.style.color='var(--navy)'"><span class="material-symbols-rounded" style="font-size:16px">visibility</span></a></td>
+            </tr>
+        </tbody>
+      </table>
+      </div>
+    </div><!-- end card izquierda -->
+
+    <!-- PANEL DERECHO ADMIN -->
+    <div style="display:flex;flex-direction:column;gap:18px;">
+
+      <div class="card fade-up fade-up-3">
+        <div class="card-header">
+          <div class="card-title">Usuarios del Sistema</div>
+          <a href="usuarios.html" class="btn btn-outline btn-sm">Gestionar</a>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div class="flex-between">
+            <div class="flex-center gap-8">
+              <div class="avatar">DS</div>
+              <div>
+                <div class="text-sm fw-500">Andrea Amador</div>
+                <div class="text-xs text-muted">Empleado</div>
+              </div>
+            </div>
+            <span class="badge badge-success">Activo</span>
+          </div>
+          <div class="flex-between">
+            <div class="flex-center gap-8">
+              <div class="avatar">SZ</div>
+              <div>
+                <div class="text-sm fw-500">Silvia Zuniga</div>
+                <div class="text-xs text-muted">Empleado</div>
+              </div>
+            </div>
+            <span class="badge badge-success">Activo</span>
+          </div>
+          <div class="flex-between">
+            <div class="flex-center gap-8">
+              <div class="avatar">IC</div>
+              <div>
+                <div class="text-sm fw-500">Isaac Carranza</div>
+                <div class="text-xs text-muted">Empleado</div>
+              </div>
+            </div>
+            <span class="badge badge-success">Activo</span>
+          </div>
+          <div class="flex-between">
+            <div class="flex-center gap-8">
+              <div class="avatar">RI</div>
+              <div>
+                <div class="text-sm fw-500">Josue Vasquez</div>
+                <div class="text-xs text-muted">Empleado</div>
+              </div>
+            </div>
+            <span class="badge badge-muted">Inactivo</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card fade-up fade-up-4">
+        <div class="card-title mb-12">Proyectos Finalizados</div>
+        <div style="text-align:center;padding:12px 0">
+          <div style="font-family:var(--font-serif);font-size:42px;font-weight:300;color:var(--navy)">6</div>
+          <div class="text-xs text-muted">proyectos completados</div>
+          <a href="finalizados.html" class="btn btn-outline btn-sm mt-12" style="width:100%;justify-content:center">
+            <span class="material-symbols-rounded">inventory</span> Ver Historial
+          </a>
+        </div>
+      </div>
+
+
+
+    </div>
+  </div>
+
+</main>
+<script src="shared.js"></script>
+<script src="dashboard-admin.js"></script>
+</body>
+</html>

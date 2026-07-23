@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PRONADERS — Gestión de Proyectos</title>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+
+<link rel="stylesheet" href="proyectos.css">
+</head>
+<body>
+
+
+<!-- ======================================================
+     DATOS DE PROYECTOS
+     ====================================================== -->
+
+
+<!-- ====================================================== -->
+<main class="main" id="main-proyectos">
+</main>
+
+<!-- ===== MODAL DETALLE PROYECTO ===== -->
+<div class="modal-overlay" id="modal-detalle">
+  <div class="modal" style="max-width:780px;padding:0;overflow:hidden">
+    <!-- Header del modal -->
+    <div id="detalle-header" style="padding:28px 32px 22px;border-bottom:1px solid var(--cream-dark)">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+        <div>
+          <div id="detalle-tipo" style="font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px"></div>
+          <div id="detalle-nombre" style="font-family:var(--font-serif);font-size:24px;font-weight:300;color:var(--navy)"></div>
+          <div id="detalle-ubicacion" style="font-size:12.5px;color:var(--muted);margin-top:4px;display:flex;align-items:center;gap:5px"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <span id="detalle-badge" class="badge"></span>
+          <button class="close-btn" onclick="document.getElementById('modal-detalle').classList.remove('open')">
+            <span class="material-symbols-rounded">close</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- Cuerpo scrolleable -->
+    <div style="padding:24px 32px;max-height:72vh;overflow-y:auto" id="detalle-body">
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL NUEVO PROYECTO (solo admin) ===== -->
+<div class="modal-overlay" id="modal-nuevo">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Nuevo <em style="font-style:italic">Proyecto</em></div>
+      <button class="close-btn" onclick="document.getElementById('modal-nuevo').classList.remove('open')">
+        <span class="material-symbols-rounded">close</span>
+      </button>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Nombre del proyecto</label>
+        <input type="text" class="form-control" id="np-nombre" placeholder="Ej. Puente Choluteca">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo de proyecto</label>
+        <select class="form-control" id="np-tipo">
+          <option>Infraestructura</option><option>Agrícola</option><option>Social</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Departamento</label>
+        <select class="form-control" id="sel-depto" onchange="cargarMunicipios()">
+          <option value="">— Selecciona un departamento —</option>
+          <option value="Atlántida">Atlántida</option><option value="Choluteca">Choluteca</option>
+          <option value="Colón">Colón</option><option value="Comayagua">Comayagua</option>
+          <option value="Copán">Copán</option><option value="Cortés">Cortés</option>
+          <option value="El Paraíso">El Paraíso</option><option value="Francisco Morazán">Francisco Morazán</option>
+          <option value="Gracias a Dios">Gracias a Dios</option><option value="Intibucá">Intibucá</option>
+          <option value="Islas de La Bahía">Islas de La Bahía</option><option value="La Paz">La Paz</option>
+          <option value="Lempira">Lempira</option><option value="Ocotepeque">Ocotepeque</option>
+          <option value="Olancho">Olancho</option><option value="Santa Bárbara">Santa Bárbara</option>
+          <option value="Valle">Valle</option><option value="Yoro">Yoro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Municipio</label>
+        <select class="form-control" id="sel-municipio" disabled>
+          <option value="">— Primero selecciona departamento —</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Fecha de inicio</label>
+        <input type="date" class="form-control" id="np-inicio" onchange="validarRangoFechas()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Fecha estimada de fin</label>
+        <input type="date" class="form-control" id="np-fin" onchange="validarRangoFechas()">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Presupuesto total (L)</label>
+      <input type="number" class="form-control" id="np-presupuesto" placeholder="0.00" min="0">
+    </div>
+    <!-- Evidencia inicial de presupuesto: documento OBLIGATORIO -->
+    <div class="form-group">
+      <label class="form-label">Evidencia inicial de presupuesto <span style="color:#C0392B">*</span></label>
+      <div id="np-evidencia-drop" tabindex="0" role="button"
+           style="border:1.5px dashed var(--cream-dark);border-radius:var(--radius);padding:18px;text-align:center;cursor:pointer;color:var(--muted);font-size:13px;transition:var(--transition)"
+           onclick="document.getElementById('np-evidencia-input').click()"
+           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('np-evidencia-input').click()}"
+           ondragover="event.preventDefault();this.style.borderColor='var(--gold)'"
+           ondragleave="this.style.borderColor=''"
+           ondrop="event.preventDefault();this.style.borderColor='';mostrarEvidencia(event.dataTransfer.files)">
+        <span class="material-symbols-rounded" style="font-size:26px;display:block;margin-bottom:6px;color:var(--cream-dark)">upload_file</span>
+        Arrastra el documento aquí o <strong style="color:var(--navy)">haz clic</strong> para adjuntarlo
+        <div style="font-size:11px;margin-top:3px">PDF, imagen o Excel · Documento obligatorio para registrar el proyecto</div>
+        <input type="file" id="np-evidencia-input" multiple accept=".pdf,.jpg,.jpeg,.png,.xlsx,.docx" style="display:none" onchange="mostrarEvidencia(this.files)">
+      </div>
+      <div id="np-evidencia-files" style="margin-top:8px;display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Colaboradores del proyecto</label>
+      <div id="colab-search-wrap" style="position:relative;margin-bottom:8px">
+        <span class="material-symbols-rounded" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:17px;color:var(--muted);pointer-events:none">search</span>
+        <input type="text" id="colab-search" class="form-control" style="padding-left:38px"
+          placeholder="Buscar por nombre o rol (ej. empleado, supervisor)..."
+          oninput="filtrarColabs(this.value)"
+          onfocus="document.getElementById('colab-dropdown').style.display='block'"
+          onclick="document.getElementById('colab-dropdown').style.display='block'"
+          onblur="setTimeout(()=>document.getElementById('colab-dropdown').style.display='none',200)">
+        <div id="colab-dropdown" style="display:none;position:absolute;left:0;right:0;top:calc(100% + 4px);background:var(--white);border:1px solid var(--cream-dark);border-radius:var(--radius);box-shadow:var(--shadow-md);z-index:50;max-height:200px;overflow-y:auto;">
+          <div class="colab-option" data-initials="AM" data-name="Andrea María Amador Canales" data-rol="Supervisora de Oficina" onmousedown="event.preventDefault();agregarColab(this)">
+            <div class="avatar" style="width:28px;height:28px;font-size:10px;flex-shrink:0;background:var(--success-bg);color:var(--success)">AM</div>
+            <div><div style="font-size:13px;font-weight:500">Andrea María Amador Canales</div><div style="font-size:11px;color:var(--muted)">Supervisora de Oficina</div></div>
+          </div>
+          <div class="colab-option" data-initials="CC" data-name="Carlos Costly" data-rol="Empleado" onmousedown="event.preventDefault();agregarColab(this)">
+            <div class="avatar" style="width:28px;height:28px;font-size:10px;flex-shrink:0;background:var(--cream-dark);color:var(--text-light)">CC</div>
+            <div><div style="font-size:13px;font-weight:500">Carlos Costly</div><div style="font-size:11px;color:var(--muted)">Empleado</div></div>
+          </div>
+          <div class="colab-option" data-initials="CR" data-name="Cristiano Ronaldo" data-rol="Empleado" onmousedown="event.preventDefault();agregarColab(this)">
+            <div class="avatar" style="width:28px;height:28px;font-size:10px;flex-shrink:0;background:#fff3e0;color:#e65100">CR</div>
+            <div><div style="font-size:13px;font-weight:500">Cristiano Ronaldo</div><div style="font-size:11px;color:var(--muted)">Empleado</div></div>
+          </div>
+          <div class="colab-option" data-initials="IC" data-name="Isaac Abisahi Carranza Posadas" data-rol="Supervisor de Campo" onmousedown="event.preventDefault();agregarColab(this)">
+            <div class="avatar" style="width:28px;height:28px;font-size:10px;flex-shrink:0;background:var(--info-bg);color:var(--info)">IC</div>
+            <div><div style="font-size:13px;font-weight:500">Isaac Abisahi Carranza Posadas</div><div style="font-size:11px;color:var(--muted)">Supervisor de Campo</div></div>
+          </div>
+          <div class="colab-option" data-initials="JM" data-name="José Luis Montero" data-rol="Empleado" onmousedown="event.preventDefault();agregarColab(this)">
+            <div class="avatar" style="width:28px;height:28px;font-size:10px;flex-shrink:0">JM</div>
+            <div><div style="font-size:13px;font-weight:500">José Luis Montero</div><div style="font-size:11px;color:var(--muted)">Empleado</div></div>
+          </div>
+          <div class="colab-option" data-initials="JL" data-name="Josué Lenoel Vásquez" data-rol="Empleado" onmousedown="event.preventDefault();agregarColab(this)">
+            <div class="avatar" style="width:28px;height:28px;font-size:10px;flex-shrink:0;background:var(--warning-bg);color:var(--warning)">JL</div>
+            <div><div style="font-size:13px;font-weight:500">Josué Lenoel Vásquez</div><div style="font-size:11px;color:var(--muted)">Empleado</div></div>
+          </div>
+          <div class="colab-option" data-initials="LY" data-name="Lamine Yamal" data-rol="Empleado" onmousedown="event.preventDefault();agregarColab(this)">
+            <div class="avatar" style="width:28px;height:28px;font-size:10px;flex-shrink:0;background:#e8f5e9;color:#2e7d32">LY</div>
+            <div><div style="font-size:13px;font-weight:500">Lamine Yamal</div><div style="font-size:11px;color:var(--muted)">Empleado</div></div>
+          </div>
+          <div class="colab-option" data-initials="SA" data-name="Silvia Alejandra Velasquez Zúñiga" data-rol="Administradora" onmousedown="event.preventDefault();agregarColab(this)">
+            <div class="avatar" style="width:28px;height:28px;font-size:10px;flex-shrink:0;background:#f3e8ff;color:#7b1fa2">SA</div>
+            <div><div style="font-size:13px;font-weight:500">Silvia Alejandra Velasquez Zúñiga</div><div style="font-size:11px;color:var(--muted)">Administradora</div></div>
+          </div>
+        </div>
+      </div>
+      <div id="colab-chips" style="display:flex;flex-wrap:wrap;gap:6px;min-height:32px;padding:4px 0">
+        <span style="font-size:11.5px;color:var(--muted);align-self:center" id="colab-placeholder">Ningún colaborador añadido aún</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Descripción</label>
+      <textarea class="form-control" id="np-desc" rows="3" placeholder="Descripción general del proyecto..."></textarea>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="FormUtils.limpiarErrores(document.getElementById('modal-nuevo'));document.getElementById('modal-nuevo').classList.remove('open')">Cancelar</button>
+      <button class="btn btn-gold" onclick="guardarProyecto()">
+        <span class="material-symbols-rounded">save</span> Guardar Proyecto
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div class="toast" id="toast">
+  <span class="material-symbols-rounded" id="toast-icon" style="font-size:18px">check_circle</span>
+  <span id="toast-msg"></span>
+</div>
+
+
+<script src="shared.js"></script>
+<script src="proyectos.js"></script>
+</body>
+</html>

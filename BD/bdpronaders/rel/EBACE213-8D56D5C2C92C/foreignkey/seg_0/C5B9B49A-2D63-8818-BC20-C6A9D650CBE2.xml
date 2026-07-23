@@ -1,0 +1,16 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<FKIndexAssociation class="oracle.dbtools.crest.model.design.relational.FKIndexAssociation" directorySegmentName="seg_0" id="C5B9B49A-2D63-8818-BC20-C6A9D650CBE2" containerWithKeyObject="54805C77-D54D-DA00-4B07-A2335AE8F813" localFKIndex="18A14E80-D5F2-2D33-54B6-EF2992CA041D" name="TBL_SOL_TBL_EQUIPOS_FK">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-23 05:31:47 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<referredTableLongName>TBL_EQUIPOS</referredTableLongName>
+<deleteRule>NO ACTION</deleteRule>
+<referredTableID>06ADA117-3080-66AB-5DE7-5FB51B6DD9F3</referredTableID>
+<keyObject>0F6594F8-AFBA-826C-EB1E-082B7C4DDCAB</keyObject>
+<referredKeyID>0F6594F8-AFBA-826C-EB1E-082B7C4DDCAB</referredKeyID>
+<mandatory>false</mandatory>
+<refColNames>ID_EQUIPO_LOG</refColNames>
+<transferable>true</transferable>
+<rely>false</rely>
+<columnDependencyConstraintGenerateInDDL>true</columnDependencyConstraintGenerateInDDL>
+</FKIndexAssociation>

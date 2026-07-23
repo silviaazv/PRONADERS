@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PRONADERS — Gestión de Usuarios</title>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+
+<link rel="stylesheet" href="usuarios.css">
+</head>
+<body>
+
+
+<main class="main">
+
+  <div class="flex-between mb-24 fade-up fade-up-1 sticky-head">
+    <div class="section-head" style="margin-bottom:0">
+      <h2>Gestión de <em style="font-style:italic">Usuarios</em></h2>
+      <p>Administra cuentas, roles y permisos del sistema</p>
+    </div>
+    <button class="btn btn-gold" onclick="abrirModalNuevoUsuario()">
+      <span class="material-symbols-rounded">person_add</span> Nuevo Usuario
+    </button>
+  </div>
+
+  <!-- STATS -->
+  <div class="grid-4 mb-24 fade-up fade-up-1">
+    <div class="card" style="padding:16px 20px;display:flex;align-items:center;gap:14px">
+      <div style="width:36px;height:36px;background:var(--info-bg);border-radius:8px;display:flex;align-items:center;justify-content:center"><span class="material-symbols-rounded" style="color:var(--info);font-size:18px">group</span></div>
+      <div><div class="text-xs text-muted">Total usuarios</div><div style="font-family:var(--font-serif);font-size:22px;color:var(--navy);line-height:1">24</div></div>
+    </div>
+    <div class="card" style="padding:16px 20px;display:flex;align-items:center;gap:14px">
+      <div style="width:36px;height:36px;background:var(--success-bg);border-radius:8px;display:flex;align-items:center;justify-content:center"><span class="material-symbols-rounded" style="color:var(--success);font-size:18px">check_circle</span></div>
+      <div><div class="text-xs text-muted">Activos</div><div style="font-family:var(--font-serif);font-size:22px;color:var(--navy);line-height:1">21</div></div>
+    </div>
+    <div class="card" style="padding:16px 20px;display:flex;align-items:center;gap:14px">
+      <div style="width:36px;height:36px;background:var(--danger-bg);border-radius:8px;display:flex;align-items:center;justify-content:center"><span class="material-symbols-rounded" style="color:var(--danger);font-size:18px">block</span></div>
+      <div><div class="text-xs text-muted">Inactivos</div><div style="font-family:var(--font-serif);font-size:22px;color:var(--navy);line-height:1">3</div></div>
+    </div>
+    <div class="card" style="padding:16px 20px;display:flex;align-items:center;gap:14px">
+      <div style="width:36px;height:36px;background:rgba(201,168,76,0.15);border-radius:8px;display:flex;align-items:center;justify-content:center"><span class="material-symbols-rounded" style="color:var(--gold-dim);font-size:18px">admin_panel_settings</span></div>
+      <div><div class="text-xs text-muted">Admin. de Oficina</div><div style="font-family:var(--font-serif);font-size:22px;color:var(--navy);line-height:1">2</div></div>
+    </div>
+  </div>
+
+  <!-- TABLA USUARIOS -->
+<div class="card fade-up fade-up-2">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Directorio de Usuarios</div>
+      <div class="card-subtitle">24 usuarios registrados en el sistema</div>
+    </div>
+  </div>
+  
+  <!-- FILTROS ALINEADOS A LA DERECHA DE LA TARJETA.
+       "Limpiar filtros" aparece a la IZQUIERDA del primer filtro,
+       únicamente cuando hay algún filtro aplicado. -->
+  <div style="display: flex; gap: 12px; align-items: center; justify-content: flex-end; flex-wrap: wrap; padding: 0 0 20px 0; border-bottom: 1px solid var(--cream-dark); margin-bottom: 20px;">
+    <button class="btn btn-outline btn-sm" id="btn-limpiar-filtros" onclick="limpiarFiltros()" style="flex-shrink: 0; white-space: nowrap; display: none;">
+      <span class="material-symbols-rounded" style="font-size: 13px;">clear</span> Limpiar filtros
+    </button>
+    <div class="search-wrap" style="width: 200px; flex-shrink: 0;">
+      <span class="material-symbols-rounded">search</span>
+      <input type="text" class="search-input" id="search-usuario" placeholder="Buscar usuario..." oninput="aplicarFiltros()">
+    </div>
+    <select class="form-control" id="filtro-rol" style="width: 180px; flex-shrink: 0; padding: 8px 32px 8px 12px; font-size: 13px;" onchange="aplicarFiltros()">
+      <option value="">Todos los roles</option>
+      <option value="admin_oficina">Admin. de Oficina</option>
+      <option value="campo">Supervisor de Campo</option>
+    </select>
+    <select class="form-control" id="filtro-zona" style="width: 160px; flex-shrink: 0; padding: 8px 32px 8px 12px; font-size: 13px;" onchange="aplicarFiltros()">
+      <option value="">Todas las zonas</option>
+      <option value="Oficina Central">Oficina Central</option>
+      <option value="Zona Norte">Zona Norte</option>
+      <option value="Zona Oriental">Zona Oriental</option>
+      <option value="Zona Occidental">Zona Occidental</option>
+      <option value="Zona Central">Zona Central</option>
+      <option value="Sistema">Sistema</option>
+    </select>
+    <select class="form-control" id="filtro-estado" style="width: 160px; flex-shrink: 0; padding: 8px 32px 8px 12px; font-size: 13px;" onchange="aplicarFiltros()">
+      <option value="">Todos los estados</option>
+      <option value="Activo">Activo</option>
+      <option value="Inactivo">Inactivo</option>
+    </select>
+  </div>
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Usuario</th>
+        <th>Correo institucional</th>
+        <th>Rol</th>
+        <th>Zona / Cargo</th>
+        <th>Último acceso</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="tabla-usuarios">
+      <tr>
+        <td><div style="display:flex;align-items:center;gap:10px"><div class="avatar" style="background:#f3e8ff;color:#7b1fa2">SA</div><div><div class="fw-500">Silvia Alejandra Velasquez Zúñiga</div><div class="text-xs text-muted">20221003100</div></div></div></td>
+        <td class="text-sm">s.velasquez@pronaders.gob.hn</td>
+        <td><span class="role-tag role-admin-oficina"><span class="material-symbols-rounded" style="font-size:11px">admin_panel_settings</span>Admin. Oficina</span></td>
+        <td class="text-sm">Oficina Central</td>
+        <td class="text-sm text-muted">Hoy, 9:12 am</td>
+        <td><span class="badge badge-success">Activo</span></td>
+        <td><div style="display:flex;gap:6px"><button class="btn btn-outline btn-sm" onclick="editarUsuario('Silvia Alejandra Velasquez Zúñiga','s.velasquez@pronaders.gob.hn','admin_oficina','Oficina Central')"><span class="material-symbols-rounded" style="font-size:13px">edit</span></button><button class="btn btn-outline btn-sm" onclick="verProyectos('Silvia Alejandra Velasquez Zúñiga')" title="Ver proyectos vinculados"><span class="material-symbols-rounded" style="font-size:13px">folder_open</span></button><button class="btn btn-outline btn-sm" onclick="generarPDFUsuario('Silvia Alejandra Velasquez Zúñiga')" title="Generar PDF de proyectos del usuario"><span class="material-symbols-rounded" style="font-size:13px">picture_as_pdf</span></button><button class="btn btn-danger btn-sm" onclick="confirmarDesactivar('Silvia Alejandra Velasquez Zúñiga')"><span class="material-symbols-rounded" style="font-size:13px">block</span></button></div></td>
+      </tr>
+      <tr>
+        <td><div style="display:flex;align-items:center;gap:10px"><div class="avatar" style="background:var(--success-bg);color:var(--success)">AM</div><div><div class="fw-500">Andrea María Amador Canales</div><div class="text-xs text-muted">20221000395</div></div></div></td>
+        <td class="text-sm">a.amador@pronaders.gob.hn</td>
+        <td><span class="role-tag role-campo"><span class="material-symbols-rounded" style="font-size:11px">engineering</span>Sup. Campo</span></td>
+        <td class="text-sm">Zona Norte</td>
+        <td class="text-sm text-muted">Hoy, 8:30 am</td>
+        <td><span class="badge badge-success">Activo</span></td>
+        <td><div style="display:flex;gap:6px"><button class="btn btn-outline btn-sm" onclick="editarUsuario('Andrea María Amador Canales','a.amador@pronaders.gob.hn','campo','Zona Norte')"><span class="material-symbols-rounded" style="font-size:13px">edit</span></button><button class="btn btn-outline btn-sm" onclick="verProyectos('Andrea María Amador Canales')" title="Ver proyectos vinculados"><span class="material-symbols-rounded" style="font-size:13px">folder_open</span></button><button class="btn btn-outline btn-sm" onclick="generarPDFUsuario('Andrea María Amador Canales')" title="Generar PDF de proyectos del usuario"><span class="material-symbols-rounded" style="font-size:13px">picture_as_pdf</span></button><button class="btn btn-danger btn-sm" onclick="confirmarDesactivar('Andrea María Amador Canales')"><span class="material-symbols-rounded" style="font-size:13px">block</span></button></div></td>
+      </tr>
+      <tr>
+        <td><div style="display:flex;align-items:center;gap:10px"><div class="avatar" style="background:var(--info-bg);color:var(--info)">IC</div><div><div class="fw-500">Isaac Abisahi Carranza Posadas</div><div class="text-xs text-muted">20221003506</div></div></div></td>
+        <td class="text-sm">i.carranza@pronaders.gob.hn</td>
+        <td><span class="role-tag role-campo"><span class="material-symbols-rounded" style="font-size:11px">engineering</span>Sup. Campo</span></td>
+        <td class="text-sm">Zona Oriental</td>
+        <td class="text-sm text-muted">Ayer, 3:40 pm</td>
+        <td><span class="badge badge-success">Activo</span></td>
+        <td><div style="display:flex;gap:6px"><button class="btn btn-outline btn-sm" onclick="editarUsuario('Isaac Abisahi Carranza Posadas','i.carranza@pronaders.gob.hn','campo','Zona Oriental')"><span class="material-symbols-rounded" style="font-size:13px">edit</span></button><button class="btn btn-outline btn-sm" onclick="verProyectos('Isaac Abisahi Carranza Posadas')" title="Ver proyectos vinculados"><span class="material-symbols-rounded" style="font-size:13px">folder_open</span></button><button class="btn btn-outline btn-sm" onclick="generarPDFUsuario('Isaac Abisahi Carranza Posadas')" title="Generar PDF de proyectos del usuario"><span class="material-symbols-rounded" style="font-size:13px">picture_as_pdf</span></button><button class="btn btn-danger btn-sm" onclick="confirmarDesactivar('Isaac Abisahi Carranza Posadas')"><span class="material-symbols-rounded" style="font-size:13px">block</span></button></div></td>
+      </tr>
+      <tr>
+        <td><div style="display:flex;align-items:center;gap:10px"><div class="avatar" style="background:var(--warning-bg);color:var(--warning)">JL</div><div><div class="fw-500">Josué Lenoel Vásquez</div><div class="text-xs text-muted">20211022013</div></div></div></td>
+        <td class="text-sm">j.vasquez@pronaders.gob.hn</td>
+        <td><span class="role-tag role-admin-oficina"><span class="material-symbols-rounded" style="font-size:11px">admin_panel_settings</span>Admin. Oficina</span></td>
+        <td class="text-sm">Gerencia Técnica</td>
+        <td class="text-sm text-muted">13 abr 2026</td>
+        <td><span class="badge badge-success">Activo</span></td>
+        <td><div style="display:flex;gap:6px"><button class="btn btn-outline btn-sm" onclick="editarUsuario('Josué Lenoel Vásquez','j.vasquez@pronaders.gob.hn','admin_oficina','Gerencia Técnica')"><span class="material-symbols-rounded" style="font-size:13px">edit</span></button><button class="btn btn-outline btn-sm" onclick="verProyectos('Josué Lenoel Vásquez')" title="Ver proyectos vinculados"><span class="material-symbols-rounded" style="font-size:13px">folder_open</span></button><button class="btn btn-outline btn-sm" onclick="generarPDFUsuario('Josué Lenoel Vásquez')" title="Generar PDF de proyectos del usuario"><span class="material-symbols-rounded" style="font-size:13px">picture_as_pdf</span></button><button class="btn btn-danger btn-sm" onclick="confirmarDesactivar('Josué Lenoel Vásquez')"><span class="material-symbols-rounded" style="font-size:13px">block</span></button></div></td>
+      </tr>
+      <tr>
+        <td><div style="display:flex;align-items:center;gap:10px"><div class="avatar">JM</div><div><div class="fw-500">José Luis Montero</div><div class="text-xs text-muted"></div></div></div></td>
+        <td class="text-sm">jl.montero@pronaders.gob.hn</td>
+        <td><span class="role-tag role-campo"><span class="material-symbols-rounded" style="font-size:11px">engineering</span>Sup. Campo</span></td>
+        <td class="text-sm">Zona Central</td>
+        <td class="text-sm text-muted">12 abr 2026</td>
+        <td><span class="badge badge-success">Activo</span></td>
+        <td><div style="display:flex;gap:6px"><button class="btn btn-outline btn-sm" onclick="editarUsuario('José Luis Montero','jl.montero@pronaders.gob.hn','campo','Zona Central')"><span class="material-symbols-rounded" style="font-size:13px">edit</span></button><button class="btn btn-outline btn-sm" onclick="verProyectos('José Luis Montero')" title="Ver proyectos vinculados"><span class="material-symbols-rounded" style="font-size:13px">folder_open</span></button><button class="btn btn-outline btn-sm" onclick="generarPDFUsuario('José Luis Montero')" title="Generar PDF de proyectos del usuario"><span class="material-symbols-rounded" style="font-size:13px">picture_as_pdf</span></button><button class="btn btn-danger btn-sm" onclick="confirmarDesactivar('José Luis Montero')"><span class="material-symbols-rounded" style="font-size:13px">block</span></button></div></td>
+      </tr>
+      <tr>
+        <td><div style="display:flex;align-items:center;gap:10px"><div class="avatar" style="background:rgba(201,168,76,0.15);color:var(--gold-dim)">IC</div><div><div class="fw-500">Isaac Carranza</div><div class="text-xs text-muted">Admin principal</div></div></div></td>
+        <td class="text-sm">admin@pronaders.gob.hn</td>
+        <td><span class="role-tag role-admin-oficina"><span class="material-symbols-rounded" style="font-size:11px">admin_panel_settings</span>Admin. Oficina</span></td>
+        <td class="text-sm">Sistema</td>
+        <td class="text-sm text-muted">Hoy, 7:00 am</td>
+        <td><span class="badge badge-success">Activo</span></td>
+        <td><span class="text-xs text-muted">No editable</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+  
+</div>
+
+
+
+
+
+
+</main>
+
+<!-- MODAL NUEVO / EDITAR USUARIO -->
+<div class="modal-overlay" id="modal-usuario">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-u-title">Nuevo <em style="font-style:italic">Usuario</em></div>
+      <button class="close-btn" onclick="cerrarModal()"><span class="material-symbols-rounded">close</span></button>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Nombre completo</label>
+        <input type="text" class="form-control" id="u-nombre" placeholder="Nombre completo">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Número de cuenta</label>
+        <input type="text" class="form-control" id="u-cuenta" placeholder="Ej. 20221003100">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Correo institucional</label>
+      <input type="email" class="form-control" id="u-email" placeholder="usuario@pronaders.gob.hn">
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Rol</label>
+        <select class="form-control" id="u-rol">
+          <option value="campo">Supervisor de Campo</option>
+          <option value="admin_oficina">Admin. de Oficina</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Zona / Cargo</label>
+        <input type="text" class="form-control" id="u-zona" placeholder="Ej. Zona Occidental">
+      </div>
+    </div>
+    <!-- Foto de identificación: comprobación visual de la identidad del usuario -->
+    <div class="form-group">
+      <label class="form-label">Foto de identificación <span style="color:var(--danger)">*</span></label>
+      <div id="foto-id-drop" tabindex="0" role="button"
+           onclick="document.getElementById('u-foto').click()"
+           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('u-foto').click()}"
+           style="border:1.5px dashed var(--cream-dark);border-radius:var(--radius);padding:16px;text-align:center;cursor:pointer">
+        <span class="material-symbols-rounded" style="font-size:24px;color:var(--muted)">badge</span>
+        <div style="font-size:12.5px;color:var(--muted);margin-top:4px">Haz clic para subir una foto del documento de identidad o carné</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">JPG o PNG · Sirve para comprobar que la cuenta corresponde a la persona</div>
+      </div>
+      <input type="file" id="u-foto" accept="image/*" style="display:none" onchange="previsualizarFotoId(this)">
+      <div id="foto-id-error" class="field-error" style="display:none">
+        <span class="material-symbols-rounded" style="font-size:13px">error</span>
+        La foto de identificación es obligatoria para crear el usuario.
+      </div>
+      <!-- Vista previa de la foto cargada -->
+      <div id="foto-id-wrap" style="display:none;align-items:center;gap:12px;margin-top:10px">
+        <img id="foto-id-img" class="foto-id-preview" alt="Foto de identificación">
+        <button type="button" class="btn btn-outline btn-sm" onclick="quitarFotoId()">
+          <span class="material-symbols-rounded" style="font-size:13px">delete</span> Quitar foto
+        </button>
+      </div>
+    </div>
+    <div style="background:var(--info-bg);border-radius:var(--radius);padding:12px 14px;margin-bottom:20px;font-size:12.5px;color:var(--info);display:flex;gap:8px;align-items:center">
+      <span class="material-symbols-rounded" style="font-size:16px">info</span>
+      Se generará una contraseña temporal y se enviará al correo institucional.
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-gold" onclick="guardarUsuario()"><span class="material-symbols-rounded">save</span> Guardar Usuario</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DESACTIVAR -->
+<div class="confirm-dialog" id="confirm-dialog">
+  <div class="confirm-box">
+    <span class="material-symbols-rounded" style="font-size:40px;color:var(--danger);display:block;margin-bottom:12px">block</span>
+    <div style="font-family:var(--font-serif);font-size:18px;color:var(--navy);margin-bottom:8px">¿Desactivar usuario?</div>
+    <p class="text-sm text-muted mb-20" id="confirm-txt">El usuario perderá acceso inmediatamente. Podrás reactivarlo en cualquier momento.</p>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-outline" onclick="document.getElementById('confirm-dialog').classList.remove('open')">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmar()">Sí, desactivar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Toast para mensajes de registro y errores -->
+<div class="toast" id="toast">
+  <span class="material-symbols-rounded" id="toast-icon" style="font-size:18px">check_circle</span>
+  <span id="toast-msg"></span>
+</div>
+
+
+
+<script src="shared.js"></script>
+<script src="usuarios.js"></script>
+</body>
+</html>

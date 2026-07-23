@@ -1,0 +1,150 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<Table class="oracle.dbtools.crest.model.design.relational.Table" directorySegmentName="seg_0" id="0A9BD738-FED1-CCA0-E7DC-B2ECE634FC29" name="TBL_USUARIOS">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:11:57 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<ordsAlias>table_3</ordsAlias>
+<allowColumnReorder>false</allowColumnReorder>
+<existDependencyGenerateInDDl>true</existDependencyGenerateInDDl>
+<parsed>true</parsed>
+<columns itemClass="oracle.dbtools.crest.model.design.relational.Column">
+<Column name="ID_USUARIO" id="CF98B54D-7609-92BE-464F-70F0309E2020">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:14:15 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="ID_ROL" id="A89AC749-DE1D-E28C-6AAE-FEEC5EA4F575">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:14:20 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<previousColumn>false</previousColumn>
+<autoIncrementCycle>false</autoIncrementCycle>
+<associations>
+<colAssociation fkAssociation="F7431444-4FCF-4CB0-7AA8-853233CA52F9" referredColumn="15D5055C-8BB7-0334-FBC6-124D00A19C5C"/>
+</associations>
+</Column>
+<Column name="ESTADO_USUARIO" id="34B8BB3B-1579-8449-A37E-5A4D506EC815">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:14:15 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<dataTypePrecision>1</dataTypePrecision>
+<ownDataTypeParameters>,1,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="NOMBRE_USUARIO" id="731C76A8-2517-796F-2F48-B6A64EAF889E">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:14:15 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>255</dataTypeSize>
+<ownDataTypeParameters>255,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="CORREO" id="A8401C43-5FDE-3646-F11F-BC3ED88C4FAD">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:14:15 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>255</dataTypeSize>
+<ownDataTypeParameters>255,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="TELEFONO" id="26FDB4BE-792A-2F52-811B-EB8F13E7E224">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:14:15 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>15</dataTypeSize>
+<ownDataTypeParameters>15,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="CONTRASENA" id="E9A8D58D-B775-4EB0-C395-133066FF8A29">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:14:15 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>255</dataTypeSize>
+<ownDataTypeParameters>255,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="FECHA_REGISTRO" id="05820CB2-F3B4-223F-6850-791B02DAF509">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:14:15 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>91229484-D19C-D458-8647-333C7FFE7B60</logicalDatatype>
+<ownDataTypeParameters>,,</ownDataTypeParameters>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+</columns>
+<indexes itemClass="oracle.dbtools.crest.model.design.relational.Index">
+<ind_PK_UK id="172DE6E6-024E-D225-CA3D-B480E8F29E96" name="TBL_USUARIOS_PK">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:14:15 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<pk>true</pk>
+<indexState>Primary Constraint</indexState>
+<isSurrogateKey>false</isSurrogateKey>
+<indexColumnUsage>
+<colUsage columnID="CF98B54D-7609-92BE-464F-70F0309E2020"/>
+</indexColumnUsage>
+</ind_PK_UK>
+<ind_PK_UK id="724A5C76-77EF-CC94-EFDD-118F0C7C28D5" name="TBL_USUARIOS_CORREO">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-23 04:26:38 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<indexState>Unique Constraint</indexState>
+<isSurrogateKey>false</isSurrogateKey>
+<indexColumnUsage>
+<colUsage columnID="A8401C43-5FDE-3646-F11F-BC3ED88C4FAD"/>
+</indexColumnUsage>
+</ind_PK_UK>
+<ind_PK_UK id="703D590C-FC18-33C7-750A-12D74E19A690" name="TBL_USUARIOS_TBL_ROLES_FK">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-22 19:14:20 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<indexState>Foreign Key</indexState>
+<isSurrogateKey>false</isSurrogateKey>
+<indexColumnUsage>
+<colUsage columnID="A89AC749-DE1D-E28C-6AAE-FEEC5EA4F575"/>
+</indexColumnUsage>
+</ind_PK_UK>
+</indexes>
+<tableCheckConstraints itemClass="oracle.dbtools.crest.model.design.constraint.TableLevelConstraint">
+<tableCheckConstraint name="CHK_USUARIOS_ESTADO" directorySegmentName="seg_0" id="77C46611-3061-1CDB-B1F7-FB5E55AAE3C1">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-23 04:27:22 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<rule><![CDATA[CHECK (estado_usuario IN (0, 1))]]></rule>
+</tableCheckConstraint>
+<tableCheckConstraint name="CHK_USUARIOS_CORREO" directorySegmentName="seg_0" id="B43307B0-3E75-217C-8DCE-D464F9E6355F">
+<createdBy>salej</createdBy>
+<createdTime>2026-07-23 04:28:25 UTC</createdTime>
+<ownerDesignName>bdpronaders</ownerDesignName>
+<rule><![CDATA[CHECK (REGEXP_LIKE(correo, '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'))]]></rule>
+</tableCheckConstraint>
+</tableCheckConstraints>
+</Table>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PRONADERS — Dashboard</title>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+<link rel="stylesheet" href="dashboard-campo.css">
+</head>
+<body>
+
+
+<main class="main">
+
+  <!-- WELCOME -->
+  <div class="flex-between mb-24 fade-up fade-up-1">
+    <div>
+      <div class="section-head" style="margin-bottom:4px">
+        <h2>Buenos días, <em style="font-style:italic;color:var(--gold)">Isaac</em></h2>
+      </div>
+      <p class="text-muted text-sm">Supervisor de Campo · Zona Occidental</p>
+    </div>
+  </div>
+
+  <!-- METRICS -->
+  <div class="grid-4 mb-24">
+    <div class="metric-card fade-up fade-up-1">
+      <div class="metric-icon" style="background:#E6F1FB">
+        <span class="material-symbols-rounded" style="color:var(--info)">folder_open</span>
+      </div>
+      <div class="metric-label">Proyectos Activos</div>
+      <div class="metric-value">4</div>
+      <div class="metric-change"><span class="material-symbols-rounded" style="font-size:14px;color:var(--success)">trending_up</span><span class="change-up">1 este mes</span></div>
+    </div>
+    <div class="metric-card fade-up fade-up-2">
+      <div class="metric-icon" style="background:var(--warning-bg)">
+        <span class="material-symbols-rounded" style="color:var(--warning)">pending_actions</span>
+      </div>
+      <div class="metric-label">Reportes Pendientes</div>
+      <div class="metric-value">2</div>
+      <div class="metric-change"><span class="text-muted">Sin revisar por oficina</span></div>
+    </div>
+    <div class="metric-card fade-up fade-up-3">
+      <div class="metric-icon" style="background:var(--danger-bg)">
+        <span class="material-symbols-rounded" style="color:var(--danger)">inventory_2</span>
+      </div>
+      <div class="metric-label">Solicitudes Activas</div>
+      <div class="metric-value">2</div>
+      <div class="metric-change"><span class="change-down">1 rechazada</span></div>
+    </div>
+    <div class="metric-card fade-up fade-up-4">
+      <div class="metric-icon" style="background:var(--success-bg)">
+        <span class="material-symbols-rounded" style="color:var(--success)">forum</span>
+      </div>
+      <div class="metric-label">Mensajes No Leídos</div>
+      <div class="metric-value">3</div>
+      <div class="metric-change"><span class="change-up">2 nuevos hoy</span></div>
+    </div>
+  </div>
+
+  <!-- MIS PROYECTOS + ACTIVIDAD -->
+  <div class="grid-mixed mb-24">
+
+    <!-- PROYECTOS -->
+    <div class="card fade-up fade-up-2">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Mis Proyectos</div>
+          <div class="card-subtitle">Avance físico actual</div>
+        </div>
+        <a href="proyectos.html" class="btn btn-outline btn-sm">Ver todos</a>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:18px;">
+
+        <div>
+          <div class="flex-between mb-8">
+            <div>
+              <div class="fw-500" style="font-size:13.5px">Construcción Puente Choluteca</div>
+              <div class="text-xs text-muted mt-4">Infraestructura · Valle de Ángeles · I. Carranza</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px"><a href="proyectos.html?detalle=PRY-001" onclick="sessionStorage.setItem('pron_open_proyecto','PRY-001')" title="Ver detalles del proyecto" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;background:var(--cream);border:1px solid var(--cream-dark);color:var(--navy);text-decoration:none;transition:var(--transition);flex-shrink:0" onmouseover="this.style.background='var(--navy)';this.style.color='var(--white)'" onmouseout="this.style.background='var(--cream)';this.style.color='var(--navy)'"><span class="material-symbols-rounded" style="font-size:16px">visibility</span></a><span class="badge badge-success">Activo</span></div>
+          </div>
+          <div class="flex-between text-xs text-muted mb-8">
+            <span>Avance físico</span><span class="fw-600 text-navy">68%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill success" style="width:68%"></div></div>
+          <div class="flex-between text-xs text-muted mt-8">
+            <span>Fin estimado: 12 jul 2026</span>
+            <span style="color:var(--success)">+3 días adelanto</span>
+          </div>
+        </div>
+
+        <hr class="divider" style="margin:4px 0">
+
+        <div>
+          <div class="flex-between mb-8">
+            <div>
+              <div class="fw-500" style="font-size:13.5px">Riego Comunitario El Paraíso</div>
+              <div class="text-xs text-muted mt-4">Agrícola · El Paraíso · A. Amador</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px"><a href="proyectos.html?detalle=PRY-002" onclick="sessionStorage.setItem('pron_open_proyecto','PRY-002')" title="Ver detalles del proyecto" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;background:var(--cream);border:1px solid var(--cream-dark);color:var(--navy);text-decoration:none;transition:var(--transition);flex-shrink:0" onmouseover="this.style.background='var(--navy)';this.style.color='var(--white)'" onmouseout="this.style.background='var(--cream)';this.style.color='var(--navy)'"><span class="material-symbols-rounded" style="font-size:16px">visibility</span></a><span class="badge badge-warning">Retrasado</span></div>
+          </div>
+          <div class="flex-between text-xs text-muted mb-8">
+            <span>Avance físico</span><span class="fw-600 text-navy">41%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill danger" style="width:41%"></div></div>
+          <div class="flex-between text-xs text-muted mt-8">
+            <span>Fin estimado: 30 sep 2026</span>
+            <span style="color:var(--danger)">−22 días retraso</span>
+          </div>
+        </div>
+
+        <hr class="divider" style="margin:4px 0">
+
+        <div>
+          <div class="flex-between mb-8">
+            <div>
+              <div class="fw-500" style="font-size:13.5px">Centro Comunitario San Pedro</div>
+              <div class="text-xs text-muted mt-4">Social · Santa Bárbara · S. Zuniga</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px"><a href="proyectos.html?detalle=PRY-003" onclick="sessionStorage.setItem('pron_open_proyecto','PRY-003')" title="Ver detalles del proyecto" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;background:var(--cream);border:1px solid var(--cream-dark);color:var(--navy);text-decoration:none;transition:var(--transition);flex-shrink:0" onmouseover="this.style.background='var(--navy)';this.style.color='var(--white)'" onmouseout="this.style.background='var(--cream)';this.style.color='var(--navy)'"><span class="material-symbols-rounded" style="font-size:16px">visibility</span></a><span class="badge badge-info">En curso</span></div>
+          </div>
+          <div class="flex-between text-xs text-muted mb-8">
+            <span>Avance físico</span><span class="fw-600 text-navy">85%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill gold" style="width:85%"></div></div>
+          <div class="flex-between text-xs text-muted mt-8">
+            <span>Fin estimado: 28 may 2026</span>
+            <span style="color:var(--gold)">En tiempo</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ACTIVIDAD RECIENTE -->
+    <div style="display:flex;flex-direction:column;gap:18px;">
+
+      <div class="card fade-up fade-up-3">
+        <div class="card-header">
+          <div class="card-title">Reportes Recientes</div>
+          <a href="reportes.html" class="btn btn-outline btn-sm">Ver todos</a>
+        </div>
+        <!-- Últimos reportes de avance emitidos por el supervisor -->
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <div style="width:32px;height:32px;border-radius:8px;background:var(--warning-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <span class="material-symbols-rounded" style="font-size:16px;color:var(--warning)">pending</span>
+            </div>
+            <div style="flex:1">
+              <div class="fw-500 text-sm">Avance semana 14 — Puente Choluteca</div>
+              <div class="text-xs text-muted">REP-2026-031 · Avance 68% · Pendiente de revisión</div>
+              <div class="text-xs" style="color:var(--muted);margin-top:3px">Emitido: 13 abr 2026</div>
+            </div>
+          </div>
+          <hr class="divider" style="margin:4px 0">
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <div style="width:32px;height:32px;border-radius:8px;background:var(--success-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <span class="material-symbols-rounded" style="font-size:16px;color:var(--success)">check_circle</span>
+            </div>
+            <div style="flex:1">
+              <div class="fw-500 text-sm">Avance semana 13 — Puente Choluteca</div>
+              <div class="text-xs text-muted">REP-2026-027 · Avance 62% · Aprobado</div>
+              <div class="text-xs" style="color:var(--muted);margin-top:3px">Emitido: 06 abr · Revisado: 07 abr 2026</div>
+            </div>
+          </div>
+          <hr class="divider" style="margin:4px 0">
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <div style="width:32px;height:32px;border-radius:8px;background:var(--success-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <span class="material-symbols-rounded" style="font-size:16px;color:var(--success)">check_circle</span>
+            </div>
+            <div style="flex:1">
+              <div class="fw-500 text-sm">Avance semana 12 — Puente Choluteca</div>
+              <div class="text-xs text-muted">REP-2026-023 · Avance 57% · Aprobado</div>
+              <div class="text-xs" style="color:var(--muted);margin-top:3px">Emitido: 30 mar · Revisado: 31 mar 2026</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card fade-up fade-up-4">
+        <div class="card-header">
+          <div class="card-title">Solicitudes</div>
+          <a href="solicitudes.html" class="btn btn-outline btn-sm">Gestionar</a>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div class="flex-between">
+            <div>
+              <div class="text-sm fw-500">Cemento y varilla</div>
+              <div class="text-xs text-muted">Puente Choluteca</div>
+            </div>
+            <span class="badge badge-warning">Pendiente</span>
+          </div>
+          <div class="flex-between">
+            <div>
+              <div class="text-sm fw-500">Bomba de agua</div>
+              <div class="text-xs text-muted">Riego El Paraíso</div>
+            </div>
+            <span class="badge badge-danger">Rechazada</span>
+          </div>
+          <div class="flex-between">
+            <div>
+              <div class="text-sm fw-500">Materiales eléctricos</div>
+              <div class="text-xs text-muted">Centro Comunitario</div>
+            </div>
+            <span class="badge badge-success">Aprobada</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ACCESO RÁPIDO -->
+  <div class="card fade-up fade-up-5">
+    <div class="card-title mb-16">Acciones Rápidas</div>
+    <div class="grid-4">
+      <a href="reportes.html" class="btn btn-primary" style="justify-content:center">
+        <span class="material-symbols-rounded">add_chart</span> Nuevo Reporte
+      </a>
+      <a href="solicitudes.html" class="btn btn-outline" style="justify-content:center">
+        <span class="material-symbols-rounded">add_shopping_cart</span> Solicitar Recursos
+      </a>
+      <a href="proyectos.html" class="btn btn-outline" style="justify-content:center">
+        <span class="material-symbols-rounded">folder_open</span> Mis Proyectos
+      </a>
+      <a href="proyecciones.html" class="btn btn-outline" style="justify-content:center">
+        <span class="material-symbols-rounded">timeline</span> Ver Proyecciones
+      </a>
+    </div>
+  </div>
+
+</main>
+<script src="shared.js"></script>
+<script src="dashboard-campo.js"></script>
+</body>
+</html>
