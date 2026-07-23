@@ -216,14 +216,22 @@ function proyectosVisibles(){
 // RENDER PRINCIPAL
 // ─────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  renderPaginaProyectos();
+  // Punto de entrada protegido: un error de datos no debe dejar
+  // la página en blanco; se registra y se notifica al usuario.
+  try {
+    renderPaginaProyectos();
 
-  // Auto-open detail if coming from dashboard eye button
-  const autoOpen = sessionStorage.getItem('pron_open_proyecto');
-  if(autoOpen){
-    sessionStorage.removeItem('pron_open_proyecto');
-    // Small delay to let render finish
-    setTimeout(() => abrirDetalle(autoOpen), 120);
+    // Abrir el detalle automáticamente si se llegó desde el
+    // "ojito" del dashboard (acceso directo al proyecto)
+    const autoOpen = sessionStorage.getItem('pron_open_proyecto');
+    if(autoOpen){
+      sessionStorage.removeItem('pron_open_proyecto');
+      // Pequeña espera para que el render termine
+      setTimeout(() => abrirDetalle(autoOpen), 120);
+    }
+  } catch(err){
+    console.error('[PRONADERS] Error al renderizar Gestión de Proyectos:', err);
+    if(typeof showToast==='function') showToast('No fue posible cargar los proyectos.','warning');
   }
 });
 
@@ -1336,13 +1344,18 @@ function mostrarSubTarjeta(html){
    "Nuevo Proyecto" del panel abre el modal directamente.
    ────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
-  // Restricción: la fecha de inicio del proyecto solo admite HOY en adelante
-  const hoy = new Date().toISOString().slice(0,10);
-  const ini = document.getElementById('np-inicio');
-  if(ini) ini.min = hoy;
+  try {
+    // Restricción: la fecha de inicio del proyecto solo admite HOY en adelante
+    const hoy = new Date().toISOString().slice(0,10);
+    const ini = document.getElementById('np-inicio');
+    if(ini) ini.min = hoy;
 
-  if(sessionStorage.getItem('pron_abrir_modal_proyecto') === '1'){
-    sessionStorage.removeItem('pron_abrir_modal_proyecto');
-    setTimeout(() => abrirModalNuevoProyecto(), 150);
+    if(sessionStorage.getItem('pron_abrir_modal_proyecto') === '1'){
+      sessionStorage.removeItem('pron_abrir_modal_proyecto');
+      setTimeout(() => abrirModalNuevoProyecto(), 150);
+    }
+  } catch(err){
+    // Manejo de errores del módulo: registrar y avisar sin romper la página
+    console.error('[PRONADERS] Error al inicializar Proyectos:', err);
   }
 });

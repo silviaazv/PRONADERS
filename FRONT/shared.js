@@ -14,6 +14,40 @@
    Este archivo debe cargarse ANTES del script propio de cada página.
    ============================================================ */
 
+/* ============================================================
+   MANEJO GLOBAL DE ERRORES
+   Cualquier error de JavaScript no controlado se captura aquí:
+   se registra en consola (para diagnóstico) y se muestra un
+   aviso discreto al usuario en lugar de dejar la página rota.
+   ============================================================ */
+window.addEventListener('error', function(ev){
+  try {
+    console.error('[PRONADERS] Error no controlado:', ev.error || ev.message);
+    mostrarAvisoError();
+  } catch(e){ /* nunca fallar dentro del manejador */ }
+});
+window.addEventListener('unhandledrejection', function(ev){
+  try {
+    console.error('[PRONADERS] Promesa rechazada sin manejar:', ev.reason);
+    mostrarAvisoError();
+  } catch(e){ /* nunca fallar dentro del manejador */ }
+});
+
+/* Aviso visual único (no se apila si ocurren varios errores) */
+function mostrarAvisoError(){
+  if(document.getElementById('aviso-error-global')) return;
+  const div = document.createElement('div');
+  div.id = 'aviso-error-global';
+  div.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);' +
+    'background:#A32D2D;color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;' +
+    'z-index:2000;box-shadow:0 4px 24px rgba(0,0,0,.25);display:flex;gap:10px;align-items:center';
+  div.innerHTML = 'Ocurri\u00f3 un error inesperado. La acci\u00f3n podr\u00eda no haberse completado.' +
+    '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:#fff;cursor:pointer;font-weight:700">\u2715</button>';
+  (document.body || document.documentElement).appendChild(div);
+  setTimeout(()=>{ const d=document.getElementById('aviso-error-global'); if(d) d.remove(); }, 6000);
+}
+
+
 (function(){
 
   /* ──────────────────────────────────────────────
@@ -59,7 +93,6 @@
       { label:'Reportes de Avance',    icon:'bar_chart',    href:'reportes.html' },
       { label:'Solicitud de Recursos', icon:'inventory_2',  href:'solicitudes.html', badge:'2' },
       { label:'Proyecciones',          icon:'timeline',     href:'proyecciones.html' },
-      { label:'Proyectos Finalizados', icon:'task_alt',     href:'finalizados-campo.html' },
     ],
     // Empleado: igual que campo pero SIN reportes de avance
     empleado: [
@@ -347,6 +380,31 @@ const FormUtils = {
 // de módulo puedan usar las utilidades sin importar el orden de carga.
 window.FormUtils = FormUtils;
 
+
+/* ============================================================
+   MANEJO GLOBAL DE ERRORES
+   ------------------------------------------------------------
+   Cualquier error de JavaScript no controlado en una página se
+   captura aquí: se registra en consola con el prefijo del sistema
+   (útil para la bitácora/soporte) y se informa al usuario con un
+   mensaje discreto, sin dejar la interfaz rota ni pantallas en
+   blanco. Complementa los try/catch locales de cada módulo.
+   ============================================================ */
+window.addEventListener('error', function(ev){
+  try {
+    console.error('[PRONADERS] Error no controlado:', ev.message, '·', (ev.filename||'').split('/').pop()+':'+ev.lineno);
+    if(typeof showToast === 'function'){
+      showToast('Ocurrió un error inesperado. Si persiste, contacta al administrador.', 'warning');
+    }
+  } catch(e){ /* nunca dejar que el manejador de errores falle */ }
+});
+
+// Promesas rechazadas sin catch (p. ej. hash de contraseñas o carga async)
+window.addEventListener('unhandledrejection', function(ev){
+  try {
+    console.error('[PRONADERS] Promesa rechazada sin manejar:', ev.reason);
+  } catch(e){ /* silencioso */ }
+});
 
 /* ============================================================
    VISOR DE EVIDENCIAS (imágenes y documentos)

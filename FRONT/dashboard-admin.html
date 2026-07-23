@@ -167,9 +167,13 @@
       <div class="card fade-up fade-up-4">
         <div class="card-title mb-12">Proyectos Finalizados</div>
         <div style="text-align:center;padding:12px 0">
-          <div style="font-family:var(--font-serif);font-size:42px;font-weight:300;color:var(--navy)">6</div>
+          <div style="font-family:var(--font-serif);font-size:42px;font-weight:300;color:var(--navy)">3</div>
           <div class="text-xs text-muted">proyectos completados</div>
-          <a href="finalizados.html" class="btn btn-outline btn-sm mt-12" style="width:100%;justify-content:center">
+          <!-- Lleva a Gestión de Proyectos con el filtro de estado
+               "Finalizado" ya aplicado (el módulo separado de
+               finalizados fue retirado del sidebar del admin) -->
+          <a href="proyectos.html" class="btn btn-outline btn-sm mt-12" style="width:100%;justify-content:center"
+             onclick="try{ sessionStorage.setItem('pron_filtros_proyectos', JSON.stringify({estado:'finalizado'})); }catch(e){ console.error('[PRONADERS] No se pudo preparar el filtro:', e); }">
             <span class="material-symbols-rounded">inventory</span> Ver Historial
           </a>
         </div>

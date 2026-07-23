@@ -10,174 +10,27 @@
 </head>
 <body>
 
+<!-- Todo el contenido de esta página se genera dinámicamente desde
+     dashboard-logistica.js: métricas, despachos pendientes e historial,
+     para poder mostrar la logística de todos los equipos por zona
+     (no solo el equipo del centro) cuando el Admin de Oficina la consulta. -->
+<main class="main" id="main-logistica"></main>
 
-<main class="main">
-
-  <!-- HEADER -->
-  <div style="margin-bottom:28px" class="fade-up">
-    <h1 style="font-family:var(--font-serif);font-size:26px;font-weight:300;color:var(--navy)">
-      Panel de <em style="font-style:italic">Logística</em>
-    </h1>
-    <p style="font-size:13px;color:var(--muted);margin-top:4px">
-      Equipo Logístico Centro — Región Francisco Morazán / Comayagua
-    </p>
+<!-- Modal de detalle de despacho/solicitud: se abre SIN cambiar de
+     módulo (ni navegar a solicitudes.html), tanto desde "Despachos
+     Pendientes" como desde el "Historial de Despachos". -->
+<div class="modal-overlay" id="modal-info-despacho">
+  <div class="modal">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px">
+      <div id="mid-titulo" style="font-family:var(--font-serif);font-size:20px;font-weight:300;color:var(--navy)"></div>
+      <button class="close-btn" onclick="document.getElementById('modal-info-despacho').classList.remove('open')">
+        <span class="material-symbols-rounded">close</span>
+      </button>
+    </div>
+    <div id="mid-body"></div>
   </div>
+</div>
 
-  <!-- MÉTRICAS -->
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px" class="fade-up fade-up-1">
-    <div class="metric-card">
-      <div style="width:36px;height:36px;border-radius:9px;background:#f3e8ff;display:flex;align-items:center;justify-content:center;margin-bottom:12px">
-        <span class="material-symbols-rounded" style="font-size:18px;color:#6a1b9a">assignment</span>
-      </div>
-      <div style="font-family:var(--font-serif);font-size:28px;font-weight:300;color:var(--navy)">3</div>
-      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Despachos pendientes</div>
-    </div>
-    <div class="metric-card">
-      <div style="width:36px;height:36px;border-radius:9px;background:var(--info-bg);display:flex;align-items:center;justify-content:center;margin-bottom:12px">
-        <span class="material-symbols-rounded" style="font-size:18px;color:var(--info)">local_shipping</span>
-      </div>
-      <div style="font-family:var(--font-serif);font-size:28px;font-weight:300;color:var(--navy)">1</div>
-      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">En tránsito ahora</div>
-    </div>
-    <div class="metric-card">
-      <div style="width:36px;height:36px;border-radius:9px;background:var(--success-bg);display:flex;align-items:center;justify-content:center;margin-bottom:12px">
-        <span class="material-symbols-rounded" style="font-size:18px;color:var(--success)">inventory_2</span>
-      </div>
-      <div style="font-family:var(--font-serif);font-size:28px;font-weight:300;color:var(--navy)">18</div>
-      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Entregas este mes</div>
-    </div>
-    <div class="metric-card">
-      <div style="width:36px;height:36px;border-radius:9px;background:var(--warning-bg);display:flex;align-items:center;justify-content:center;margin-bottom:12px">
-        <span class="material-symbols-rounded" style="font-size:18px;color:var(--warning)">schedule</span>
-      </div>
-      <div style="font-family:var(--font-serif);font-size:28px;font-weight:300;color:var(--navy)">1.4<span style="font-size:14px">d</span></div>
-      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Tiempo promedio entrega</div>
-    </div>
-  </div>
-
-  <!-- DESPACHOS PENDIENTES -->
-  <div class="card fade-up fade-up-2" style="margin-bottom:20px">
-    <div class="card-header">
-      <div>
-        <div class="card-title">Despachos Pendientes</div>
-        <div class="card-subtitle">Solicitudes aprobadas por Gerencia Técnica asignadas a este equipo</div>
-      </div>
-      <a href="solicitudes.html" class="btn btn-info btn-sm"
-         onclick="sessionStorage.setItem('pron_vista_logistica','1')">
-        <span class="material-symbols-rounded" style="font-size:14px">open_in_new</span> Ver todas
-      </a>
-    </div>
-
-    <div style="display:flex;flex-direction:column;gap:12px">
-
-      <div class="despacho-card priority-high">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
-          <div style="flex:1">
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-              <span style="font-size:11px;font-weight:600;color:var(--muted)">SOL-2026-046</span>
-              <span class="badge badge-dispatch"><span class="material-symbols-rounded" style="font-size:11px">local_shipping</span>Asignado</span>
-              <span style="font-size:11px;color:var(--danger);font-weight:600;display:flex;align-items:center;gap:3px"><span class="material-symbols-rounded" style="font-size:13px">priority_high</span>Alta prioridad</span>
-            </div>
-            <div style="font-size:15px;font-weight:600;color:var(--navy);margin-top:5px">Andamios y taladro percutor</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:2px">Puente Choluteca · Isaac Carranza · 26 abr 2026</div>
-            <div style="font-size:12.5px;margin-top:8px">
-              <span style="background:var(--cream);padding:3px 8px;border-radius:6px;margin-right:6px">🏗️ 6 andamios 2m</span>
-              <span style="background:var(--cream);padding:3px 8px;border-radius:6px;margin-right:6px">🔧 2 taladros percutores</span>
-              
-            </div>
-            <div style="font-size:12px;color:var(--text-light);margin-top:8px;display:flex;align-items:center;gap:6px">
-              <span class="material-symbols-rounded" style="font-size:14px">location_on</span>
-              Destino: Puente Choluteca, Choluteca · ~180 km
-            </div>
-          </div>
-          <div style="text-align:right;flex-shrink:0">
-            <div style="font-size:11px;color:var(--muted)">Monto total</div>
-            <div style="font-family:var(--font-serif);font-size:20px;font-weight:300;color:var(--navy)">L 13,800</div>
-            <!-- Despacha ÚNICAMENTE esta solicitud: abre el modal de despacho
-                 directamente y el registro pasa al historial de despachos -->
-            <a href="solicitudes.html" class="btn btn-info btn-sm" style="margin-top:8px;text-decoration:none"
-               onclick="sessionStorage.setItem('pron_vista_logistica','1');sessionStorage.setItem('pron_despachar','SOL-2026-046')">
-              <span class="material-symbols-rounded" style="font-size:14px">local_shipping</span> Despachar
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <div class="despacho-card priority-med">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
-          <div style="flex:1">
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-              <span style="font-size:11px;font-weight:600;color:var(--muted)">SOL-2026-044</span>
-              <span class="badge badge-dispatch"><span class="material-symbols-rounded" style="font-size:11px">local_shipping</span>Asignado</span>
-            </div>
-            <div style="font-size:15px;font-weight:600;color:var(--navy);margin-top:5px">Tubería PVC y accesorios</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:2px">Riego El Paraíso · Isaac Carranza · 23 abr 2026</div>
-            <div style="font-size:12.5px;margin-top:8px">
-              <span style="background:var(--cream);padding:3px 8px;border-radius:6px;margin-right:6px">📦 80m tubería PVC 4"</span>
-              <span style="background:var(--cream);padding:3px 8px;border-radius:6px">🔧 1 lote accesorios</span>
-            </div>
-            <div style="font-size:12px;color:var(--text-light);margin-top:8px;display:flex;align-items:center;gap:6px">
-              <span class="material-symbols-rounded" style="font-size:14px">location_on</span>
-              Destino: El Paraíso, El Paraíso · ~120 km
-            </div>
-          </div>
-          <div style="text-align:right;flex-shrink:0">
-            <div style="font-size:11px;color:var(--muted)">Monto total</div>
-            <div style="font-family:var(--font-serif);font-size:20px;font-weight:300;color:var(--navy)">L 15,200</div>
-            <a href="solicitudes.html" class="btn btn-info btn-sm" style="margin-top:8px;text-decoration:none"
-               onclick="sessionStorage.setItem('pron_vista_logistica','1');sessionStorage.setItem('pron_despachar','SOL-2026-044')">
-              <span class="material-symbols-rounded" style="font-size:14px">local_shipping</span> Despachar
-            </a>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- HISTORIAL RECIENTE -->
-  <div class="card fade-up fade-up-3">
-    <div class="card-header">
-      <div>
-        <div class="card-title">Historial de Despachos</div>
-        <div class="card-subtitle">Últimas entregas registradas · haz clic en una fila para ver la solicitud</div>
-      </div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:0">
-      <div onclick="sessionStorage.setItem('pron_vista_logistica','1');sessionStorage.setItem('pron_open_solicitud','SOL-2026-028');window.location.href='solicitudes.html'" style="cursor:pointer;display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--cream-dark);border-radius:8px" title="Ver la información de la solicitud SOL-2026-028" onmouseover="this.style.background='rgba(247,244,238,0.7)'" onmouseout="this.style.background=''" data-sol="SOL-2026-028">
-        <div style="width:36px;height:36px;border-radius:9px;background:var(--success-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <span class="material-symbols-rounded" style="font-size:17px;color:var(--success)">verified</span>
-        </div>
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:500">SOL-2026-028 — Herramientas manuales</div>
-          <div style="font-size:11.5px;color:var(--muted)">Riego El Paraíso · Entregado 05 abr 2026 · Confirmado por Isaac Carranza</div>
-        </div>
-        <span class="badge badge-success">Confirmado</span>
-        <span class="material-symbols-rounded" style="font-size:16px;color:var(--muted)">chevron_right</span>      </div>
-      <div onclick="sessionStorage.setItem('pron_vista_logistica','1');sessionStorage.setItem('pron_open_solicitud','SOL-2026-020');window.location.href='solicitudes.html'" style="cursor:pointer;display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--cream-dark);border-radius:8px" title="Ver la información de la solicitud SOL-2026-020" onmouseover="this.style.background='rgba(247,244,238,0.7)'" onmouseout="this.style.background=''" data-sol="SOL-2026-020">
-        <div style="width:36px;height:36px;border-radius:9px;background:var(--success-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <span class="material-symbols-rounded" style="font-size:17px;color:var(--success)">verified</span>
-        </div>
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:500">SOL-2026-020 — Bloques y arena</div>
-          <div style="font-size:11.5px;color:var(--muted)">Puente Choluteca · Entregado 25 mar 2026 · Confirmado por Isaac Carranza</div>
-        </div>
-        <span class="badge badge-success">Confirmado</span>
-        <span class="material-symbols-rounded" style="font-size:16px;color:var(--muted)">chevron_right</span>      </div>
-      <div onclick="sessionStorage.setItem('pron_vista_logistica','1');sessionStorage.setItem('pron_open_solicitud','SOL-2026-035');window.location.href='solicitudes.html'" style="cursor:pointer;display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--cream-dark);border-radius:8px" title="Ver la información de la solicitud SOL-2026-035" onmouseover="this.style.background='rgba(247,244,238,0.7)'" onmouseout="this.style.background=''" data-sol="SOL-2026-035">
-        <div style="width:36px;height:36px;border-radius:9px;background:var(--info-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <span class="material-symbols-rounded" style="font-size:17px;color:var(--info)">local_shipping</span>
-        </div>
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:500">SOL-2026-035 — Nivel óptico y trípode</div>
-          <div style="font-size:11.5px;color:var(--muted)">Camino Copán · Despachado 14 abr 2026 · Pendiente confirmación</div>
-        </div>
-        <span class="badge" style="background:var(--info-bg);color:var(--info)">En tránsito</span>
-        <span class="material-symbols-rounded" style="font-size:16px;color:var(--muted)">chevron_right</span>      </div>
-    </div>
-  </div>
-
-</main>
 <script src="shared.js"></script>
 <script src="dashboard-logistica.js"></script>
 </body>

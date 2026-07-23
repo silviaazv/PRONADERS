@@ -71,3 +71,19 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);line
 .despacho-card:hover{box-shadow:var(--shadow-md);border-color:var(--gold);}
 .priority-high{border-left:3px solid var(--danger);}
 .priority-med{border-left:3px solid var(--warning);}
+.priority-low{border-left:3px solid var(--success);}
+
+/* Selector de zona (visible solo para el Admin de Oficina, para ver
+   la logística de todos los equipos por zona) */
+.form-control{width:100%;padding:9px 13px;border:1.5px solid var(--cream-dark);border-radius:var(--radius);font-family:var(--font-sans);font-size:13.5px;color:var(--text);background:var(--white);transition:var(--transition);outline:none;}
+.form-control:focus{border-color:var(--navy-light);box-shadow:0 0 0 3px rgba(30,50,112,0.07);}
+.badge-navy{background:rgba(13,27,62,0.08);color:var(--navy);}
+
+/* Modal de detalle de despacho/solicitud (se muestra SIN cambiar de
+   módulo: se abre sobre el propio dashboard de logística) */
+.modal-overlay{position:fixed;inset:0;background:rgba(13,27,62,0.45);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--white);border-radius:var(--radius-lg);padding:28px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(13,27,62,0.2);animation:modalFadeUp 0.22s ease;}
+@keyframes modalFadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.close-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:22px;border-radius:6px;transition:var(--transition);}
+.close-btn:hover{color:var(--text);background:var(--cream);}

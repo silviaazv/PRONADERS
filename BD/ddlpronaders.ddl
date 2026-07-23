@@ -1,5 +1,5 @@
 -- Generado por Oracle SQL Developer Data Modeler 24.3.1.347.1153
---   en:        2026-07-23 13:05:00 CST
+--   en:        2026-07-23 13:46:21 CST
 --   sitio:      Oracle Database 11g
 --   tipo:      Oracle Database 11g
 
@@ -57,12 +57,15 @@ ALTER TABLE tbl_archivos
 ALTER TABLE tbl_archivos ADD CONSTRAINT tbl_evidencias_pk PRIMARY KEY ( id_archivo );
 
 CREATE TABLE tbl_bitacora (
-    id_registro  NUMBER NOT NULL,
-    id_usuario   NUMBER NOT NULL,
-    tipo_accion  VARCHAR2(50) NOT NULL,
-    tipo_objeto  VARCHAR2(20),
-    id_objeto    NUMBER,
-    fecha_accion TIMESTAMP NOT NULL
+    id_registro      NUMBER NOT NULL,
+    id_usuario       NUMBER NOT NULL,
+    tipo_accion      VARCHAR2(50) NOT NULL,
+    tipo_objeto      VARCHAR2(20),
+    id_objeto        NUMBER,
+    fecha_accion     TIMESTAMP NOT NULL,
+    campo_modificado VARCHAR2(255),
+    valor_antiguo    VARCHAR2(255),
+    valor_nuevo      VARCHAR2(255)
 );
 
 ALTER TABLE TBL_BITACORA 
