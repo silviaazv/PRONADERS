@@ -1,0 +1,219 @@
+// ============================================================
+// reportes.js - ROUTER DE REPORTES (BACKEND)
+// ============================================================
+
+const express = require('express');
+const router = express.Router();
+const db = require('../db');
+
+// ─────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────
+
+async function registrarBitacora(id_usuario, tipo_accion, tipo_objeto, id_objeto, campo_modificado, valor_antiguo, valor_nuevo) {
+    await db.execute(`
+        INSERT INTO tbl_bitacora 
+        (id_usuario, tipo_accion, tipo_objeto, id_objeto, fecha_accion, campo_modificado, valor_antiguo, valor_nuevo)
+        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?)
+    `, [id_usuario, tipo_accion, tipo_objeto, id_objeto, campo_modificado, valor_antiguo, valor_nuevo]);
+}
+
+// ─────────────────────────────────────────────────────────────
+// ENDPOINTS
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/reportes
+ * Lista reportes con filtros
+ * Query params: id_proyecto, id_usuario, estado
+ */
+router.get('/', async (req, res) => {
+    try {
+        const { id_proyecto, id_usuario, estado } = req.query;
+        let query = `
+            SELECT r.*, 
+                   p.nombre_proyecto,
+                   u.nombre_usuario as autor_nombre
+            FROM tbl_reportes r
+            LEFT JOIN tbl_proyectos p ON r.id_proyecto = p.id_proyecto
+            LEFT JOIN tbl_usuarios u ON r.id_usuario = u.id_usuario
+            WHERE 1=1
+        `;
+        const params = [];
+
+        if (id_proyecto) {
+            query += ' AND r.id_proyecto = ?';
+            params.push(parseInt(id_proyecto));
+        }
+        if (id_usuario) {
+            query += ' AND r.id_usuario = ?';
+            params.push(parseInt(id_usuario));
+        }
+        if (estado !== undefined && estado !== '') {
+            query += ' AND r.estado_reporte = ?';
+            params.push(parseInt(estado));
+        }
+
+        query += ' ORDER BY r.fecha_reporte DESC';
+
+        const reportes = await db.queryAll(query, params);
+
+        // Obtener archivos adjuntos para cada reporte
+        for (const r of reportes) {
+            const archivos = await db.queryAll(
+                'SELECT * FROM tbl_archivos WHERE id_reporte = ?',
+                [r.id_reporte]
+            );
+            r.adjuntos = archivos;
+        }
+
+        res.json(reportes);
+    } catch (error) {
+        console.error('Error listando reportes:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/reportes/:id
+ * Obtiene un reporte por ID
+ */
+router.get('/:id', async (req, res) => {
+    try {
+        const reporte = await db.queryOne(`
+            SELECT r.*, 
+                   p.nombre_proyecto,
+                   u.nombre_usuario as autor_nombre
+            FROM tbl_reportes r
+            LEFT JOIN tbl_proyectos p ON r.id_proyecto = p.id_proyecto
+            LEFT JOIN tbl_usuarios u ON r.id_usuario = u.id_usuario
+            WHERE r.id_reporte = ?
+        `, [parseInt(req.params.id)]);
+
+        if (!reporte) {
+            return res.status(404).json({ error: 'Reporte no encontrado' });
+        }
+
+        const archivos = await db.queryAll(
+            'SELECT * FROM tbl_archivos WHERE id_reporte = ?',
+            [parseInt(req.params.id)]
+        );
+        reporte.adjuntos = archivos;
+
+        res.json(reporte);
+    } catch (error) {
+        console.error('Error obteniendo reporte:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * POST /api/reportes
+ * Crea un nuevo reporte
+ * Body: { id_proyecto, id_usuario, descripcion_reporte, avance_fisico, avance_financiero, observaciones, incidencias }
+ */
+router.post('/', async (req, res) => {
+    try {
+        const { id_proyecto, id_usuario, descripcion_reporte, avance_fisico, avance_financiero, observaciones, incidencias } = req.body;
+
+        if (!id_proyecto) return res.status(400).json({ error: 'El proyecto es obligatorio' });
+        if (!id_usuario) return res.status(400).json({ error: 'El usuario es obligatorio' });
+        if (!descripcion_reporte || descripcion_reporte.trim().length === 0) {
+            return res.status(400).json({ error: 'La descripción del avance es obligatoria' });
+        }
+
+        const fechaActual = new Date().toISOString();
+
+        const result = await db.execute(`
+            INSERT INTO tbl_reportes 
+            (id_proyecto, id_usuario, descripcion_reporte, fecha_reporte, estado_reporte)
+            VALUES (?, ?, ?, ?, 0)
+        `, [parseInt(id_proyecto), parseInt(id_usuario), descripcion_reporte.trim(), fechaActual]);
+
+        const id_reporte = result.lastInsertRowid;
+
+        await registrarBitacora(
+            parseInt(id_usuario),
+            'INSERT',
+            'REPORTE',
+            id_reporte,
+            null,
+            null,
+            `Reporte creado para proyecto ${id_proyecto}`
+        );
+
+        const nuevoReporte = await db.queryOne(
+            'SELECT * FROM tbl_reportes WHERE id_reporte = ?',
+            [id_reporte]
+        );
+
+        res.status(201).json({
+            success: true,
+            message: 'Reporte creado exitosamente',
+            reporte: nuevoReporte
+        });
+    } catch (error) {
+        console.error('Error creando reporte:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * PATCH /api/reportes/:id/aprobar
+ * Aprueba un reporte
+ * Body: { id_usuario }
+ */
+router.patch('/:id/aprobar', async (req, res) => {
+    try {
+        const { id_usuario } = req.body;
+        const id_reporte = parseInt(req.params.id);
+
+        if (!id_usuario) return res.status(400).json({ error: 'Usuario es obligatorio' });
+
+        const reporte = await db.queryOne(
+            'SELECT * FROM tbl_reportes WHERE id_reporte = ?',
+            [id_reporte]
+        );
+        if (!reporte) return res.status(404).json({ error: 'Reporte no encontrado' });
+        if (reporte.estado_reporte !== 0) {
+            return res.status(400).json({
+                error: `El reporte ya está ${reporte.estado_reporte === 1 ? 'aprobado' : 'en otro estado'}`
+            });
+        }
+
+        const fechaActual = new Date().toISOString();
+
+        await db.execute(`
+            UPDATE tbl_reportes 
+            SET estado_reporte = 1, 
+                fecha_revision_reporte = ?
+            WHERE id_reporte = ?
+        `, [fechaActual, id_reporte]);
+
+        await registrarBitacora(
+            parseInt(id_usuario),
+            'REVISION',
+            'REPORTE',
+            id_reporte,
+            'estado_reporte',
+            '0',
+            '1 (Aprobado)'
+        );
+
+        const reporteActualizado = await db.queryOne(
+            'SELECT * FROM tbl_reportes WHERE id_reporte = ?',
+            [id_reporte]
+        );
+
+        res.json({
+            success: true,
+            message: 'Reporte aprobado',
+            reporte: reporteActualizado
+        });
+    } catch (error) {
+        console.error('Error aprobando reporte:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+module.exports = router;

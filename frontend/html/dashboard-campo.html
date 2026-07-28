@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>PRONADERS — Dashboard Campo</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+    <link rel="stylesheet" href="../css/dashboard-campo.css">
+</head>
+<body>
+
+    <!-- ===== SIDEBAR + TOPBAR (shared) ===== -->
+    <div id="sidebar-container"></div>
+    <div id="topbar-container"></div>
+
+    <main class="main" id="main-content">
+        <!-- Contenido renderizado dinámicamente por dashboard-campo.js -->
+        <div id="dashboard-content">
+            <!-- Loading spinner -->
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <p>Cargando tu dashboard...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- ===== TOAST ===== -->
+    <div class="toast" id="toast">
+        <span class="material-symbols-rounded" id="toast-icon" style="font-size:18px">check_circle</span>
+        <span id="toast-msg"></span>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/shared.js"></script>
+    <script src="../js/dashboard-campo.js"></script>
+</body>
+</html>

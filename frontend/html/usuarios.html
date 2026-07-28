@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PRONADERS — Gestión de Usuarios</title>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+
+<link rel="stylesheet" href="../css/usuarios.css">
+</head>
+<body>
+
+
+<main class="main">
+
+  <div class="flex-between mb-24 fade-up fade-up-1 sticky-head">
+    <div class="section-head" style="margin-bottom:0">
+      <h2>Gestión de <em style="font-style:italic">Usuarios</em></h2>
+      <p>Administra cuentas, roles y permisos del sistema</p>
+    </div>
+    <button class="btn btn-gold" onclick="abrirModalNuevoUsuario()">
+      <span class="material-symbols-rounded">person_add</span> Nuevo Usuario
+    </button>
+  </div>
+
+  <!-- STATS (los valores se calculan en usuarios.js a partir de la API) -->
+  <div class="grid-4 mb-24 fade-up fade-up-1">
+    <div class="card" style="padding:16px 20px;display:flex;align-items:center;gap:14px">
+      <div style="width:36px;height:36px;background:var(--info-bg);border-radius:8px;display:flex;align-items:center;justify-content:center"><span class="material-symbols-rounded" style="color:var(--info);font-size:18px">group</span></div>
+      <div><div class="text-xs text-muted">Total usuarios</div><div id="stat-total" style="font-family:var(--font-serif);font-size:22px;color:var(--navy);line-height:1">0</div></div>
+    </div>
+    <div class="card" style="padding:16px 20px;display:flex;align-items:center;gap:14px">
+      <div style="width:36px;height:36px;background:var(--success-bg);border-radius:8px;display:flex;align-items:center;justify-content:center"><span class="material-symbols-rounded" style="color:var(--success);font-size:18px">check_circle</span></div>
+      <div><div class="text-xs text-muted">Activos</div><div id="stat-activos" style="font-family:var(--font-serif);font-size:22px;color:var(--navy);line-height:1">0</div></div>
+    </div>
+    <div class="card" style="padding:16px 20px;display:flex;align-items:center;gap:14px">
+      <div style="width:36px;height:36px;background:var(--danger-bg);border-radius:8px;display:flex;align-items:center;justify-content:center"><span class="material-symbols-rounded" style="color:var(--danger);font-size:18px">block</span></div>
+      <div><div class="text-xs text-muted">Inactivos</div><div id="stat-inactivos" style="font-family:var(--font-serif);font-size:22px;color:var(--navy);line-height:1">0</div></div>
+    </div>
+    <div class="card" style="padding:16px 20px;display:flex;align-items:center;gap:14px">
+      <div style="width:36px;height:36px;background:rgba(201,168,76,0.15);border-radius:8px;display:flex;align-items:center;justify-content:center"><span class="material-symbols-rounded" style="color:var(--gold-dim);font-size:18px">admin_panel_settings</span></div>
+      <div><div class="text-xs text-muted">Admin. de Oficina</div><div id="stat-admins" style="font-family:var(--font-serif);font-size:22px;color:var(--navy);line-height:1">0</div></div>
+    </div>
+  </div>
+
+  <!-- TABLA USUARIOS -->
+<div class="card fade-up fade-up-2">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Directorio de Usuarios</div>
+      <div class="card-subtitle" id="usuarios-subtitle">Cargando usuarios…</div>
+    </div>
+  </div>
+  
+  <!-- FILTROS ALINEADOS A LA DERECHA DE LA TARJETA.
+       "Limpiar filtros" aparece a la IZQUIERDA del primer filtro,
+       únicamente cuando hay algún filtro aplicado. -->
+  <div style="display: flex; gap: 12px; align-items: center; justify-content: flex-end; flex-wrap: wrap; padding: 0 0 20px 0; border-bottom: 1px solid var(--cream-dark); margin-bottom: 20px;">
+    <button class="btn btn-outline btn-sm" id="btn-limpiar-filtros" onclick="limpiarFiltros()" style="flex-shrink: 0; white-space: nowrap; display: none;">
+      <span class="material-symbols-rounded" style="font-size: 13px;">clear</span> Limpiar filtros
+    </button>
+    <div class="search-wrap" style="width: 200px; flex-shrink: 0;">
+      <span class="material-symbols-rounded">search</span>
+      <input type="text" class="search-input" id="search-usuario" placeholder="Buscar usuario..." oninput="aplicarFiltros()">
+    </div>
+    <select class="form-control" id="filtro-rol" style="width: 180px; flex-shrink: 0; padding: 8px 32px 8px 12px; font-size: 13px;" onchange="aplicarFiltros()">
+      <option value="">Todos los roles</option>
+    </select>
+    <select class="form-control" id="filtro-estado" style="width: 160px; flex-shrink: 0; padding: 8px 32px 8px 12px; font-size: 13px;" onchange="aplicarFiltros()">
+      <option value="">Todos los estados</option>
+      <option value="Activo">Activo</option>
+      <option value="Inactivo">Inactivo</option>
+    </select>
+  </div>
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Usuario</th>
+        <th>Correo institucional</th>
+        <th>Rol</th>
+        <th>Registrado</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="tabla-usuarios">
+      <tr><td colspan="6" style="text-align:center;padding:26px;color:var(--muted)">Cargando usuarios…</td></tr>
+    </tbody>
+  </table>
+</div>
+  
+</div>
+
+</main>
+
+<!-- MODAL NUEVO / EDITAR USUARIO -->
+<div class="modal-overlay" id="modal-usuario">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-u-title">Nuevo <em style="font-style:italic">Usuario</em></div>
+      <button class="close-btn" onclick="cerrarModal()"><span class="material-symbols-rounded">close</span></button>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Nombre completo</label>
+        <input type="text" class="form-control" id="u-nombre" placeholder="Nombre completo">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Teléfono</label>
+        <input type="text" class="form-control" id="u-telefono" placeholder="Ej. 99998888">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Correo institucional</label>
+      <input type="email" class="form-control" id="u-email" placeholder="usuario@pronaders.gob.hn">
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Rol</label>
+        <select class="form-control" id="u-rol"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="u-pass-label">Contraseña temporal</label>
+        <input type="text" class="form-control" id="u-pass" placeholder="Se le entrega al usuario para su primer ingreso">
+      </div>
+    </div>
+    <div style="background:var(--info-bg);border-radius:var(--radius);padding:12px 14px;margin-bottom:20px;font-size:12.5px;color:var(--info);display:flex;gap:8px;align-items:center">
+      <span class="material-symbols-rounded" style="font-size:16px">info</span>
+      <span id="u-pass-hint">Esta contraseña temporal debe entregarse manualmente al usuario (el sistema aún no envía correos automáticos).</span>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-gold" onclick="guardarUsuario()"><span class="material-symbols-rounded">save</span> Guardar Usuario</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DESACTIVAR -->
+<div class="confirm-dialog" id="confirm-dialog">
+  <div class="confirm-box">
+    <span class="material-symbols-rounded" style="font-size:40px;color:var(--danger);display:block;margin-bottom:12px">block</span>
+    <div style="font-family:var(--font-serif);font-size:18px;color:var(--navy);margin-bottom:8px">¿Desactivar usuario?</div>
+    <p class="text-sm text-muted mb-20" id="confirm-txt">El usuario perderá acceso inmediatamente. Podrás reactivarlo en cualquier momento.</p>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-outline" onclick="document.getElementById('confirm-dialog').classList.remove('open')">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmar()">Sí, desactivar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Toast para mensajes de registro y errores -->
+<div class="toast" id="toast">
+  <span class="material-symbols-rounded" id="toast-icon" style="font-size:18px">check_circle</span>
+  <span id="toast-msg"></span>
+</div>
+
+
+
+<script src="../js/api.js"></script>
+<script src="../js/shared.js"></script>
+<script src="../js/usuarios.js"></script>
+</body>
+</html>
