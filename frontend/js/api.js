@@ -37,6 +37,7 @@ const API = {
     // ============================================================
     solicitudes: {
         listar: (params) => API.get('/solicitudes' + _qs(params)),
+        filas: (id) => API.get(`/solicitudes/${id}/filas`),
         obtener: (id) => API.get(`/solicitudes/${id}`),
         crear: (datos) => API.post('/solicitudes', datos),
         aprobar: (id, datos) => API.patch(`/solicitudes/${id}/aprobar`, datos),

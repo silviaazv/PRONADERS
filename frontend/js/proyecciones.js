@@ -15,13 +15,14 @@
 
 let proyectosCache = [];
 let reportesCache = [];
+let usuariosCache = [];
+let usuariosMap = {};
 let proyeccionesData = [];
 
 const ID_USUARIO = parseInt(sessionStorage.getItem('pron_id_usuario')) || null;
 const NOMBRE_USUARIO = sessionStorage.getItem('pron_nombre') || 'Usuario';
 const ROLE = sessionStorage.getItem('pron_role') || 'campo';
-const ES_ADMIN = (ROLE === 'admin_oficina' || ROLE === 'admin');
-
+const ES_ADMIN = (ROLE === 'Administrador de Oficina');
 // ─────────────────────────────────────────────────────────────
 // INICIALIZACIÓN
 // ─────────────────────────────────────────────────────────────
@@ -34,19 +35,20 @@ async function cargarDatosYCalcular() {
     try {
         mostrarLoading(true);
 
-        // Obtener proyectos y reportes
-        const [proyectos, reportes] = await Promise.all([
+        // 1º: esperar a que lleguen los datos reales
+        const [proyectos, reportes, usuarios] = await Promise.all([
             API.proyectos.listar(),
-            API.reportes.listar()
+            API.reportes.listar(),
+            API.usuarios.listar()
         ]);
 
         proyectosCache = proyectos || [];
         reportesCache = reportes || [];
+        usuariosCache = usuarios || [];
+        usuariosMap = Object.fromEntries(usuariosCache.map(u => [u.id_usuario, u]));
 
-        // Calcular proyecciones
+        // 2º: ya con los datos cargados, calcular y renderizar
         calcularProyecciones();
-
-        // Renderizar
         renderizarProyecciones();
 
         mostrarLoading(false);
@@ -68,7 +70,8 @@ function calcularProyecciones() {
 
     // Solo proyectos activos o retrasados
     const proyectosActivos = proyectosCache.filter(p =>
-        p.estado_proyecto === 'ACTIVO' || p.estado_proyecto === 'RETRASADO'
+        p.estado_proyecto === 'ACTIVO' 
+        || p.estado_proyecto === 'RETRASADO' 
     );
 
     proyeccionesData = proyectosActivos.map(p => {
@@ -168,10 +171,11 @@ function calcularProyecciones() {
 
         return {
             id: p.id_proyecto,
+            idSupervisor: p.id_supervisor,
             nombre: p.nombre_proyecto || 'Sin nombre',
             tipo: p.tipo_proyecto || 'Sin tipo',
             tipoBadge: tipoColor,
-            supervisor: p.autor_nombre || 'Sin supervisor',
+            supervisor: usuariosMap[p.id_supervisor]?.nombre_usuario || 'Sin supervisor',
             fechaInicio: fechaInicioStr,
             fechaFinPlan: fechaFinPlanStr,
             fechaFinProy: fechaFinProyStr,
@@ -201,14 +205,8 @@ function renderizarProyecciones() {
     // Filtrar para el rol campo (solo sus proyectos)
     let data = proyeccionesData;
     if (!ES_ADMIN) {
-        // Obtener IDs de proyectos del usuario
-        const proyectosUsuario = proyectosCache.filter(p => {
-            const usuarios = p.usuarios_ids || [];
-            return usuarios.map(Number).includes(ID_USUARIO);
-        });
-        const idsUsuario = new Set(proyectosUsuario.map(p => p.id_proyecto));
-        data = data.filter(p => idsUsuario.has(p.id));
-    }
+    data = data.filter(p => p.idSupervisor === ID_USUARIO);
+    }   
 
     // Ordenar por estado (retraso primero, luego on_time, luego adelanto)
     const ordenEstado = { 'retraso': 0, 'on_time': 1, 'adelanto': 2, 'finalizando': 3 };

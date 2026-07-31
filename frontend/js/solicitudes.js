@@ -37,6 +37,18 @@ async function cargarDatosIniciales() {
         proyectosCache = proyectos || [];
         equiposCache = equipos || [];
 
+        // Cargar equipos en el select de aprobación
+        const selectEquipo = document.getElementById('aprob-logistica');
+        if (selectEquipo && equiposCache.length > 0) {
+            selectEquipo.innerHTML = '<option value="">— Seleccionar equipo —</option>';
+            equiposCache.forEach(e => {
+                const opt = document.createElement('option');
+                opt.value = e.id_equipo_log;
+                opt.textContent = e.nombre_equipo_log;
+                selectEquipo.appendChild(opt);
+            });
+        }
+
     } catch (error) {
         console.error('Error cargando datos:', error);
         showToast('Error al cargar datos del servidor', 'warning');
@@ -48,7 +60,7 @@ async function cargarDatosIniciales() {
 // ─────────────────────────────────────────────────────────────
 
 function solicitudesVisibles() {
-    const esAdmin = (ROLE === 'admin_oficina' || ROLE === 'admin');
+    const esAdmin = (ROLE === 'admin_oficina' || ROLE === 'Administrador de Oficina' || ROLE === 'admin');
     if (esAdmin) return solicitudesCache;
     return solicitudesCache.filter(s => s.id_usuario === ID_USUARIO);
 }
@@ -68,7 +80,7 @@ function solicitudesLogistica() {
 function renderVista() {
     if (ROLE === 'logistica') renderVistaLogistica();
     else if (ROLE === 'campo') renderVistaCampo();
-    else if (ROLE === 'admin_oficina' || ROLE === 'admin') renderVistaAdmin();
+    else if (ROLE === 'admin_oficina' || ROLE === 'admin' || ROLE === 'Administrador de Oficina') renderVistaAdmin();
     else renderVistaCampo();
 }
 
@@ -122,11 +134,18 @@ function renderListaSolicitudes() {
         return matchEstado && matchProy;
     });
 
+    // Ordenar por fecha
+    data.sort((a, b) => {
+        const fechaA = new Date(a.fecha_solicitud);
+        const fechaB = new Date(b.fecha_solicitud);
+        return fechaB - fechaA;
+    });
+
     const cont = document.getElementById('lista-solicitudes');
     if (!cont) return;
 
     cont.innerHTML = data.length
-        ? data.map(s => cardSolicitud(s)).join('')
+        ? data.map(s => cardSolicitud(s, 'campo')).join('')
         : `<div class="card" style="text-align:center;padding:40px;color:var(--muted)">
             <span class="material-symbols-rounded" style="font-size:36px;display:block;margin-bottom:10px;color:var(--cream-dark)">inbox</span>
             No hay solicitudes con los filtros seleccionados.
@@ -158,7 +177,7 @@ function renderVistaAdmin() {
     <div class="card mb-16 fade-up" style="padding:12px 18px">
         <div style="display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap">
             <span class="text-xs text-muted" id="sol-contador" style="margin-right:auto"></span>
-            <select class="form-control" id="f-sol-estado" style="width:auto;padding:7px 32px 7px 12px;font-size:13px" onchange="renderListaSolicitudes()">
+            <select class="form-control" id="f-sol-estado" style="width:auto;padding:7px 32px 7px 12px;font-size:13px" onchange="renderListaSolicitudesAdmin()">
                 <option value="">Todas</option>
                 <option value="PENDIENTE" selected>Pendientes (${pendientes})</option>
                 <option value="APROBADA">Aprobadas</option>
@@ -167,7 +186,7 @@ function renderVistaAdmin() {
                 <option value="ENTREGADA">Entregadas</option>
                 <option value="CONFIRMADA">Confirmadas</option>
             </select>
-            <select class="form-control" id="f-sol-proyecto" style="width:auto;padding:7px 32px 7px 12px;font-size:13px" onchange="renderListaSolicitudes()">
+            <select class="form-control" id="f-sol-proyecto" style="width:auto;padding:7px 32px 7px 12px;font-size:13px" onchange="renderListaSolicitudesAdmin()">
                 <option value="">Todos los proyectos</option>
                 ${proyectos.map(p => `<option value="${p}">${p}</option>`).join('')}
             </select>
@@ -261,9 +280,11 @@ function cardSolicitud(s, vistaRol = 'campo') {
         </tr>
     `).join('');
 
-    // Acciones según rol
+    // ✅ ACCIONES SEGÚN ROL - CORREGIDO
     let acciones = '';
-    if ((vistaRol === 'admin' || vistaRol === 'admin_oficina') && s.estado_solicitud === 'PENDIENTE') {
+    const esAdmin = (vistaRol === 'admin' || vistaRol === 'admin_oficina' || ROLE === 'admin_oficina' || ROLE === 'Administrador de Oficina');
+
+    if (esAdmin && s.estado_solicitud === 'PENDIENTE') {
         acciones = `
             <button class="btn btn-danger btn-sm" onclick="abrirModalRechazar(${s.id_solicitud})">
                 <span class="material-symbols-rounded" style="font-size:14px">cancel</span> Rechazar
@@ -334,58 +355,109 @@ function cardSolicitud(s, vistaRol = 'campo') {
 }
 
 // ─────────────────────────────────────────────────────────────
-// MODALES
+// FUNCIONES DEL MODAL - NUEVA SOLICITUD
 // ─────────────────────────────────────────────────────────────
 
-function abrirModalSol() {
-    document.getElementById('modal-sol').classList.add('open');
+async function abrirModalSol() {
+    try {
+        FormUtils.limpiarErrores(document.getElementById('modal-sol'));
+
+        const selectProyecto = document.getElementById('sol-proyecto');
+        selectProyecto.innerHTML = '<option value="">— Selecciona el proyecto —</option>';
+
+        const id_usuario = parseInt(sessionStorage.getItem('pron_id_usuario'));
+        const proyectos = await API.proyectos.listar({ id_usuario: id_usuario });
+
+        if (proyectos.length === 0) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = '⚠ No tienes proyectos asignados';
+            opt.disabled = true;
+            selectProyecto.appendChild(opt);
+        } else {
+            proyectos.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id_proyecto;
+                opt.textContent = p.nombre_proyecto;
+                selectProyecto.appendChild(opt);
+            });
+        }
+
+        if (!document.querySelectorAll('#sol-items-body tr').length) {
+            agregarFilaItem();
+        }
+
+        document.getElementById('modal-sol').classList.add('open');
+        setTimeout(() => document.getElementById('sol-proyecto').focus(), 80);
+
+    } catch (error) {
+        console.error('Error abriendo modal solicitud:', error);
+        showToast('Error al cargar los proyectos', 'warning');
+    }
 }
 
 function cerrarModalSol() {
+    FormUtils.limpiarErrores(document.getElementById('modal-sol'));
     document.getElementById('modal-sol').classList.remove('open');
 }
 
 async function enviarSolicitudOficial() {
-    const id_proyecto = parseInt(document.getElementById('sol-proyecto')?.value) || null;
-    const justificacion = document.getElementById('sol-justificacion')?.value.trim() || '';
+    let errores = FormUtils.validar([
+        { id: 'sol-proyecto', msg: 'Selecciona el proyecto de la solicitud.' },
+        { id: 'sol-justificacion', msg: 'Escribe la justificación de la solicitud.' },
+    ]);
 
-    if (!id_proyecto) {
-        showToast('Selecciona un proyecto', 'warning');
-        return;
-    }
-    if (!justificacion) {
-        showToast('Escribe una justificación', 'warning');
-        return;
-    }
-
-    // Recolectar items
     const filas = document.querySelectorAll('#sol-items-body tr');
     const items = [];
+
     filas.forEach(tr => {
         const tipo = tr.querySelector('.sol-item-tipo')?.value || '';
-        const desc = tr.querySelector('.sol-item-recurso')?.value.trim() || '';
-        const cantidad = tr.querySelector('.sol-item-cantidad')?.value.trim() || '';
-        if (tipo && desc && cantidad) {
-            items.push({ tipo, desc, cantidad });
+        const rec = tr.querySelector('.sol-item-recurso')?.value.trim() || '';
+        const cant = tr.querySelector('.sol-item-cantidad')?.value.trim() || '';
+
+        if (tipo && rec && cant) {
+            items.push({ tipo, desc: rec, cantidad: cant });
+        } else if (tipo || rec || cant) {
+            if (!tipo) FormUtils.marcarInvalido(tr.querySelector('.sol-item-tipo'), 'Selecciona el tipo.');
+            if (!rec) FormUtils.marcarInvalido(tr.querySelector('.sol-item-recurso'), 'Describe el recurso.');
+            if (!cant) FormUtils.marcarInvalido(tr.querySelector('.sol-item-cantidad'), 'Indica la cantidad.');
+            errores++;
         }
     });
 
-    if (items.length === 0) {
-        showToast('Agrega al menos un recurso', 'warning');
+    if (items.length === 0 && !errores) {
+        showToast('Agrega al menos un recurso a la lista.', 'warning');
         return;
     }
 
+    if (errores) {
+        showToast(`Hay ${errores} campo(s) por completar.`, 'warning');
+        return;
+    }
+
+    const id_proyecto = parseInt(document.getElementById('sol-proyecto').value);
+    const justificacion = document.getElementById('sol-justificacion').value.trim();
+
+    const datos = {
+        id_proyecto: id_proyecto,
+        id_usuario: ID_USUARIO,
+        justificacion: justificacion,
+        items: items
+    };
+
     try {
-        const result = await API.solicitudes.crear({
-            id_proyecto,
-            id_usuario: ID_USUARIO,
-            justificacion,
-            items
-        });
+        const result = await API.solicitudes.crear(datos);
 
         if (result.success) {
             showToast('Solicitud creada exitosamente', 'success');
             cerrarModalSol();
+
+            // Limpiar formulario
+            document.getElementById('sol-proyecto').value = '';
+            document.getElementById('sol-justificacion').value = '';
+            document.getElementById('sol-items-body').innerHTML = '';
+            document.getElementById('sol-files').innerHTML = '';
+
             await cargarDatosIniciales();
             renderVista();
         }
@@ -393,6 +465,33 @@ async function enviarSolicitudOficial() {
         showToast(error.message || 'Error al crear la solicitud', 'warning');
     }
 }
+
+function agregarFilaItem() {
+    const tb = document.getElementById('sol-items-body');
+    if (!tb) return;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td style="padding:6px 6px 6px 0">
+            <select class="form-control sol-item-tipo" style="font-size:13px;padding:7px 28px 7px 10px">
+                <option value="">Tipo...</option>
+                <option value="MATERIAL">Material</option>
+                <option value="EQUIPO">Equipo</option>
+                <option value="FINANCIERO">Financiero</option>
+            </select>
+        </td>
+        <td style="padding:6px"><input type="text" class="form-control sol-item-recurso" style="font-size:13px" placeholder="Ej. Cemento Portland"></td>
+        <td style="padding:6px"><input type="text" class="form-control sol-item-cantidad" style="font-size:13px;width:110px" placeholder="150 bolsas"></td>
+        <td style="padding:6px 0 6px 6px;text-align:right">
+            <button type="button" class="btn btn-outline btn-sm" onclick="this.closest('tr').remove()" style="padding:6px 8px">✕</button>
+        </td>
+    `;
+    tb.appendChild(tr);
+    tr.querySelector('.sol-item-tipo')?.focus();
+}
+
+// ─────────────────────────────────────────────────────────────
+// MODALES - APROBAR / RECHAZAR / DESPACHO / RECEPCIÓN
+// ─────────────────────────────────────────────────────────────
 
 function abrirModalAprobar(id) {
     _solActiva = id;
@@ -531,31 +630,68 @@ async function confirmarRecepcion() {
 }
 
 // ─────────────────────────────────────────────────────────────
-// HELPERS
+// PROPUESTA DE NECESIDAD (Empleados)
 // ─────────────────────────────────────────────────────────────
 
-function agregarFilaItem() {
-    const tb = document.getElementById('sol-items-body');
-    if (!tb) return;
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-        <td style="padding:6px 6px 6px 0">
-            <select class="form-control sol-item-tipo" style="font-size:13px;padding:7px 28px 7px 10px">
-                <option value="">Tipo...</option>
-                <option value="MATERIAL">Material</option>
-                <option value="EQUIPO">Equipo</option>
-                <option value="FINANCIERO">Financiero</option>
-            </select>
-        </td>
-        <td style="padding:6px"><input type="text" class="form-control sol-item-recurso" style="font-size:13px" placeholder="Ej. Cemento Portland"></td>
-        <td style="padding:6px"><input type="text" class="form-control sol-item-cantidad" style="font-size:13px;width:110px" placeholder="150 bolsas"></td>
-        <td style="padding:6px 0 6px 6px;text-align:right">
-            <button type="button" class="btn btn-outline btn-sm" onclick="this.closest('tr').remove()" style="padding:6px 8px">✕</button>
-        </td>
-    `;
-    tb.appendChild(tr);
-    tr.querySelector('.sol-item-tipo')?.focus();
+function proponerNecesidad() {
+    const errores = FormUtils.validar([
+        { id: 'need-proyecto', msg: 'Selecciona el proyecto.' },
+        { id: 'need-desc', msg: 'Describe el recurso que necesitas.' },
+        { id: 'need-cantidad', msg: 'Indica la cantidad requerida.' },
+        { id: 'need-monto', msg: 'Indica un monto estimado mayor a cero.', cond: v => parseFloat(v) > 0 },
+    ]);
+
+    if (errores) {
+        showToast(`Faltan ${errores} campo(s) obligatorio(s) por completar.`, 'warning');
+        return;
+    }
+
+    showToast('Necesidad propuesta enviada al Supervisor de Campo', 'success');
+    document.getElementById('modal-necesidad').classList.remove('open');
+
+    // Limpiar campos
+    document.getElementById('need-proyecto').value = '';
+    document.getElementById('need-desc').value = '';
+    document.getElementById('need-cantidad').value = '';
+    document.getElementById('need-monto').value = '';
+    document.getElementById('need-justif').value = '';
 }
+
+// ─────────────────────────────────────────────────────────────
+// HELPERS: ARCHIVOS
+// ─────────────────────────────────────────────────────────────
+
+function mostrarArchivos(containerId, files) {
+    const c = document.getElementById(containerId);
+    if (!c || !files || !files.length) return;
+
+    Array.from(files).forEach(f => {
+        const d = document.createElement('div');
+        d.className = 'file-chip';
+        d.dataset.filename = f.name;
+        d.style.cssText = 'display:flex;align-items:center;gap:8px;background:var(--cream);border:1px solid var(--cream-dark);border-radius:8px;padding:6px 10px;font-size:12px';
+        d.innerHTML = `
+            <span class="material-symbols-rounded" style="font-size:16px;color:var(--navy)">description</span>
+            <span style="flex:1;color:var(--text)">${f.name}</span>
+            <span style="color:var(--muted)">${(f.size / 1024).toFixed(0)} KB</span>
+            <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:var(--muted)">✕</button>
+        `;
+        c.appendChild(d);
+    });
+}
+
+function mostrarArchivosSol(files) {
+    mostrarArchivos('sol-files', files);
+}
+
+function handleDropAprob(e) {
+    e.preventDefault();
+    mostrarArchivos('aprob-files', e.dataTransfer.files);
+}
+
+// ─────────────────────────────────────────────────────────────
+// TOAST
+// ─────────────────────────────────────────────────────────────
 
 let _toastTimer;
 
@@ -589,4 +725,8 @@ window.abrirModalRecepcion = abrirModalRecepcion;
 window.confirmarRecepcion = confirmarRecepcion;
 window.filtrarLog = filtrarLog;
 window.renderListaSolicitudes = renderListaSolicitudes;
+window.proponerNecesidad = proponerNecesidad;
+window.mostrarArchivos = mostrarArchivos;
+window.mostrarArchivosSol = mostrarArchivosSol;
+window.handleDropAprob = handleDropAprob;
 window.showToast = showToast;

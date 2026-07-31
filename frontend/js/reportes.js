@@ -27,9 +27,9 @@ let usuariosCache = [];
 
 const ID_USUARIO = parseInt(sessionStorage.getItem('pron_id_usuario')) || null;
 const NOMBRE_USUARIO = sessionStorage.getItem('pron_nombre') || 'Usuario';
-const ROLE = sessionStorage.getItem('pron_role') || 'campo';
-const ES_ADMIN = (ROLE === 'admin_oficina' || ROLE === 'admin');
-const ES_CAMPO = (ROLE === 'campo');
+const ROLE = sessionStorage.getItem('pron_role') || 'Supervisor de Campo';
+const ES_ADMIN = (ROLE === 'Administrador de Oficina');
+const ES_CAMPO = (ROLE === 'Supervisor de Campo');
 const ES_EMPLEADO = (ROLE === 'empleado');
 
 // ─────────────────────────────────────────────────────────────
@@ -198,9 +198,14 @@ function renderReportes() {
 
 function cardReporte(r) {
     const esPendiente = r.estado_reporte === 0;
+    const esRevisado = r.estado_reporte === 1;
+    const esRechazado = r.estado_reporte === 2;
+    
     const badge = esPendiente
         ? '<span class="badge badge-warning"><span class="material-symbols-rounded" style="font-size:12px">pending</span>Pendiente</span>'
-        : '<span class="badge badge-success"><span class="material-symbols-rounded" style="font-size:12px">check_circle</span>Aprobado</span>';
+        : esRevisado
+            ? '<span class="badge badge-success"><span class="material-symbols-rounded" style="font-size:12px">check_circle</span>Aprobado</span>'  
+            : '<span class="badge badge-danger"><span class="material-symbols-rounded" style="font-size:12px">cancel</span>Rechazado</span>';  
 
     const fechaEmision = r.fecha_reporte ? new Date(r.fecha_reporte).toLocaleDateString('es-HN', {
         day: '2-digit', month: 'short', year: 'numeric'
@@ -216,6 +221,7 @@ function cardReporte(r) {
 
     // Acciones según rol
     let acciones = '';
+
     if (esPendiente) {
         if (ES_ADMIN) {
             acciones = `
@@ -228,6 +234,15 @@ function cardReporte(r) {
         }
     }
 
+    if (esRechazado) {
+        if (ES_ADMIN) {
+            acciones = `<button class="btn btn-success btn-sm" onclick="abrirModalRechazarReporte(${r.id_reporte})">
+                    <span class="material-symbols-rounded" style="font-size:14px">check</span> Rechazar
+                </button>`;
+        } else if (ES_CAMPO) {  
+            acciones = `<span class="text-xs text-muted" style="align-self:center">Rechazado por oficina</span>`;
+        }
+    }
     // Calcular avance desde presupuesto si está disponible
     const avanceFisico = r.avance_fisico || 0;
     const avanceFinanciero = r.avance_financiero || 0;
@@ -362,6 +377,41 @@ async function aprobarReporte(id) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// RECHAZAR REPORTE (Admin)
+//
+
+function abrirModalRechazarReporte(id) {
+    _reporteActivo = id;
+    document.getElementById('rechazo-reporte-motivo').value = '';
+    document.getElementById('modal-rechazar-reporte').classList.add('open');
+}
+
+async function confirmarRechazoReporte() {
+    const motivo = document.getElementById('rechazo-reporte-motivo')?.value.trim() || '';
+
+    if (!motivo) {
+        showToast('El motivo del rechazo es obligatorio', 'warning');
+        return;
+    }
+
+    try {
+        const result = await API.reportes.rechazar(_reporteActivo, {
+            id_usuario: ID_USUARIO,
+            motivo: motivo
+        });
+
+        if (result.success) {
+            showToast('Reporte rechazado', 'info');
+            document.getElementById('modal-rechazar-reporte').classList.remove('open');
+            await cargarDatosIniciales();
+            renderReportes();
+        }
+    } catch (error) {
+        showToast(error.message || 'Error al rechazar el reporte', 'warning');
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
 // MODAL NUEVO REPORTE
 // ─────────────────────────────────────────────────────────────
 
@@ -370,18 +420,28 @@ async function abrirModalReporte() {
 
     // Cargar proyectos del usuario
     const sel = document.getElementById('rep-proyecto');
-    sel.innerHTML = '<option value="">— Selecciona un proyecto —</option>';
+    if (sel) {
+        sel.innerHTML = '<option value="">— Selecciona un proyecto —</option>';
 
-    try {
-        const proyectos = await API.proyectos.listar({ id_usuario: ID_USUARIO });
-        proyectos.forEach(p => {
-            const o = document.createElement('option');
-            o.value = p.id_proyecto;
-            o.textContent = p.nombre_proyecto;
-            sel.appendChild(o);
-        });
-    } catch (error) {
-        console.error('Error cargando proyectos:', error);
+        try {
+            const proyectos = await API.proyectos.listar({ id_usuario: ID_USUARIO });
+            if (proyectos && proyectos.length > 0) {
+                proyectos.forEach(p => {
+                    const o = document.createElement('option');
+                    o.value = p.id_proyecto;
+                    o.textContent = p.nombre_proyecto;
+                    sel.appendChild(o);
+                });
+            } else {
+                const o = document.createElement('option');
+                o.value = '';
+                o.textContent = 'No tienes proyectos asignados';
+                o.disabled = true;
+                sel.appendChild(o);
+            }
+        } catch (error) {
+            console.error('Error cargando proyectos:', error);
+        }
     }
 
     // Resetear campos
@@ -391,10 +451,14 @@ async function abrirModalReporte() {
     document.getElementById('rep-files').innerHTML = '';
     document.getElementById('val-fisico').textContent = '50%';
     document.getElementById('val-fin').textContent = '40%';
-    document.querySelector('#modal-reporte .range-input')?.forEach(el => el.value = 50);
+
+    //Usar querySelectorAll para obtener todos los range inputs
+    document.querySelectorAll('#modal-reporte .range-input').forEach(el => {
+        el.value = 50;
+    });
 
     document.getElementById('modal-reporte').classList.add('open');
-    setTimeout(() => document.getElementById('rep-proyecto').focus(), 80);
+    setTimeout(() => document.getElementById('rep-proyecto')?.focus(), 80);
 }
 
 function cerrarModalReporte() {

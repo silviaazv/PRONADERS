@@ -3,22 +3,6 @@
    ------------------------------------------------------------
    Ahora consume datos reales de /api/solicitudes, /api/equipos,
    /api/proyectos y /api/usuarios en vez de arreglos de muestra.
-
-   CAMBIOS respecto a la maqueta original (límites reales del
-   esquema de base de datos):
-   - Se quitó "Prioridad" (alta/media/baja): tbl_solicitudes no
-     tiene esa columna.
-   - Se quitó "Destino" (ciudad/distancia): no existe ese dato;
-     se podría derivar del municipio del proyecto si hace falta.
-   - Se quitó la métrica "Tiempo promedio de entrega": la BD no
-     guarda una fecha de entrega/confirmación separada de
-     fecha_revision_solicitud, así que no se puede calcular sin
-     inventar el dato.
-   - El selector de "zona" se reemplazó por un selector de EQUIPO
-     real (tbl_equipos), porque no existe el concepto de "zona"
-     por equipo en la BD. Tampoco existe un vínculo entre un
-     usuario de logística y su equipo, así que por ahora el
-     selector queda disponible para cualquier rol.
    ============================================================ */
 
 let _equiposCache = [];

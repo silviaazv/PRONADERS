@@ -1,17 +1,11 @@
-/* ============================================================
+/* 
    proyectos.js — MÓDULO: GESTIÓN DE PROYECTOS (Admin de Oficina) / Mis Proyectos (Campo)
    El sidebar, topbar, notificaciones y utilidades de
-   validación se cargan desde shared.js (incluido antes).
-   ============================================================ */
+   validación se cargan desde shared.js.
+   */
 
-/* ============================================================
-   proyectos.js — MÓDULO: GESTIÓN DE PROYECTOS
-   Todos los datos se obtienen desde la API
-   ============================================================ */
-
-// ─────────────────────────────────────────────────────────────
 // VARIABLES GLOBALES
-// ─────────────────────────────────────────────────────────────
+
 
 let proyectosCache = [];
 let usuariosCache = [];
@@ -22,12 +16,12 @@ let colabsSeleccionados = new Set();
 
 const ID_USUARIO = parseInt(sessionStorage.getItem('pron_id_usuario')) || null;
 const NOMBRE_USUARIO = sessionStorage.getItem('pron_nombre') || 'Usuario';
-const ROLE = sessionStorage.getItem('pron_role') || 'campo';
-const esAdmin = (ROLE === 'admin_oficina' || ROLE === 'admin');
+const ROLE = sessionStorage.getItem('pron_role') || 'Supervisor de Campo';
+const esAdmin = (ROLE === 'admin_oficina' || ROLE === 'Administrador de Oficina');
 
-// ─────────────────────────────────────────────────────────────
+
 // INICIALIZACIÓN
-// ─────────────────────────────────────────────────────────────
+
 
 document.addEventListener('DOMContentLoaded', async () => {
     await cargarDatosIniciales();
@@ -59,28 +53,141 @@ async function cargarDatosIniciales() {
         const [proyectos, usuarios, departamentos] = await Promise.all([
             API.proyectos.listar(),
             API.usuarios.listar(),
-            API.departamentos.listar()
+            API.departamentos.listar(),
+            API.municipios.listar() 
         ]);
 
         proyectosCache = proyectos || [];
         usuariosCache = usuarios || [];
         departamentosCache = departamentos || [];
 
-        // Cargar municipios del primer departamento si existe
+        //Cargar municipios del primer departamento si existe
         if (departamentosCache.length > 0) {
             const municipios = await API.municipios.listar({ id_departamento: departamentosCache[0].id_departamento });
             municipiosCache = municipios || [];
         }
 
+
     } catch (error) {
         console.error('Error cargando datos:', error);
         showToast('Error al cargar datos del servidor', 'warning');
     }
+
 }
 
-// ─────────────────────────────────────────────────────────────
+
+async function cargarSupervisores() {
+    try {
+        const select = document.getElementById('np-supervisor');
+        if (!select) {
+            console.warn('Select #np-supervisor no encontrado');
+            return [];
+        }
+
+        // Obtener usuarios
+        let usuarios = [];
+        try {
+            usuarios = await API.usuarios.listar();
+        } catch (error) {
+            console.error('Error obteniendo usuarios:', error);
+            return [];
+        }
+
+        // Filtrar supervisores (id_rol = 2)
+        const supervisores = usuarios.filter(u => u.id_rol === 2);
+
+        select.innerHTML = '<option value="">— Selecciona un supervisor —</option>';
+        
+        if (supervisores.length === 0) {
+            // Si no hay supervisores, mostrar opción para crear uno
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = 'No hay supervisores registrados';
+            opt.disabled = true;
+            select.appendChild(opt);
+        } else {
+            supervisores.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.id_usuario;
+                opt.textContent = u.nombre_usuario + ' (' + (u.nombre_rol || 'Supervisor') + ')';
+                select.appendChild(opt);
+            });
+        }
+
+        return supervisores;
+
+    } catch (error) {
+        console.error('Error en cargarSupervisores:', error);
+        return [];
+    }
+}
+
+//Cargar departamentos
+async function cargarDepartamentos() {
+    try {
+        const selDepto = document.getElementById('sel-depto');
+        if (!selDepto) {
+            console.warn('Select #sel-depto no encontrado');
+            return;
+        }
+
+        selDepto.innerHTML = '<option value="">— Selecciona un departamento —</option>';
+
+        if (departamentosCache && departamentosCache.length > 0) {
+            departamentosCache.forEach(d => {
+                const o = document.createElement('option');
+                o.value = d.id_departamento;
+                o.textContent = d.nombre_departamento;
+                selDepto.appendChild(o);
+            });
+        } else {
+            
+            const deptos = await API.departamentos.listar();
+            departamentosCache = deptos;
+            deptos.forEach(d => {
+                const o = document.createElement('option');
+                o.value = d.id_departamento;
+                o.textContent = d.nombre_departamento;
+                selDepto.appendChild(o);
+            });
+        }
+
+    } catch (error) {
+        console.error('Error cargando departamentos:', error);
+    }
+}
+
+// Cargar municipios según departamento seleccionado
+async function cargarMunicipios() {
+    const id_departamento = document.getElementById('sel-depto')?.value;
+    const selMun = document.getElementById('sel-municipio');
+
+    if (!id_departamento || !selMun) {
+        selMun.innerHTML = '<option value="">— Primero selecciona departamento —</option>';
+        selMun.disabled = true;
+        return;
+    }
+
+    try {
+        const municipios = await API.municipios.listar({ id_departamento: parseInt(id_departamento) });
+        
+        selMun.innerHTML = '<option value="">— Selecciona un municipio —</option>';
+        municipios.forEach(m => {
+            const o = document.createElement('option');
+            o.value = m.id_municipio;
+            o.textContent = m.nombre_municipio;
+            selMun.appendChild(o);
+        });
+        selMun.disabled = false;
+    } catch (error) {
+        console.error('Error cargando municipios:', error);
+        selMun.innerHTML = '<option value="">— Error al cargar municipios —</option>';
+        selMun.disabled = true;
+    }
+}
+
+
 // PROYECTOS VISIBLES SEGÚN ROL
-// ─────────────────────────────────────────────────────────────
 
 function proyectosVisibles() {
     if (esAdmin) return proyectosCache;
@@ -91,9 +198,8 @@ function proyectosVisibles() {
     });
 }
 
-// ─────────────────────────────────────────────────────────────
 // RENDER PRINCIPAL
-// ─────────────────────────────────────────────────────────────
+
 
 function renderPaginaProyectos() {
     const container = document.getElementById('proyectos-content');
@@ -104,7 +210,6 @@ function renderPaginaProyectos() {
         ? 'Haga clic en la tarjeta del proyecto para ver detalles'
         : `Proyectos en los que participas · ${visibles.length} asignado${visibles.length !== 1 ? 's' : ''}`;
 
-    // Stats
     const base = esAdmin ? proyectosCache : visibles;
     const statsHtml = `
         <div class="grid-4 mb-24 fade-up fade-up-1">
@@ -174,7 +279,7 @@ function renderPaginaProyectos() {
             </select>
             <select class="form-control" id="f-depto" style="width:auto;padding:7px 32px 7px 12px;font-size:13px" onchange="aplicarFiltros()">
                 <option value="">Todos los departamentos</option>
-                ${deptos.map(d => `<option value="${d}">${d}</option>`).join('')}
+                ${deptos.map(d => `<option value="${d}">${d}</option>`).join('')} //REVISAR ESTO YA QUE NO ESTA FILTRANDO POR DEPARTAMENTO
             </select>
         </div>
     `;
@@ -290,6 +395,11 @@ function filtrarProyectos(lista, f) {
 // ─────────────────────────────────────────────────────────────
 
 function tarjetaProyecto(p) {
+
+    console.log('Proyecto detalle:', p);
+    console.log('Supervisor:', p.supervisor_nombre);
+    console.log('Ubicación:', p.nombre_municipio, p.nombre_departamento);
+
     const avance = p.presupuesto_ejecutado && p.presupuesto_inicial
         ? Math.min(Math.round((p.presupuesto_ejecutado / p.presupuesto_inicial) * 100), 100)
         : 0;
@@ -307,9 +417,11 @@ function tarjetaProyecto(p) {
     const fechaInicio = p.fecha_inicio ? new Date(p.fecha_inicio).toLocaleDateString('es-HN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
     const fechaFin = p.fecha_fin ? new Date(p.fecha_fin).toLocaleDateString('es-HN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
 
-    // Colaboradores (usuarios asignados)
-    const colaboradores = p.usuarios_nombres || [];
-    const colaboradoresMostrar = colaboradores.slice(0, 4);
+    const supervisorNombre = p.supervisor_nombre || 'Sin supervisor';
+
+    const ubicacion = p.nombre_municipio || p.municipio || 'Sin ubicación';
+    const departamento = p.nombre_departamento || p.departamento || '';
+    const ubicacionCompleta = departamento ? `${ubicacion}, ${departamento}` : ubicacion;
 
     return `
         <div class="project-card" role="button" tabindex="0" style="cursor:pointer"
@@ -322,7 +434,7 @@ function tarjetaProyecto(p) {
             <div class="fw-600" style="font-size:15px;margin-bottom:3px;color:var(--navy)">${p.nombre_proyecto || 'Sin nombre'}</div>
             <div style="font-size:11.5px;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:4px">
                 <span class="material-symbols-rounded" style="font-size:13px">location_on</span>
-                ${p.nombre_municipio || 'Sin ubicación'}, ${p.nombre_departamento || ''}
+                ${ubicacionCompleta}
             </div>
             <div class="flex-between" style="font-size:12px;margin-bottom:6px">
                 <span style="color:var(--muted)">Avance físico</span>
@@ -332,12 +444,17 @@ function tarjetaProyecto(p) {
                 <div class="progress-fill ${progressColor}" style="width:${avance}%"></div>
             </div>
             <div class="flex-between" style="margin-bottom:12px">
-                <div style="display:flex;gap:-4px">
-                    ${colaboradoresMostrar.map(n => `
-                        <div class="avatar" style="width:24px;height:24px;font-size:9px;background:var(--cream-dark);color:var(--text-light);border:2px solid var(--white);margin-right:-6px" title="${n}">${n.split(' ').map(x => x[0]).join('').toUpperCase().slice(0, 2)}</div>
-                    `).join('')}
-                    ${colaboradores.length > 4 ? `<div class="avatar" style="width:24px;height:24px;font-size:9px;background:var(--cream-dark);color:var(--muted);border:2px solid var(--white)">+${colaboradores.length - 4}</div>` : ''}
-                </div>
+    <div style="display:flex;align-items:center;gap:8px">
+        <div class="avatar" style="width:24px;height:24px;font-size:9px;background:var(--gold);color:var(--white);border:2px solid var(--white)">
+            ${p.supervisor_nombre 
+                ? p.supervisor_nombre.split(' ').map(x => x[0]).join('').toUpperCase().slice(0, 2)
+                : '??'}
+        </div>
+        <span style="font-size:12px;color:var(--text-light)">Supervisor:</span>
+        <span style="font-size:12px;font-weight:500;color:var(--navy)">
+            ${p.supervisor_nombre || 'Sin supervisor asignado'}
+        </span>
+    </div>
                 <div style="font-size:11px;color:var(--muted)">L ${(p.presupuesto_inicial || 0).toLocaleString('es-HN')}</div>
             </div>
             <hr class="divider">
@@ -380,28 +497,34 @@ async function abrirDetalle(id) {
         const fechaInicio = p.fecha_inicio ? new Date(p.fecha_inicio).toLocaleDateString('es-HN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
         const fechaFin = p.fecha_fin ? new Date(p.fecha_fin).toLocaleDateString('es-HN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
 
+        const supervisorNombre = p.supervisor_nombre || 'Sin supervisor';
+
+        const ubicacion = p.nombre_municipio || p.municipio || 'Sin ubicación';
+        const departamento = p.nombre_departamento || p.departamento || '';
+        const ubicacionCompleta = departamento ? `${ubicacion}, ${departamento}` : ubicacion;
+
         document.getElementById('detalle-tipo').textContent = p.tipo_proyecto || 'Sin tipo';
         document.getElementById('detalle-tipo').style.color = 'var(--info)';
         document.getElementById('detalle-nombre').textContent = p.nombre_proyecto || 'Sin nombre';
         document.getElementById('detalle-ubicacion').innerHTML =
-            `<span class="material-symbols-rounded" style="font-size:14px">location_on</span>${p.nombre_municipio || 'Sin ubicación'}, ${p.nombre_departamento || ''}`;
+            `<span class="material-symbols-rounded" style="font-size:14px">location_on</span>${ubicacionCompleta}`;
 
         const badge = document.getElementById('detalle-badge');
         badge.className = `badge ${estadoBadge}`;
         badge.textContent = estadoLabel;
 
-        // Usuarios asignados
-        const usuariosHtml = (p.usuarios_asignados || []).map(u => `
+        //SUPERVISOR DE CAMPO
+        const supervisorHtml = p.supervisor_nombre ? `
             <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--cream);border-radius:var(--radius)">
-                <div style="width:32px;height:32px;border-radius:50%;background:var(--cream-dark);color:var(--text-light);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0">
-                    ${u.nombre_usuario ? u.nombre_usuario.split(' ').map(x => x[0]).join('').toUpperCase().slice(0, 2) : 'U'}
+                <div style="width:32px;height:32px;border-radius:50%;background:var(--gold);color:var(--white);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0">
+                    ${p.supervisor_nombre.split(' ').map(x => x[0]).join('').toUpperCase().slice(0, 2)}
                 </div>
                 <div style="flex:1">
-                    <div style="font-size:13px;font-weight:500">${u.nombre_usuario || 'Sin nombre'}</div>
-                    <div style="font-size:11.5px;color:var(--muted)">${u.nombre_rol || 'Sin rol'}</div>
+                    <div style="font-size:13px;font-weight:500;color:var(--navy)">${p.supervisor_nombre}</div>
+                    <div style="font-size:11.5px;color:var(--muted)">Supervisor de Campo</div>
                 </div>
             </div>
-        `).join('');
+        ` : '<div class="text-muted text-sm">Sin supervisor asignado</div>';
 
         document.getElementById('detalle-body').innerHTML = `
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px">
@@ -421,8 +544,9 @@ async function abrirDetalle(id) {
                     <div style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Presupuesto ejecutado</div>
                 </div>
                 <div style="background:var(--cream);border-radius:var(--radius);padding:14px 16px;text-align:center">
-                    <div style="font-family:var(--font-serif);font-size:22px;font-weight:300;color:var(--navy)">${(p.usuarios_asignados || []).length}</div>
-                    <div style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Colaboradores</div>
+                    <div style="font-family:var(--font-serif);font-size:22px;font-weight:300;color:var(--navy)">${p.id_supervisor ? 1 : 0}</div>
+                    <div style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Supervisor asignado</div>
+                </div>
                 </div>
             </div>
 
@@ -449,9 +573,9 @@ async function abrirDetalle(id) {
             </div>
 
             <div style="margin-bottom:22px">
-                <div style="font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:10px">Equipo del proyecto</div>
+                <div style="font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:10px">Supervisor de Campo</div>
                 <div style="display:flex;flex-direction:column;gap:8px">
-                    ${usuariosHtml || '<div class="text-muted text-sm">No hay colaboradores asignados</div>'}
+                    ${supervisorHtml}
                 </div>
             </div>
 
@@ -474,21 +598,41 @@ async function abrirDetalle(id) {
 // ─────────────────────────────────────────────────────────────
 // MODAL NUEVO PROYECTO
 // ─────────────────────────────────────────────────────────────
-
 async function abrirModalNuevoProyecto() {
+
+    try {
+
+        console.log('Cargando datos para nuevo proyecto...');
+
     _proyectoEnEdicion = null;
     document.querySelector('#modal-nuevo .modal-title').innerHTML = 'Nuevo <em style="font-style:italic">Proyecto</em>';
     FormUtils.limpiarErrores(document.getElementById('modal-nuevo'));
 
-    // Cargar departamentos
-    const selDepto = document.getElementById('sel-depto');
-    selDepto.innerHTML = '<option value="">— Selecciona un departamento —</option>';
-    departamentosCache.forEach(d => {
-        const o = document.createElement('option');
-        o.value = d.id_departamento;
-        o.textContent = d.nombre_departamento;
-        selDepto.appendChild(o);
-    });
+        // ── VERIFICAR QUE LOS ELEMENTOS EXISTEN ──
+        const elementos = [
+            'sel-depto', 'sel-municipio', 'np-nombre', 'np-tipo',
+            'np-inicio', 'np-fin', 'np-presupuesto', 'np-desc',
+            'np-supervisor'
+        ];
+
+        for (const id of elementos) {
+            if (!document.getElementById(id)) {
+                console.warn('[Frontend] Elemento no encontrado:', id);
+            }
+        }
+
+            // ── CARGAR SUPERVISORES ──
+        try {
+            await cargarSupervisores();
+            console.log('[Frontend] Supervisores cargados');
+        } catch (error) {
+            console.error('[Frontend] Error cargando supervisores:', error);
+        }
+
+
+    await cargarDepartamentos();
+
+    await cargarMunicipios(); 
 
     document.getElementById('sel-municipio').innerHTML = '<option value="">— Primero selecciona departamento —</option>';
     document.getElementById('sel-municipio').disabled = true;
@@ -503,6 +647,24 @@ async function abrirModalNuevoProyecto() {
 
     document.getElementById('modal-nuevo').classList.add('open');
     setTimeout(() => document.getElementById('np-nombre').focus(), 80);
+
+    // ── ABRIR MODAL ──
+        const modal = document.getElementById('modal-nuevo');
+        if (modal) {
+            modal.classList.add('open');
+            console.log('[Frontend] Modal abierto');
+            setTimeout(() => {
+                const nombre = document.getElementById('np-nombre');
+                if (nombre) nombre.focus();
+            }, 80);
+        } else {
+            console.error('[Frontend] Modal #modal-nuevo no encontrado');
+        }
+
+    } catch (error) {
+        console.error('[Frontend] Error en abrirModalNuevoProyecto:', error);
+        showToast('Error al abrir el formulario: ' + error.message, 'warning');
+    }
 }
 
 function cerrarModalNuevo() {
@@ -526,6 +688,9 @@ async function abrirEditarProyecto(id) {
         FormUtils.limpiarErrores(document.getElementById('modal-nuevo'));
         document.querySelector('#modal-nuevo .modal-title').innerHTML =
             `Editar <em style="font-style:italic">Proyecto</em> <span style="font-size:12px;color:var(--muted)">· ID: ${id}</span>`;
+
+        //Cargar supervisores
+        await cargarSupervisores();
 
         // Cargar departamentos
         const selDepto = document.getElementById('sel-depto');
@@ -555,7 +720,8 @@ async function abrirEditarProyecto(id) {
         document.getElementById('np-fin').value = p.fecha_fin ? p.fecha_fin.slice(0, 10) : '';
         document.getElementById('np-presupuesto').value = p.presupuesto_inicial || '';
         document.getElementById('np-desc').value = p.descripcion_proyecto || '';
-
+        if (p.id_supervisor) {
+            document.getElementById('np-supervisor').value = p.id_supervisor; }
         document.getElementById('modal-detalle').classList.remove('open');
         document.getElementById('modal-nuevo').classList.add('open');
 
@@ -582,6 +748,10 @@ async function guardarProyecto() {
 
     const ini = document.getElementById('np-inicio').value;
     const fin = document.getElementById('np-fin').value;
+    const supervisor = document.getElementById('np-supervisor').value;
+    
+    const usuarioActual = parseInt(sessionStorage.getItem('pron_id_usuario')) || 1;
+
 
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
@@ -608,7 +778,9 @@ async function guardarProyecto() {
         fecha_inicio: ini,
         fecha_fin: fin || null,
         presupuesto_inicial: parseFloat(document.getElementById('np-presupuesto').value),
-        estado_proyecto: 'ACTIVO'
+        estado_proyecto: 'ACTIVO',
+        id_usuario: usuarioActual,
+        id_supervisor: supervisor ? parseInt(supervisor) : null, 
     };
 
     try {
@@ -639,7 +811,7 @@ async function guardarProyecto() {
 // GEO — municipios
 // ─────────────────────────────────────────────────────────────
 
-async function cargarMunicipios() {
+/*async function cargarMunicipios() {
     const id_departamento = document.getElementById('sel-depto').value;
     const selMun = document.getElementById('sel-municipio');
 
@@ -664,7 +836,7 @@ async function cargarMunicipios() {
         selMun.innerHTML = '<option value="">— Error al cargar municipios —</option>';
         selMun.disabled = true;
     }
-}
+}*/
 
 function validarRangoFechas() {
     const ini = document.getElementById('np-inicio');

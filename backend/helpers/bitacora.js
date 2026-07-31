@@ -12,6 +12,30 @@ async function registrarBitacora({
 
 }) {
 
+    try {
+
+        const accionesSinObjeto = ['LOGIN', 'LOGOUT'];
+
+        if (accionesSinObjeto.includes(tipo_accion)) {
+            // Login/Logout: objeto debe ser NULL
+            tipo_objeto = null;
+            id_objeto = null;
+            campo_modificado = null;
+            valor_antiguo = null;
+            valor_nuevo = null;
+        } else {
+            // Otras acciones: objeto NO debe ser NULL
+            if (!tipo_objeto) {
+                console.warn('[Bitácora] tipo_objeto es NULL para', tipo_accion);
+                return false;
+            }
+            if (!id_objeto) {
+                console.warn('[Bitácora] id_objeto es NULL para', tipo_accion);
+                return false;
+            }
+        }
+    
+
     await db.execute(
 
         `
@@ -32,7 +56,7 @@ async function registrarBitacora({
 
         [
 
-            id_usuario,
+            id_usuario || 1,
 
             tipo_accion,
 
@@ -42,16 +66,22 @@ async function registrarBitacora({
 
             new Date().toISOString(),
 
-            campo_modificado,
+            campo_modificado || null,
 
-            valor_antiguo,
+            valor_antiguo || null,
 
-            valor_nuevo
+            valor_nuevo || null
 
         ]
 
     );
 
+    return true;
+
+    } catch (error) {
+        console.error('[Bitácora] Error:', error.message);
+        return false;
+    }
 }
 
 module.exports = {

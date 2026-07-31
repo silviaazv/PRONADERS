@@ -1,300 +1,211 @@
+// ============================================================
 // genericCrud.js
-// Fábrica de routers CRUD para tablas con llave primaria simple.
-// Compatible con sqlite3 utilizando las funciones queryAll,
-// queryOne y execute definidas en db.js.
+// ============================================================
 
-const express = require('express');
 const db = require('../db');
+const { registrarBitacora } = require('../helpers/bitacora');
 
+/**
+ * Crea un CRUD genérico con bitácora integrada
+ */
 function genericCrud({ table, pk, columns }) {
+    const router = require('express').Router();
 
-    const router = express.Router();
-
-    const editableColumns = columns.filter(c => c !== pk);
-
-    //==================================================
-    // GET /
-    //==================================================
-
+    // ──────────────────────────────────────────────
+    // GET / - Listar todos
+    // ──────────────────────────────────────────────
     router.get('/', async (req, res) => {
-
         try {
-
-            const filtros = Object.keys(req.query)
-                .filter(k => columns.includes(k));
-
-            let sql = `SELECT * FROM ${table}`;
-
-            const params = [];
-
-            if (filtros.length) {
-
-                sql +=
-                    ' WHERE ' +
-                    filtros.map(f => `${f} = ?`).join(' AND ');
-
-                filtros.forEach(f => params.push(req.query[f]));
-
-            }
-
-            const filas = await db.queryAll(sql, params);
-
-            res.json(filas);
-
+            const data = await db.queryAll(`SELECT * FROM ${table}`);
+            res.json(data);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
         }
-
-        catch (err) {
-
-            res.status(500).json({
-                error: err.message
-            });
-
-        }
-
     });
 
-    //==================================================
-    // GET /:id
-    //==================================================
-
+    // ──────────────────────────────────────────────
+    // GET /:id - Obtener por ID
+    // ──────────────────────────────────────────────
     router.get('/:id', async (req, res) => {
-
         try {
-
-            const fila = await db.queryOne(
-
+            const data = await db.queryOne(
                 `SELECT * FROM ${table} WHERE ${pk} = ?`,
-
                 [req.params.id]
-
             );
-
-            if (!fila) {
-
-                return res.status(404).json({
-
-                    error: `${table}: registro no encontrado`
-
-                });
-
+            if (!data) {
+                return res.status(404).json({ error: 'Registro no encontrado' });
             }
-
-            res.json(fila);
-
+            res.json(data);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
         }
-
-        catch (err) {
-
-            res.status(500).json({
-
-                error: err.message
-
-            });
-
-        }
-
     });
 
-    //==================================================
-    // POST
-    //==================================================
-
+    // ──────────────────────────────────────────────
+    // POST / - Crear (CON BITÁCORA)
+    // ──────────────────────────────────────────────
     router.post('/', async (req, res) => {
-
         try {
+            const data = req.body;
+            const id_usuario = data.id_usuario || 1;
 
-            const cols = editableColumns.filter(
+            // Obtener columnas que tienen valor
+            const keys = columns.filter(c => data[c] !== undefined && data[c] !== null);
+            const values = keys.map(c => data[c]);
+            const placeholders = keys.map(() => '?').join(',');
 
-                c => req.body[c] !== undefined
+            const query = `INSERT INTO ${table} (${keys.join(',')}) VALUES (${placeholders})`;
+            const result = await db.execute(query, values);
 
-            );
+            const id = result.lastInsertRowid;
 
-            if (!cols.length) {
-
-                return res.status(400).json({
-
-                    error: 'No se enviaron columnas válidas'
-
-                });
-
-            }
-
-            const placeholders = cols.map(() => '?').join(', ');
-
-            const sql =
-
-                `INSERT INTO ${table}
-                (${cols.join(', ')})
-                VALUES (${placeholders})`;
-
-            const resultado = await db.execute(
-
-                sql,
-
-                cols.map(c => req.body[c])
-
-            );
-
-            const nuevoId =
-
-                req.body[pk] !== undefined
-
-                    ? req.body[pk]
-
-                    : resultado.lastID;
-
-            const creado = await db.queryOne(
-
-                `SELECT * FROM ${table} WHERE ${pk} = ?`,
-
-                [nuevoId]
-
-            );
-
-            res.status(201).json(creado);
-
-        }
-
-        catch (err) {
-
-            res.status(400).json({
-
-                error: err.message
-
+            //REGISTRAR EN BITÁCORA
+            const nombreTabla = table.replace('tbl_', '').toUpperCase();
+            await registrarBitacora({
+                id_usuario: id_usuario,
+                tipo_accion: 'INSERT',
+                tipo_objeto: nombreTabla,
+                id_objeto: id,
+                valor_nuevo: `Registro creado en ${table}`
             });
 
-        }
+            const nuevo = await db.queryOne(
+                `SELECT * FROM ${table} WHERE ${pk} = ?`,
+                [id]
+            );
 
+            res.status(201).json({
+                success: true,
+                message: 'Registro creado exitosamente',
+                [nombreTabla.toLowerCase()]: nuevo
+            });
+
+        } catch (error) {
+            console.error('Error en POST:', error);
+            res.status(500).json({ error: error.message });
+        }
     });
 
-    //==================================================
-    // PUT
-    //==================================================
-
+    // ──────────────────────────────────────────────
+    // PUT /:id - Actualizar (CON BITÁCORA)
+    // ──────────────────────────────────────────────
     router.put('/:id', async (req, res) => {
-
         try {
+            const id = req.params.id;
+            const data = req.body;
+            const id_usuario = data.id_usuario || 1;
 
-            const cols = editableColumns.filter(
-
-                c => req.body[c] !== undefined
-
+            // Obtener el registro anterior
+            const anterior = await db.queryOne(
+                `SELECT * FROM ${table} WHERE ${pk} = ?`,
+                [id]
             );
-
-            if (!cols.length) {
-
-                return res.status(400).json({
-
-                    error: 'No se enviaron columnas válidas'
-
-                });
-
+            if (!anterior) {
+                return res.status(404).json({ error: 'Registro no encontrado' });
             }
 
-            const sets = cols.map(
+            // Construir SET
+            const sets = [];
+            const values = [];
+            const cambios = [];
 
-                c => `${c} = ?`
+            columns.forEach(col => {
+                if (col !== pk && data[col] !== undefined) {
+                    const valorNuevo = data[col];
+                    const valorAnterior = anterior[col];
+                    if (String(valorAnterior) !== String(valorNuevo)) {
+                        sets.push(`${col} = ?`);
+                        values.push(valorNuevo);
+                        cambios.push({ campo: col, anterior: valorAnterior, nuevo: valorNuevo });
+                    }
+                }
+            });
 
-            ).join(', ');
+            if (sets.length === 0) {
+                return res.status(400).json({ error: 'No hay cambios para actualizar' });
+            }
 
-            const sql =
-
-                `UPDATE ${table}
-                SET ${sets}
-                WHERE ${pk} = ?`;
-
-            const resultado = await db.execute(
-
-                sql,
-
-                [
-
-                    ...cols.map(c => req.body[c]),
-
-                    req.params.id
-
-                ]
-
+            values.push(id);
+            await db.execute(
+                `UPDATE ${table} SET ${sets.join(', ')} WHERE ${pk} = ?`,
+                values
             );
 
-            if (resultado.changes === 0) {
-
-                return res.status(404).json({
-
-                    error: `${table}: registro no encontrado`
-
+            //REGISTRAR EN BITÁCORA (cada campo modificado)
+            const nombreTabla = table.replace('tbl_', '').toUpperCase();
+            for (const cambio of cambios) {
+                await registrarBitacora({
+                    id_usuario: id_usuario,
+                    tipo_accion: 'UPDATE',
+                    tipo_objeto: nombreTabla,
+                    id_objeto: id,
+                    campo_modificado: cambio.campo,
+                    valor_antiguo: String(cambio.anterior || null),
+                    valor_nuevo: String(cambio.nuevo || null)
                 });
-
             }
 
             const actualizado = await db.queryOne(
-
                 `SELECT * FROM ${table} WHERE ${pk} = ?`,
-
-                [req.params.id]
-
+                [id]
             );
 
-            res.json(actualizado);
-
-        }
-
-        catch (err) {
-
-            res.status(400).json({
-
-                error: err.message
-
+            res.json({
+                success: true,
+                message: 'Registro actualizado',
+                [nombreTabla.toLowerCase()]: actualizado
             });
 
+        } catch (error) {
+            console.error('Error en PUT:', error);
+            res.status(500).json({ error: error.message });
         }
-
     });
 
-    //==================================================
-    // DELETE
-    //==================================================
-
+    // ──────────────────────────────────────────────
+    // DELETE /:id - Eliminar (CON BITÁCORA)
+    // ──────────────────────────────────────────────
     router.delete('/:id', async (req, res) => {
-
         try {
+            const id = req.params.id;
+            const { id_usuario } = req.query;
 
-            const resultado = await db.execute(
-
-                `DELETE FROM ${table} WHERE ${pk} = ?`,
-
-                [req.params.id]
-
+            // Obtener el registro antes de eliminar
+            const anterior = await db.queryOne(
+                `SELECT * FROM ${table} WHERE ${pk} = ?`,
+                [id]
             );
-
-            if (resultado.changes === 0) {
-
-                return res.status(404).json({
-
-                    error: `${table}: registro no encontrado`
-
-                });
-
+            if (!anterior) {
+                return res.status(404).json({ error: 'Registro no encontrado' });
             }
 
-            res.sendStatus(204);
+            await db.execute(
+                `DELETE FROM ${table} WHERE ${pk} = ?`,
+                [id]
+            );
 
-        }
-
-        catch (err) {
-
-            res.status(400).json({
-
-                error: err.message
-
+            //REGISTRAR EN BITÁCORA
+            const nombreTabla = table.replace('tbl_', '').toUpperCase();
+            await registrarBitacora({
+                id_usuario: id_usuario || 1,
+                tipo_accion: 'DELETE',
+                tipo_objeto: nombreTabla,
+                id_objeto: id,
+                valor_nuevo: `Registro eliminado de ${table}: ${JSON.stringify(anterior)}`
             });
 
-        }
+            res.json({
+                success: true,
+                message: 'Registro eliminado'
+            });
 
+        } catch (error) {
+            console.error('Error en DELETE:', error);
+            res.status(500).json({ error: error.message });
+        }
     });
 
     return router;
-
 }
 
 module.exports = genericCrud;

@@ -80,6 +80,15 @@ router.post('/', async (req, res) => {
 
         );
 
+        //REGISTRAR EN BITÁCORA
+        await registrarBitacora({
+            id_usuario: req.body.id_usuario || 1,
+            tipo_accion: 'INSERT',
+            tipo_objeto: 'USUARIO',
+            id_objeto: resultado.lastID,
+            valor_nuevo: `Usuario "${nombre_usuario}" creado con rol ${id_rol}`
+        });
+
         res.status(201).json(usuario);
 
     }
@@ -103,6 +112,19 @@ router.put('/:id', async (req, res) => {
     try {
 
         const datos = { ...req.body };
+        const id = parseInt(req.params.id);
+
+        //REGISTRAR cambios en bitácora (solo campos que cambiaron)
+        const anterior = await db.queryOne(
+            'SELECT * FROM tbl_usuarios WHERE id_usuario = ?',
+            [id]
+        );
+
+        if (!anterior) {
+            return res.status(404).json({
+                error: 'Usuario no encontrado'
+            });
+        }
 
         if (datos.contrasena) {
 
@@ -129,6 +151,19 @@ router.put('/:id', async (req, res) => {
 
         }
 
+        //REGISTRAR cambios en bitácora (solo campos que cambiaron)
+        const cambios = [];
+
+        for (const col of columnas) {
+            if (datos[col] !== undefined && String(anterior[col]) !== String(datos[col])) {
+                cambios.push({
+                    campo: col,
+                    anterior: anterior[col],
+                    nuevo: datos[col]
+                });
+            }
+        }
+
         const sql = `
             UPDATE tbl_usuarios
             SET ${columnas.map(c => `${c} = ?`).join(', ')}
@@ -141,7 +176,7 @@ router.put('/:id', async (req, res) => {
 
             [
                 ...columnas.map(c => datos[c]),
-                req.params.id
+                id
             ]
 
         );
@@ -152,6 +187,19 @@ router.put('/:id', async (req, res) => {
                 error: 'Usuario no encontrado'
             });
 
+        }
+
+        //REGISTRAR EN BITÁCORA (cada campo modificado)
+        for (const cambio of cambios) {
+            await registrarBitacora({
+                id_usuario: req.body.id_usuario || 1,
+                tipo_accion: 'UPDATE',
+                tipo_objeto: 'USUARIO',
+                id_objeto: id,
+                campo_modificado: cambio.campo,
+                valor_antiguo: String(cambio.anterior ?? null),
+                valor_nuevo: String(cambio.nuevo ?? null)
+            });
         }
 
         const usuario = await db.queryOne(
@@ -169,7 +217,7 @@ router.put('/:id', async (req, res) => {
             WHERE id_usuario = ?
             `,
 
-            [req.params.id]
+            [id]
 
         );
 
@@ -249,6 +297,7 @@ router.post('/login', async (req, res) => {
 
         }
 
+        //REGISTRAR EN BITÁCORA (LOGIN)
         await registrarBitacora({
 
             id_usuario: usuario.id_usuario,
@@ -393,6 +442,20 @@ router.delete('/:id', async (req, res) => {
 
     try {
 
+        const id = parseInt(req.params.id);
+
+        //Obtener usuario antes de eliminar
+        const usuario = await db.queryOne(
+            'SELECT * FROM tbl_usuarios WHERE id_usuario = ?',
+            [id]
+        );
+
+        if (!usuario) {
+            return res.status(404).json({
+                error: 'Usuario no encontrado'
+            });
+        }
+
         const resultado = await db.execute(
 
             `
@@ -401,7 +464,7 @@ router.delete('/:id', async (req, res) => {
             WHERE id_usuario = ?
             `,
 
-            [req.params.id]
+            [id]
 
         );
 
@@ -414,6 +477,15 @@ router.delete('/:id', async (req, res) => {
             });
 
         }
+
+        //REGISTRAR EN BITÁCORA
+        await registrarBitacora({
+            id_usuario: req.query.id_usuario || 1,
+            tipo_accion: 'DELETE',
+            tipo_objeto: 'USUARIO',
+            id_objeto: id,
+            valor_nuevo: `Usuario "${usuario.nombre_usuario}" eliminado`
+        });
 
         res.sendStatus(204);
 

@@ -110,6 +110,24 @@ router.get('/', async (req, res) => {
 });
 
 /**
+ * GET /api/solicitudes/resumen
+ * Obtiene un resumen de solicitudes por estado
+ */
+router.get('/resumen', async (req, res) => {
+    try {
+        const resumen = await db.queryAll(`
+            SELECT estado_solicitud, COUNT(*) as total
+            FROM tbl_solicitudes
+            GROUP BY estado_solicitud
+        `);
+        res.json(resumen);
+    } catch (error) {
+        console.error('Error obteniendo resumen de solicitudes:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
  * GET /api/solicitudes/:id
  * Obtiene una solicitud por ID
  */
@@ -233,6 +251,38 @@ router.post('/', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+    /**
+ * GET /api/solicitudes/:id/filas
+ * Obtiene las filas/ítems de una solicitud específica
+ */
+router.get('/:id/filas', async (req, res) => {
+    try {
+        const id_solicitud = parseInt(req.params.id);
+
+        // Verificar que la solicitud existe
+        const sol = await db.queryOne(
+            'SELECT * FROM tbl_solicitudes WHERE id_solicitud = ?',
+            [id_solicitud]
+        );
+
+        if (!sol) {
+            return res.status(404).json({ error: 'Solicitud no encontrada' });
+        }
+
+        // Obtener las filas
+        const filas = await db.queryAll(
+            'SELECT * FROM tbl_fila_solicitud WHERE id_solicitud = ?',
+            [id_solicitud]
+        );
+
+        res.json(filas);
+
+    } catch (error) {
+        console.error('Error obteniendo filas de solicitud:', error);
+        res.status(500).json({ error: error.message });
+    }
+    });
 
 /**
  * PATCH /api/solicitudes/:id/aprobar
@@ -474,24 +524,6 @@ router.patch('/:id/confirmar-recepcion', async (req, res) => {
         console.error('Error confirmando recepción:', error);
         res.status(500).json({ error: error.message });
     }
-});
 
-/**
- * GET /api/solicitudes/resumen
- * Obtiene un resumen de solicitudes por estado
- */
-router.get('/resumen', async (req, res) => {
-    try {
-        const resumen = await db.queryAll(`
-            SELECT estado_solicitud, COUNT(*) as total
-            FROM tbl_solicitudes
-            GROUP BY estado_solicitud
-        `);
-        res.json(resumen);
-    } catch (error) {
-        console.error('Error obteniendo resumen:', error);
-        res.status(500).json({ error: error.message });
-    }
 });
-
 module.exports = router;

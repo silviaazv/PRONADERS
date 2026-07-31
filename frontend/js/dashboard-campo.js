@@ -5,7 +5,6 @@
 // ─────────────────────────────────────────────────────────────
 // VARIABLES GLOBALES
 // ─────────────────────────────────────────────────────────────
-
 let dashboardData = {
     usuario: null,
     proyectos: [],
@@ -28,8 +27,14 @@ let dashboardData = {
 
 const ID_USUARIO = parseInt(sessionStorage.getItem('pron_id_usuario')) || null;
 const NOMBRE_USUARIO = sessionStorage.getItem('pron_nombre') || 'Usuario';
-const ROLE = sessionStorage.getItem('pron_role') || 'campo';
+const ROLE = sessionStorage.getItem('pron_role') || 'Supervisor de Campo';
 const ZONA = sessionStorage.getItem('pron_zona') || 'Zona no especificada';
+
+console.log('[Dashboard Campo] Iniciando...');
+console.log('[Dashboard Campo] ID_USUARIO:', ID_USUARIO);
+console.log('[Dashboard Campo] NOMBRE_USUARIO:', NOMBRE_USUARIO);
+console.log('[Dashboard Campo] ROLE:', ROLE);
+console.log('[Dashboard Campo] API disponible?', typeof API !== 'undefined');
 
 // ─────────────────────────────────────────────────────────────
 // INICIALIZACIÓN

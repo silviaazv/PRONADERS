@@ -110,7 +110,6 @@ router.get('/:id', async (req, res) => {
 /**
  * POST /api/reportes
  * Crea un nuevo reporte
- * Body: { id_proyecto, id_usuario, descripcion_reporte, avance_fisico, avance_financiero, observaciones, incidencias }
  */
 router.post('/', async (req, res) => {
     try {
@@ -215,5 +214,120 @@ router.patch('/:id/aprobar', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+/**
+ * PATCH /api/reportes/:id/rechazar
+ * Rechaza un reporte de avance
+ * Body: { id_usuario, motivo }
+ */
+router.patch('/:id/rechazar', async (req, res) => {
+    try {
+        const { id_usuario, motivo } = req.body;
+        const id_reporte = parseInt(req.params.id);
+
+        if (!id_usuario) return res.status(400).json({ error: 'Usuario es obligatorio' });
+        if (!motivo || motivo.trim().length === 0) {
+            return res.status(400).json({ error: 'El motivo del rechazo es obligatorio' });
+        }
+
+        const reporte = await db.queryOne(
+            'SELECT * FROM tbl_reportes WHERE id_reporte = ?',
+            [id_reporte]
+        );
+        if (!reporte) return res.status(404).json({ error: 'Reporte no encontrado' });
+        if (reporte.estado_reporte !== 0) {
+            return res.status(400).json({
+                error: `El reporte ya está ${reporte.estado_reporte === 1 ? 'aprobado' : 'en otro estado'}`
+            });
+        }
+
+        const fechaActual = new Date().toISOString();
+
+        await db.execute(`
+            UPDATE tbl_reportes 
+            SET estado_reporte = 2, 
+                fecha_revision_reporte = ?,
+                motivo_rechazo = ?
+            WHERE id_reporte = ?
+        `, [fechaActual, motivo, id_reporte]);
+
+        // Registrar en bitácora
+        await registrarBitacora({
+            id_usuario: parseInt(id_usuario),
+            tipo_accion: 'RECHAZO',
+            tipo_objeto: 'REPORTE',
+            id_objeto: id_reporte,
+            campo_modificado: 'estado_reporte',
+            valor_antiguo: '0 (Pendiente)',
+            valor_nuevo: `2 (Rechazado) - Motivo: ${motivo}`
+        });
+
+        const reporteActualizado = await db.queryOne(
+            'SELECT * FROM tbl_reportes WHERE id_reporte = ?',
+            [id_reporte]
+        );
+
+        res.json({
+            success: true,
+            message: 'Reporte rechazado',
+            reporte: reporteActualizado
+        });
+    } catch (error) {
+        console.error('Error rechazando reporte:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * DELETE /api/reportes/:id
+ * Elimina un reporte (solo si está pendiente)
+ * Query params: id_usuario
+ */
+router.delete('/:id', async (req, res) => {
+    try {
+        const id_reporte = parseInt(req.params.id);
+        const { id_usuario } = req.query;
+
+        const reporte = await db.queryOne(
+            'SELECT * FROM tbl_reportes WHERE id_reporte = ?',
+            [id_reporte]
+        );
+        if (!reporte) return res.status(404).json({ error: 'Reporte no encontrado' });
+        if (reporte.estado_reporte !== 0) {
+            return res.status(400).json({
+                error: `Solo se pueden eliminar reportes pendientes. Estado actual: ${reporte.estado_reporte === 1 ? 'Aprobado' : 'Otro'}`
+            });
+        }
+
+        // Eliminar archivos asociados primero
+        await db.execute(
+            'DELETE FROM tbl_archivos WHERE id_reporte = ?',
+            [id_reporte]
+        );
+
+        await db.execute(
+            'DELETE FROM tbl_reportes WHERE id_reporte = ?',
+            [id_reporte]
+        );
+
+        //REGISTRAR EN BITÁCORA
+        await registrarBitacora({
+            id_usuario: parseInt(id_usuario) || 1,
+            tipo_accion: 'DELETE',
+            tipo_objeto: 'REPORTE',
+            id_objeto: id_reporte,
+            valor_nuevo: `Reporte eliminado: ${reporte.descripcion_reporte || 'Sin descripción'}`
+        });
+
+        res.json({
+            success: true,
+            message: 'Reporte eliminado'
+        });
+    } catch (error) {
+        console.error('Error eliminando reporte:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 
 module.exports = router;

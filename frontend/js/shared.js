@@ -17,9 +17,9 @@
     const pagina = window.location.pathname.split('/').pop();
 
     function rolPorDefecto() {
-        if (pagina.startsWith('dashboard-admin')) return 'admin_oficina';
-        if (pagina.startsWith('dashboard-logistica')) return 'logistica';
-        return 'campo';
+        if (pagina.startsWith('dashboard-admin')) return 'Administrador de Oficina';
+        if (pagina.startsWith('dashboard-logistica')) return 'Equipo de Logistica';
+        return 'Supervisor de Campo';
     }
 
     const role = sessionStorage.getItem('pron_role') || rolPorDefecto();
@@ -665,7 +665,7 @@
     window._notifsCargadas = notificacionesCargadas;
 
     /* ──────────────────────────────────────────────
-       7. FUNCIONES DE NOTIFICACIONES (DENTRO DE LA IIFE)
+       7. FUNCIONES DE NOTIFICACIONES 
        ────────────────────────────────────────────── */
 
     function _renderNotifPanel() {
@@ -831,7 +831,7 @@
         await cargarNotificaciones();
     });
 
-    // Exponer funciones dentro de la IIFE al window
+    // Exponer funciones al window
     window.toggleNotificaciones = toggleNotificaciones;
     window.abrirNotificacion = abrirNotificacion;
     window.marcarNotifsLeidas = marcarNotifsLeidas;
@@ -841,12 +841,12 @@
     window._cargarNotificaciones = cargarNotificaciones;
 
     /* ──────────────────────────────────────────────
-       8. CIERRE DE LA IIFE
+       8. CIERRE 
        ────────────────────────────────────────────── */
-})();  // <-- ¡CIERRE CORRECTO DE LA IIFE!
+})();  
 
 /* ============================================================
-   FUNCIONES GLOBALES (FUERA DE LA IIFE)
+   FUNCIONES GLOBALES
    ============================================================ */
 
 /**

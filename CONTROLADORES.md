@@ -7,7 +7,7 @@ prototipo, su responsabilidad y sus funciones principales.
 
 | Controlador | Responsabilidad | Funciones principales |
 |---|---|---|
-| `shared.js` | Se carga en **todas** las páginas antes del controlador propio de cada módulo. Inyecta el sidebar y el topbar, construye la navegación según el rol en sesión (`admin_oficina`, `campo`, `empleado`, `logistica`), implementa el panel de **notificaciones** del topbar y expone las utilidades de **validación de formularios** (`FormUtils`). | `toggleNotificaciones()`, `abrirNotificacion()`, `marcarNotifsLeidas()`, `logout()`, `FormUtils.validar()`, `FormUtils.marcarInvalido()`, `FormUtils.limpiarInvalido()`, `FormUtils.limpiarErrores()`, `FormUtils.fechasValidas()`, `FormUtils.emailValido()` |
+| `shared.js` | Se carga en **todas** las páginas antes del controlador propio de cada módulo. Inyecta el sidebar y el topbar, construye la navegación según el rol en sesión (`admin_oficina`, `campo`, `logistica`), implementa el panel de **notificaciones** del topbar y expone las utilidades de **validación de formularios** (`FormUtils`). | `toggleNotificaciones()`, `abrirNotificacion()`, `marcarNotifsLeidas()`, `logout()`, `FormUtils.validar()`, `FormUtils.marcarInvalido()`, `FormUtils.limpiarInvalido()`, `FormUtils.limpiarErrores()`, `FormUtils.fechasValidas()`, `FormUtils.emailValido()` |
 
 ## Controladores por módulo
 

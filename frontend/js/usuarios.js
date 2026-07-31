@@ -126,7 +126,7 @@ function actualizarStats(usuarios){
   const total = usuarios.length;
   const activos = usuarios.filter(u=>u.estado_usuario===1).length;
   const inactivos = total - activos;
-  const adminRolId = _rolesCache.find(r=>r.nombre_rol==='admin_oficina')?.id_rol;
+  const adminRolId = _rolesCache.find(r=>r.nombre_rol==='Administrador de Oficina')?.id_rol;
   const admins = usuarios.filter(u=>u.id_rol===adminRolId).length;
   document.getElementById('stat-total').textContent = total;
   document.getElementById('stat-activos').textContent = activos;

@@ -1,932 +1,255 @@
-backend solicitudes.js
-const db = require('../db');
-const genericCrud = require('./genericCrud');
-
-const router = genericCrud({
-    table: 'tbl_solicitudes',
-    pk: 'id_solicitud',
-    columns: [
-        'id_solicitud',
-        'id_proyecto',
-        'id_usuario',
-        'estado_solicitud',
-        'fecha_solicitud',
-        'justificacion',
-        'fecha_revision_solicitud',
-        'motivo_rechazo',
-        'id_equipo_log',
-    ],
-});
-
-// ======================================================
-// GET /api/solicitudes/:id/filas
-// ======================================================
-
-router.get('/:id/filas', async (req, res) => {
-
-    try {
-
-        const filas = await db.queryAll(
-
-            `
-            SELECT *
-            FROM tbl_fila_solicitud
-            WHERE id_solicitud = ?
-            `,
-
-            [req.params.id]
-
-        );
-
-        res.json(filas);
-
-    }
-
-    catch (err) {
-
-        res.status(500).json({
-            error: err.message
-        });
-
-    }
-
-});
-
-// ======================================================
-// PATCH /api/solicitudes/:id/aprobar
-// ======================================================
-
-router.patch('/:id/aprobar', async (req, res) => {
-
-    try {
-
-        const resultado = await db.execute(
-
-            `
-            UPDATE tbl_solicitudes
-            SET
-                estado_solicitud = 'APROBADA',
-                fecha_revision_solicitud = ?
-            WHERE id_solicitud = ?
-            `,
-
-            [
-                new Date().toISOString(),
-                req.params.id
-            ]
-
-        );
-
-        if (resultado.changes === 0) {
-
-            return res.status(404).json({
-                error: 'Solicitud no encontrada'
-            });
-
-        }
-
-        const solicitud = await db.queryOne(
-
-            `
-            SELECT *
-            FROM tbl_solicitudes
-            WHERE id_solicitud = ?
-            `,
-
-            [req.params.id]
-
-        );
-
-        res.json(solicitud);
-
-    }
-
-    catch (err) {
-
-        res.status(400).json({
-            error: err.message
-        });
-
-    }
-
-});
-
-/**
- * GET /api/solicitudes/resumen
- * Obtiene un resumen de solicitudes por estado
- */
-router.get('/resumen', async (req, res) => {
-    try {
-        const resumen = await db.queryAll(`
-            SELECT estado_solicitud, COUNT(*) as total
-            FROM tbl_solicitudes
-            GROUP BY estado_solicitud
-        `);
-        res.json(resumen);
-    } catch (error) {
-        console.error('Error obteniendo resumen:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// ======================================================
-// PATCH /api/solicitudes/:id/rechazar
-// ======================================================
-
-router.patch('/:id/rechazar', async (req, res) => {
-
-    try {
-
-        const resultado = await db.execute(
-
-            `
-            UPDATE tbl_solicitudes
-            SET
-                estado_solicitud = 'RECHAZADA',
-                fecha_revision_solicitud = ?,
-                motivo_rechazo = ?
-            WHERE id_solicitud = ?
-            `,
-
-            [
-                new Date().toISOString(),
-                req.body.motivo_rechazo || null,
-                req.params.id
-            ]
-
-        );
-
-        if (resultado.changes === 0) {
-
-            return res.status(404).json({
-                error: 'Solicitud no encontrada'
-            });
-
-        }
-
-        const solicitud = await db.queryOne(
-
-            `
-            SELECT *
-            FROM tbl_solicitudes
-            WHERE id_solicitud = ?
-            `,
-
-            [req.params.id]
-
-        );
-
-        res.json(solicitud);
-
-    }
-
-    catch (err) {
-
-        res.status(400).json({
-            error: err.message
-        });
-
-    }
-
-});
-
-// ======================================================
-// PATCH /api/solicitudes/:id/despachar
-// ======================================================
-
-router.patch('/:id/despachar', async (req, res) => {
-
-    try {
-
-        const resultado = await db.execute(
-
-            `
-            UPDATE tbl_solicitudes
-            SET
-                estado_solicitud = 'EN DESPACHO',
-                id_equipo_log = ?
-            WHERE id_solicitud = ?
-            `,
-
-            [
-                req.body.id_equipo_log || null,
-                req.params.id
-            ]
-
-        );
-
-        if (resultado.changes === 0) {
-
-            return res.status(404).json({
-                error: 'Solicitud no encontrada'
-            });
-
-        }
-
-        const solicitud = await db.queryOne(
-
-            `
-            SELECT *
-            FROM tbl_solicitudes
-            WHERE id_solicitud = ?
-            `,
-
-            [req.params.id]
-
-        );
-
-        res.json(solicitud);
-
-    }
-
-    catch (err) {
-
-        res.status(400).json({
-            error: err.message
-        });
-
-    }
-
-});
-
-module.exports = router;
-
-frontend solicitudes.js
-// ============================================================
-// solicitudes.js - ROUTER DE SOLICITUDES
-// ============================================================
-
-const express = require('express');
-const router = express.Router();
-const db = require('../db');
-
-// ─────────────────────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────────────────────
-
-async function generarCodigoSolicitud() {
-    const año = new Date().getFullYear();
-    const result = await db.queryOne(
-        "SELECT COUNT(*) as total FROM tbl_solicitudes WHERE strftime('%Y', fecha_solicitud) = ?",
-        [año.toString()]
-    );
-    const count = result ? result.total : 0;
-    const num = String(count + 1).padStart(3, '0');
-    return `SOL-${año}-${num}`;
-}
-
-async function obtenerNombreUsuario(id_usuario) {
-    const user = await db.queryOne(
-        'SELECT nombre_usuario FROM tbl_usuarios WHERE id_usuario = ?',
-        [id_usuario]
-    );
-    return user ? user.nombre_usuario : null;
-}
-
-async function obtenerNombreProyecto(id_proyecto) {
-    const proy = await db.queryOne(
-        'SELECT nombre_proyecto FROM tbl_proyectos WHERE id_proyecto = ?',
-        [id_proyecto]
-    );
-    return proy ? proy.nombre_proyecto : null;
-}
-
-async function obtenerNombreEquipo(id_equipo_log) {
-    if (!id_equipo_log) return null;
-    const eq = await db.queryOne(
-        'SELECT nombre_equipo_log FROM tbl_equipos WHERE id_equipo_log = ?',
-        [id_equipo_log]
-    );
-    return eq ? eq.nombre_equipo_log : null;
-}
-
-async function registrarBitacora(id_usuario, tipo_accion, tipo_objeto, id_objeto, campo_modificado, valor_antiguo, valor_nuevo) {
-    await db.execute(`
-        INSERT INTO tbl_bitacora 
-        (id_usuario, tipo_accion, tipo_objeto, id_objeto, fecha_accion, campo_modificado, valor_antiguo, valor_nuevo)
-        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?)
-    `, [id_usuario, tipo_accion, tipo_objeto, id_objeto, campo_modificado, valor_antiguo, valor_nuevo]);
-}
-
-// ─────────────────────────────────────────────────────────────
-// ENDPOINTS
-// ─────────────────────────────────────────────────────────────
-
-/**
- * GET /api/solicitudes
- * Lista todas las solicitudes con filtros opcionales
- * Query params: estado, id_proyecto, id_usuario, id_equipo_log
- */
-router.get('/', async (req, res) => {
-    try {
-        const { estado, id_proyecto, id_usuario, id_equipo_log } = req.query;
-        let query = `
-            SELECT s.*, 
-                   p.nombre_proyecto as proyecto_nombre,
-                   u.nombre_usuario as solicitante_nombre,
-                   e.nombre_equipo_log as equipo_nombre
-            FROM tbl_solicitudes s
-            LEFT JOIN tbl_proyectos p ON s.id_proyecto = p.id_proyecto
-            LEFT JOIN tbl_usuarios u ON s.id_usuario = u.id_usuario
-            LEFT JOIN tbl_equipos e ON s.id_equipo_log = e.id_equipo_log
-            WHERE 1=1
-        `;
-        const params = [];
-        
-        if (estado) {
-            query += ' AND s.estado_solicitud = ?';
-            params.push(estado.toUpperCase());
-        }
-        if (id_proyecto) {
-            query += ' AND s.id_proyecto = ?';
-            params.push(parseInt(id_proyecto));
-        }
-        if (id_usuario) {
-            query += ' AND s.id_usuario = ?';
-            params.push(parseInt(id_usuario));
-        }
-        if (id_equipo_log) {
-            query += ' AND s.id_equipo_log = ?';
-            params.push(parseInt(id_equipo_log));
-        }
-        
-        query += ' ORDER BY s.fecha_solicitud DESC';
-        
-        const solicitudes = await db.queryAll(query, params);
-        
-        // Obtener filas para cada solicitud
-        for (const sol of solicitudes) {
-            const filas = await db.queryAll(
-                'SELECT * FROM tbl_fila_solicitud WHERE id_solicitud = ?',
-                [sol.id_solicitud]
-            );
-            sol.items = filas.map(f => ({
-                tipo: f.tipo_recurso,
-                desc: f.descripcion_recurso,
-                cantidad: f.cantidad_recurso,
-                monto: 0
-            }));
-            
-            // Obtener documentos
-            const docs = await db.queryAll(
-                'SELECT * FROM tbl_archivos WHERE id_solicitud = ?',
-                [sol.id_solicitud]
-            );
-            sol.documentos = docs.map(d => d.nombre_archivo);
-        }
-        
-        res.json(solicitudes);
-    } catch (error) {
-        console.error('Error listando solicitudes:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-/**
- * GET /api/solicitudes/:id
- * Obtiene una solicitud por ID
- */
-router.get('/:id', async (req, res) => {
-    try {
-        const sol = await db.queryOne(`
-            SELECT s.*, 
-                   p.nombre_proyecto as proyecto_nombre,
-                   u.nombre_usuario as solicitante_nombre,
-                   e.nombre_equipo_log as equipo_nombre
-            FROM tbl_solicitudes s
-            LEFT JOIN tbl_proyectos p ON s.id_proyecto = p.id_proyecto
-            LEFT JOIN tbl_usuarios u ON s.id_usuario = u.id_usuario
-            LEFT JOIN tbl_equipos e ON s.id_equipo_log = e.id_equipo_log
-            WHERE s.id_solicitud = ?
-        `, [parseInt(req.params.id)]);
-        
-        if (!sol) {
-            return res.status(404).json({ error: 'Solicitud no encontrada' });
-        }
-        
-        // Filas
-        const filas = await db.queryAll(
-            'SELECT * FROM tbl_fila_solicitud WHERE id_solicitud = ?',
-            [parseInt(req.params.id)]
-        );
-        sol.items = filas.map(f => ({
-            tipo: f.tipo_recurso,
-            desc: f.descripcion_recurso,
-            cantidad: f.cantidad_recurso
-        }));
-        
-        // Documentos
-        const docs = await db.queryAll(
-            'SELECT * FROM tbl_archivos WHERE id_solicitud = ?',
-            [parseInt(req.params.id)]
-        );
-        sol.documentos = docs;
-        
-        // Bitácora
-        const bitacora = await db.queryAll(`
-            SELECT b.*, u.nombre_usuario as usuario_nombre
-            FROM tbl_bitacora b
-            LEFT JOIN tbl_usuarios u ON b.id_usuario = u.id_usuario
-            WHERE b.tipo_objeto = 'SOLICITUD' AND b.id_objeto = ?
-            ORDER BY b.fecha_accion ASC
-        `, [parseInt(req.params.id)]);
-        sol.timeline = bitacora;
-        
-        res.json(sol);
-    } catch (error) {
-        console.error('Error obteniendo solicitud:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-/**
- * POST /api/solicitudes
- * Crea una nueva solicitud
- * Body: { id_proyecto, id_usuario, justificacion, items: [{tipo, desc, cantidad}] }
- */
-router.post('/', async (req, res) => {
-    try {
-        const { id_proyecto, id_usuario, justificacion, items } = req.body;
-        
-        // Validaciones
-        if (!id_proyecto) return res.status(400).json({ error: 'El proyecto es obligatorio' });
-        if (!id_usuario) return res.status(400).json({ error: 'El solicitante es obligatorio' });
-        if (!justificacion || justificacion.trim().length === 0) {
-            return res.status(400).json({ error: 'La justificación es obligatoria' });
-        }
-        if (!items || items.length === 0) {
-            return res.status(400).json({ error: 'Debe incluir al menos un recurso' });
-        }
-        
-        // Validar cada ítem
-        for (const item of items) {
-            if (!item.tipo || !item.desc || !item.cantidad) {
-                return res.status(400).json({ 
-                    error: 'Cada recurso debe tener tipo, descripción y cantidad' 
-                });
-            }
-            const tipoUpper = item.tipo.toUpperCase();
-            if (!['MATERIAL', 'EQUIPO', 'FINANCIERO'].includes(tipoUpper)) {
-                return res.status(400).json({ 
-                    error: `Tipo de recurso inválido: ${item.tipo}. Debe ser MATERIAL, EQUIPO o FINANCIERO` 
-                });
-            }
-            if (parseInt(item.cantidad) <= 0) {
-                return res.status(400).json({ 
-                    error: `La cantidad debe ser mayor a 0: ${item.cantidad}` 
-                });
-            }
-        }
-        
-        const fechaActual = new Date().toISOString();
-        
-        // Insertar solicitud
-        const result = await db.execute(`
-            INSERT INTO tbl_solicitudes 
-            (id_proyecto, id_usuario, estado_solicitud, fecha_solicitud, justificacion)
-            VALUES (?, ?, 'PENDIENTE', ?, ?)
-        `, [parseInt(id_proyecto), parseInt(id_usuario), fechaActual, justificacion]);
-        
-        const id_solicitud = result.lastInsertRowid;
-        
-        // Insertar filas/ítems
-        for (const item of items) {
-            await db.execute(`
-                INSERT INTO tbl_fila_solicitud 
-                (id_solicitud, tipo_recurso, descripcion_recurso, cantidad_recurso)
-                VALUES (?, ?, ?, ?)
-            `, [
-                id_solicitud, 
-                item.tipo.toUpperCase(), 
-                item.desc, 
-                parseInt(item.cantidad)
-            ]);
-        }
-        
-        // Registrar en bitácora
-        const nombreProyecto = await obtenerNombreProyecto(id_proyecto);
-        await registrarBitacora(
-            parseInt(id_usuario), 
-            'EMISION', 
-            'SOLICITUD', 
-            id_solicitud, 
-            null, 
-            null, 
-            `Solicitud creada para proyecto ${nombreProyecto || id_proyecto}`
-        );
-        
-        // Obtener la solicitud creada
-        const nuevaSol = await db.queryOne(
-            'SELECT * FROM tbl_solicitudes WHERE id_solicitud = ?',
-            [id_solicitud]
-        );
-        
-        // Generar código para respuesta
-        const codigo = `SOL-${new Date().getFullYear()}-${String(id_solicitud).padStart(3, '0')}`;
-        
-        res.status(201).json({ 
-            success: true, 
-            message: `Solicitud ${codigo} creada exitosamente`,
-            solicitud: nuevaSol 
-        });
-    } catch (error) {
-        console.error('Error creando solicitud:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-/**
- * PATCH /api/solicitudes/:id/aprobar
- * Aprueba una solicitud
- * Body: { id_usuario, comentario, id_equipo_log }
- */
-router.patch('/:id/aprobar', async (req, res) => {
-    try {
-        const { id_usuario, comentario, id_equipo_log } = req.body;
-        const id_solicitud = parseInt(req.params.id);
-        
-        if (!id_usuario) return res.status(400).json({ error: 'Usuario es obligatorio' });
-        if (!comentario || comentario.trim().length === 0) {
-            return res.status(400).json({ error: 'El comentario de aprobación es obligatorio' });
-        }
-        if (!id_equipo_log) return res.status(400).json({ error: 'Debe seleccionar un equipo logístico' });
-        
-        // Verificar que la solicitud existe y está pendiente
-        const sol = await db.queryOne(
-            'SELECT * FROM tbl_solicitudes WHERE id_solicitud = ?',
-            [id_solicitud]
-        );
-        if (!sol) return res.status(404).json({ error: 'Solicitud no encontrada' });
-        if (sol.estado_solicitud !== 'PENDIENTE') {
-            return res.status(400).json({ 
-                error: `La solicitud no está pendiente. Estado actual: ${sol.estado_solicitud}` 
-            });
-        }
-        
-        const fechaActual = new Date().toISOString();
-        const estadoAnterior = sol.estado_solicitud;
-        
-        // Actualizar solicitud
-        await db.execute(`
-            UPDATE tbl_solicitudes 
-            SET estado_solicitud = 'APROBADA', 
-                id_equipo_log = ?,
-                fecha_revision_solicitud = ?
-            WHERE id_solicitud = ?
-        `, [parseInt(id_equipo_log), fechaActual, id_solicitud]);
-        
-        // Registrar en bitácora
-        await registrarBitacora(
-            parseInt(id_usuario), 
-            'APROBACION', 
-            'SOLICITUD', 
-            id_solicitud, 
-            'estado_solicitud', 
-            estadoAnterior, 
-            `APROBADA - Comentario: ${comentario}`
-        );
-        
-        // Obtener la solicitud actualizada
-        const solActualizada = await db.queryOne(
-            'SELECT * FROM tbl_solicitudes WHERE id_solicitud = ?',
-            [id_solicitud]
-        );
-        
-        res.json({ 
-            success: true, 
-            message: `Solicitud aprobada`,
-            solicitud: solActualizada 
-        });
-    } catch (error) {
-        console.error('Error aprobando solicitud:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-/**
- * PATCH /api/solicitudes/:id/rechazar
- * Rechaza una solicitud
- * Body: { id_usuario, motivo }
- */
-router.patch('/:id/rechazar', async (req, res) => {
-    try {
-        const { id_usuario, motivo } = req.body;
-        const id_solicitud = parseInt(req.params.id);
-        
-        if (!id_usuario) return res.status(400).json({ error: 'Usuario es obligatorio' });
-        if (!motivo || motivo.trim().length === 0) {
-            return res.status(400).json({ error: 'El motivo del rechazo es obligatorio' });
-        }
-        
-        const sol = await db.queryOne(
-            'SELECT * FROM tbl_solicitudes WHERE id_solicitud = ?',
-            [id_solicitud]
-        );
-        if (!sol) return res.status(404).json({ error: 'Solicitud no encontrada' });
-        if (sol.estado_solicitud !== 'PENDIENTE') {
-            return res.status(400).json({ 
-                error: `La solicitud no está pendiente. Estado actual: ${sol.estado_solicitud}` 
-            });
-        }
-        
-        const fechaActual = new Date().toISOString();
-        const estadoAnterior = sol.estado_solicitud;
-        
-        await db.execute(`
-            UPDATE tbl_solicitudes 
-            SET estado_solicitud = 'RECHAZADA', 
-                fecha_revision_solicitud = ?,
-                motivo_rechazo = ?
-            WHERE id_solicitud = ?
-        `, [fechaActual, motivo, id_solicitud]);
-        
-        await registrarBitacora(
-            parseInt(id_usuario), 
-            'RECHAZO', 
-            'SOLICITUD', 
-            id_solicitud, 
-            'estado_solicitud', 
-            estadoAnterior, 
-            `RECHAZADA - Motivo: ${motivo}`
-        );
-        
-        const solActualizada = await db.queryOne(
-            'SELECT * FROM tbl_solicitudes WHERE id_solicitud = ?',
-            [id_solicitud]
-        );
-        
-        res.json({ 
-            success: true, 
-            message: `Solicitud rechazada`,
-            solicitud: solActualizada 
-        });
-    } catch (error) {
-        console.error('Error rechazando solicitud:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-/**
- * PATCH /api/solicitudes/:id/despachar
- * Registra el despacho de una solicitud
- * Body: { id_usuario, fecha_despacho, responsable_entrega, observaciones }
- */
-router.patch('/:id/despachar', async (req, res) => {
-    try {
-        const { id_usuario, fecha_despacho, responsable_entrega, observaciones } = req.body;
-        const id_solicitud = parseInt(req.params.id);
-        
-        if (!id_usuario) return res.status(400).json({ error: 'Usuario es obligatorio' });
-        if (!fecha_despacho) return res.status(400).json({ error: 'La fecha de despacho es obligatoria' });
-        
-        const sol = await db.queryOne(
-            'SELECT * FROM tbl_solicitudes WHERE id_solicitud = ?',
-            [id_solicitud]
-        );
-        if (!sol) return res.status(404).json({ error: 'Solicitud no encontrada' });
-        if (sol.estado_solicitud !== 'APROBADA') {
-            return res.status(400).json({ 
-                error: `La solicitud debe estar aprobada. Estado actual: ${sol.estado_solicitud}` 
-            });
-        }
-        
-        const estadoAnterior = sol.estado_solicitud;
-        
-        // Actualizar a EN DESPACHO
-        await db.execute(`
-            UPDATE tbl_solicitudes 
-            SET estado_solicitud = 'EN DESPACHO'
-            WHERE id_solicitud = ?
-        `, [id_solicitud]);
-        
-        await registrarBitacora(
-            parseInt(id_usuario), 
-            'REVISION', 
-            'SOLICITUD', 
-            id_solicitud, 
-            'estado_solicitud', 
-            estadoAnterior, 
-            `EN DESPACHO - Responsable: ${responsable_entrega || 'N/A'} - ${observaciones || ''}`
-        );
-        
-        const solActualizada = await db.queryOne(
-            'SELECT * FROM tbl_solicitudes WHERE id_solicitud = ?',
-            [id_solicitud]
-        );
-        
-        res.json({ 
-            success: true, 
-            message: `Despacho registrado para solicitud`,
-            solicitud: solActualizada 
-        });
-    } catch (error) {
-        console.error('Error registrando despacho:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-/**
- * PATCH /api/solicitudes/:id/entregar
- * Marca una solicitud como entregada
- * Body: { id_usuario }
- */
-router.patch('/:id/entregar', async (req, res) => {
-    try {
-        const { id_usuario } = req.body;
-        const id_solicitud = parseInt(req.params.id);
-        
-        if (!id_usuario) return res.status(400).json({ error: 'Usuario es obligatorio' });
-        
-        const sol = await db.queryOne(
-            'SELECT * FROM tbl_solicitudes WHERE id_solicitud = ?',
-            [id_solicitud]
-        );
-        if (!sol) return res.status(404).json({ error: 'Solicitud no encontrada' });
-        if (sol.estado_solicitud !== 'EN DESPACHO') {
-            return res.status(400).json({ 
-                error: `La solicitud debe estar en despacho. Estado actual: ${sol.estado_solicitud}` 
-            });
-        }
-        
-        const estadoAnterior = sol.estado_solicitud;
-        
-        await db.execute(`
-            UPDATE tbl_solicitudes 
-            SET estado_solicitud = 'ENTREGADA'
-            WHERE id_solicitud = ?
-        `, [id_solicitud]);
-        
-        await registrarBitacora(
-            parseInt(id_usuario), 
-            'REVISION', 
-            'SOLICITUD', 
-            id_solicitud, 
-            'estado_solicitud', 
-            estadoAnterior, 
-            'ENTREGADA - Recursos entregados al solicitante'
-        );
-        
-        const solActualizada = await db.queryOne(
-            'SELECT * FROM tbl_solicitudes WHERE id_solicitud = ?',
-            [id_solicitud]
-        );
-        
-        res.json({ 
-            success: true, 
-            message: `Solicitud marcada como entregada`,
-            solicitud: solActualizada 
-        });
-    } catch (error) {
-        console.error('Error marcando entrega:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-/**
- * PATCH /api/solicitudes/:id/confirmar-recepcion
- * Confirma la recepción de una solicitud
- * Body: { id_usuario, observaciones }
- */
-router.patch('/:id/confirmar-recepcion', async (req, res) => {
-    try {
-        const { id_usuario, observaciones } = req.body;
-        const id_solicitud = parseInt(req.params.id);
-        
-        if (!id_usuario) return res.status(400).json({ error: 'Usuario es obligatorio' });
-        
-        const sol = await db.queryOne(
-            'SELECT * FROM tbl_solicitudes WHERE id_solicitud = ?',
-            [id_solicitud]
-        );
-        if (!sol) return res.status(404).json({ error: 'Solicitud no encontrada' });
-        if (sol.estado_solicitud !== 'ENTREGADA') {
-            return res.status(400).json({ 
-                error: `La solicitud debe estar entregada. Estado actual: ${sol.estado_solicitud}` 
-            });
-        }
-        
-        const estadoAnterior = sol.estado_solicitud;
-        
-        await db.execute(`
-            UPDATE tbl_solicitudes 
-            SET estado_solicitud = 'CONFIRMADA'
-            WHERE id_solicitud = ?
-        `, [id_solicitud]);
-        
-        await registrarBitacora(
-            parseInt(id_usuario), 
-            'REVISION', 
-            'SOLICITUD', 
-            id_solicitud, 
-            'estado_solicitud', 
-            estadoAnterior, 
-            `CONFIRMADA - Recepción confirmada. ${observaciones || ''}`
-        );
-        
-        const solActualizada = await db.queryOne(
-            'SELECT * FROM tbl_solicitudes WHERE id_solicitud = ?',
-            [id_solicitud]
-        );
-        
-        res.json({ 
-            success: true, 
-            message: `Recepción confirmada para solicitud`,
-            solicitud: solActualizada 
-        });
-    } catch (error) {
-        console.error('Error confirmando recepción:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-/**
- * GET /api/solicitudes/:id/filas
- * Obtiene las filas/ítems de una solicitud
- */
-router.get('/:id/filas', async (req, res) => {
-    try {
-        const filas = await db.queryAll(
-            'SELECT * FROM tbl_fila_solicitud WHERE id_solicitud = ?',
-            [parseInt(req.params.id)]
-        );
-        res.json(filas);
-    } catch (error) {
-        console.error('Error obteniendo filas:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-/**
- * GET /api/solicitudes/estados
- * Obtiene la lista de estados posibles
- */
-router.get('/estados', async (req, res) => {
-    try {
-        const estados = ['PENDIENTE', 'APROBADA', 'RECHAZADA', 'EN DESPACHO', 'ENTREGADA', 'CONFIRMADA', 'CANCELADA'];
-        res.json(estados);
-    } catch (error) {
-        console.error('Error obteniendo estados:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-/**
- * GET /api/solicitudes/resumen
- * Obtiene un resumen de solicitudes por estado
- */
-router.get('/resumen', async (req, res) => {
-    try {
-        const resumen = await db.queryAll(`
-            SELECT estado_solicitud, COUNT(*) as total
-            FROM tbl_solicitudes
-            GROUP BY estado_solicitud
-        `);
-        res.json(resumen);
-    } catch (error) {
-        console.error('Error obteniendo resumen:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-/**
- * DELETE /api/solicitudes/:id
- * Elimina una solicitud (solo si está pendiente)
- */
-router.delete('/:id', async (req, res) => {
-    try {
-        const id_solicitud = parseInt(req.params.id);
-        const sol = await db.queryOne(
-            'SELECT * FROM tbl_solicitudes WHERE id_solicitud = ?',
-            [id_solicitud]
-        );
-        if (!sol) return res.status(404).json({ error: 'Solicitud no encontrada' });
-        if (sol.estado_solicitud !== 'PENDIENTE') {
-            return res.status(400).json({ 
-                error: `Solo se pueden eliminar solicitudes pendientes. Estado actual: ${sol.estado_solicitud}` 
-            });
-        }
-        
-        // Las filas se eliminan en cascada (ON DELETE CASCADE)
-        await db.execute(
-            'DELETE FROM tbl_solicitudes WHERE id_solicitud = ?',
-            [id_solicitud]
-        );
-        
-        await registrarBitacora(
-            null, 
-            'DELETE', 
-            'SOLICITUD', 
-            id_solicitud, 
-            null, 
-            null, 
-            `Solicitud eliminada (estado anterior: ${sol.estado_solicitud})`
-        );
-        
-        res.json({ success: true, message: 'Solicitud eliminada' });
-    } catch (error) {
-        console.error('Error eliminando solicitud:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-module.exports = router;
+-- ============================================================
+-- Adaptación a SQLite del DDL original (Oracle Database 11g)
+-- Archivo original: ddlpronaders.ddl
+--
+-- Cambios realizados respecto al original:
+--   1. Todas las PRIMARY KEY, FOREIGN KEY, UNIQUE y CHECK se
+--      movieron DENTRO del CREATE TABLE, porque SQLite no
+--      soporta ALTER TABLE ... ADD CONSTRAINT.
+--   2. NUMBER          -> INTEGER (ids, banderas) o NUMERIC (montos)
+--      VARCHAR2(n)     -> TEXT
+--      CLOB            -> TEXT
+--      DATE/TIMESTAMP  -> TEXT (formato ISO 8601 'YYYY-MM-DD[ HH:MM:SS]')
+--   3. REGEXP_LIKE(...) no existe en SQLite (es función propia de
+--      Oracle), así que los CHECK de correo, teléfono y extensión
+--      de archivo se reescribieron con LIKE / GLOB, que es lo que
+--      SQLite soporta de forma nativa.
+--   4. Se corrigió una coma sobrante en el CHECK de
+--      tbl_bitacora (chk_bitacora_tipo_accion) que producía un
+--      error de sintaxis incluso en Oracle.
+--   5. Se agregó "PRAGMA foreign_keys = ON;" porque SQLite ignora
+--      las llaves foráneas por defecto si no se activa.
+-- ============================================================
+ 
+PRAGMA foreign_keys = ON;
+ 
+-- ------------------------------------------------------------
+-- Tablas sin dependencias
+-- ------------------------------------------------------------
+ 
+CREATE TABLE tbl_departamentos (
+    id_departamento     INTEGER NOT NULL,
+    nombre_departamento TEXT    NOT NULL,
+    CONSTRAINT tbl_departamentos_pk PRIMARY KEY ( id_departamento )
+);
+ 
+CREATE TABLE tbl_equipos (
+    id_equipo_log     INTEGER NOT NULL,
+    nombre_equipo_log TEXT    NOT NULL,
+    CONSTRAINT tbl_equipos_pk PRIMARY KEY ( id_equipo_log )
+);
+ 
+CREATE TABLE tbl_roles (
+    id_rol     INTEGER NOT NULL,
+    nombre_rol TEXT    NOT NULL,
+    CONSTRAINT tbl_roles_pk PRIMARY KEY ( id_rol )
+);
+ 
+-- ------------------------------------------------------------
+-- Depende de tbl_departamentos
+-- ------------------------------------------------------------
+ 
+CREATE TABLE tbl_municipios (
+    id_municipio     INTEGER NOT NULL,
+    id_departamento  INTEGER NOT NULL,
+    nombre_municipio TEXT    NOT NULL,
+    CONSTRAINT tbl_municipios_pk PRIMARY KEY ( id_municipio ),
+    CONSTRAINT tbl_mun_tbl_dpt_fk FOREIGN KEY ( id_departamento )
+        REFERENCES tbl_departamentos ( id_departamento )
+);
+ 
+-- ------------------------------------------------------------
+-- Depende de tbl_roles
+-- ------------------------------------------------------------
+ 
+CREATE TABLE tbl_usuarios (
+    id_usuario     INTEGER NOT NULL,
+    id_rol         INTEGER NOT NULL,
+    estado_usuario INTEGER NOT NULL,
+    nombre_usuario TEXT    NOT NULL,
+    correo         TEXT    NOT NULL,
+    telefono       TEXT,
+    contrasena     TEXT,
+    fecha_registro TEXT    NOT NULL,
+    CONSTRAINT tbl_usuarios_pk PRIMARY KEY ( id_usuario ),
+    CONSTRAINT tbl_usuarios_correo UNIQUE ( correo ),
+    CONSTRAINT tbl_usuarios_tbl_roles_fk FOREIGN KEY ( id_rol )
+        REFERENCES tbl_roles ( id_rol ),
+    CONSTRAINT chk_usuarios_estado CHECK ( estado_usuario IN ( 0, 1 ) ),
+    -- Original: REGEXP_LIKE(correo, '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+    -- SQLite no tiene REGEXP nativo; validación aproximada con LIKE.
+    CONSTRAINT chk_usuarios_correo CHECK ( correo LIKE '_%@_%.__%' ),
+    -- Original: REGEXP_LIKE(telefono, '^[0-9]{8,15}$')
+    -- Equivalente con GLOB: solo dígitos y longitud entre 8 y 15.
+    CONSTRAINT chk_usuarios_telefono CHECK ( telefono IS NULL
+        OR ( LENGTH(telefono) BETWEEN 8 AND 15
+             AND telefono GLOB '[0-9]*'
+             AND telefono NOT GLOB '*[^0-9]*' ) )
+);
+ 
+-- ------------------------------------------------------------
+-- Depende de tbl_municipios
+-- ------------------------------------------------------------
+ 
+CREATE TABLE tbl_proyectos (
+    id_proyecto           INTEGER NOT NULL,
+    tipo_proyecto         TEXT    NOT NULL,
+    estado_proyecto       TEXT    NOT NULL,
+    id_ubicacion          INTEGER NOT NULL,
+    nombre_proyecto       TEXT    NOT NULL,
+    descripcion_proyecto  TEXT,
+    fecha_inicio          TEXT    NOT NULL,
+    fecha_fin             TEXT,
+    presupuesto_inicial   NUMERIC NOT NULL,
+    presupuesto_ejecutado NUMERIC,
+    CONSTRAINT tbl_proyectos_pk PRIMARY KEY ( id_proyecto ),
+    CONSTRAINT tbl_proyectos_tbl_mun_fk FOREIGN KEY ( id_ubicacion )
+        REFERENCES tbl_municipios ( id_municipio ),
+    CONSTRAINT chk_proyectos_tipo
+        CHECK ( tipo_proyecto IN ( 'AGRICOLA', 'INFRAESTRUCTURA', 'SOCIAL' ) ),
+    CONSTRAINT chk_proyectos_estado
+        CHECK ( estado_proyecto IN ( 'ACTIVO', 'RETRASADO', 'FINALIZADO', 'CANCELADO' ) ),
+    CONSTRAINT chk_proyectos_presup CHECK ( presupuesto_ejecutado >= 0 ),
+    CONSTRAINT chk_proyectos_fechas CHECK ( fecha_fin >= fecha_inicio OR fecha_fin IS NULL )
+);
+ 
+-- ------------------------------------------------------------
+-- Depende de tbl_proyectos y tbl_usuarios
+-- ------------------------------------------------------------
+ 
+CREATE TABLE tbl_proyectos_usuarios (
+    id_usuario  INTEGER NOT NULL,
+    id_proyecto INTEGER NOT NULL,
+    CONSTRAINT tbl_proyectos_usuarios_pk PRIMARY KEY ( id_usuario, id_proyecto ),
+    CONSTRAINT tbl_pry_usr_tbl_pry_fk FOREIGN KEY ( id_proyecto )
+        REFERENCES tbl_proyectos ( id_proyecto ),
+    CONSTRAINT tbl_pry_usr_tbl_usr_fk FOREIGN KEY ( id_usuario )
+        REFERENCES tbl_usuarios ( id_usuario )
+);
+ 
+CREATE TABLE tbl_solicitudes (
+    id_solicitud             INTEGER NOT NULL,
+    id_proyecto              INTEGER NOT NULL,
+    id_usuario                INTEGER NOT NULL,
+    estado_solicitud         TEXT    NOT NULL,
+    fecha_solicitud          TEXT    NOT NULL,
+    justificacion            TEXT,
+    fecha_revision_solicitud TEXT,
+    motivo_rechazo           TEXT,
+    id_equipo_log            INTEGER,
+    CONSTRAINT tbl_solicitudes_pk PRIMARY KEY ( id_solicitud ),
+    CONSTRAINT tbl_sol_tbl_proyectos_fk FOREIGN KEY ( id_proyecto )
+        REFERENCES tbl_proyectos ( id_proyecto ),
+    CONSTRAINT tbl_sol_tbl_usuarios_fk FOREIGN KEY ( id_usuario )
+        REFERENCES tbl_usuarios ( id_usuario ),
+    CONSTRAINT tbl_sol_tbl_equipos_fk FOREIGN KEY ( id_equipo_log )
+        REFERENCES tbl_equipos ( id_equipo_log ),
+    CONSTRAINT chk_solicitudes_estado
+        CHECK ( estado_solicitud IN ( 'PENDIENTE', 'APROBADA', 'RECHAZADA', 'EN DESPACHO', 'ENTREGADA',
+                                      'CONFIRMADA', 'CANCELADA' ) ),
+    CONSTRAINT chk_solicitudes_fechas
+        CHECK ( fecha_revision_solicitud >= fecha_solicitud OR fecha_revision_solicitud IS NULL )
+);
+ 
+CREATE TABLE tbl_fila_solicitud (
+    id_fila             INTEGER NOT NULL,
+    id_solicitud        INTEGER NOT NULL,
+    tipo_recurso        TEXT    NOT NULL,
+    descripcion_recurso TEXT    NOT NULL,
+    cantidad_recurso    INTEGER NOT NULL,
+    CONSTRAINT tbl_fila_solicitud_pk PRIMARY KEY ( id_fila ),
+    CONSTRAINT tbl_fila_sol_tbl_sol_fk FOREIGN KEY ( id_solicitud )
+        REFERENCES tbl_solicitudes ( id_solicitud ),
+    CONSTRAINT chk_fila_cantidad CHECK ( cantidad_recurso > 0 ),
+    CONSTRAINT chk_fila_tipo CHECK ( tipo_recurso IN ( 'MATERIAL', 'EQUIPO', 'FINANCIERO' ) )
+);
+ 
+CREATE TABLE tbl_reportes (
+    id_reporte             INTEGER NOT NULL,
+    id_proyecto            INTEGER NOT NULL,
+    id_usuario             INTEGER NOT NULL,
+    descripcion_reporte    TEXT,
+    fecha_reporte          TEXT    NOT NULL,
+    estado_reporte         INTEGER NOT NULL,
+    fecha_revision_reporte TEXT,
+    CONSTRAINT tbl_reportes_pk PRIMARY KEY ( id_reporte ),
+    CONSTRAINT tbl_reportes_tbl_proyectos_fk FOREIGN KEY ( id_proyecto )
+        REFERENCES tbl_proyectos ( id_proyecto ),
+    CONSTRAINT tbl_reportes_tbl_usuarios_fk FOREIGN KEY ( id_usuario )
+        REFERENCES tbl_usuarios ( id_usuario ),
+    CONSTRAINT chk_reportes_estado CHECK ( estado_reporte IN ( 0, 1 ) ),
+    CONSTRAINT chk_reportes_fechas
+        CHECK ( fecha_revision_reporte >= fecha_reporte OR fecha_revision_reporte IS NULL )
+);
+ 
+-- ------------------------------------------------------------
+-- Depende de tbl_proyectos, tbl_solicitudes, tbl_reportes, tbl_usuarios
+-- ------------------------------------------------------------
+ 
+CREATE TABLE tbl_archivos (
+    id_archivo          INTEGER NOT NULL,
+    id_usuario          INTEGER NOT NULL,
+    id_proyecto         INTEGER,
+    id_solicitud        INTEGER,
+    id_reporte          INTEGER,
+    nombre_archivo      TEXT    NOT NULL,
+    ruta_archivo        TEXT,
+    descripcion_archivo TEXT,
+    tamano_bytes        INTEGER,
+    CONSTRAINT tbl_evidencias_pk PRIMARY KEY ( id_archivo ),
+    CONSTRAINT tbl_archivos_tbl_usrs_fk FOREIGN KEY ( id_usuario )
+        REFERENCES tbl_usuarios ( id_usuario ),
+    CONSTRAINT tbl_archivos_tbl_prys_fk FOREIGN KEY ( id_proyecto )
+        REFERENCES tbl_proyectos ( id_proyecto ),
+    CONSTRAINT tbl_archivos_tbl_sols_fk FOREIGN KEY ( id_solicitud )
+        REFERENCES tbl_solicitudes ( id_solicitud ),
+    CONSTRAINT tbl_archivos_tbl_reps_fk FOREIGN KEY ( id_reporte )
+        REFERENCES tbl_reportes ( id_reporte ),
+    CONSTRAINT chk_archivos_tamano CHECK ( tamano_bytes > 0 ),
+    CONSTRAINT chk_archivos_origen
+        CHECK ( (
+            CASE WHEN id_reporte   IS NOT NULL THEN 1 ELSE 0 END +
+            CASE WHEN id_solicitud IS NOT NULL THEN 1 ELSE 0 END +
+            CASE WHEN id_proyecto  IS NOT NULL THEN 1 ELSE 0 END
+        ) <= 1 ),
+    -- Original: REGEXP_LIKE(nombre_archivo, '\.(pdf|doc|docx|...)$', 'i')
+    -- Reescrito con LIKE, comparando en minúsculas para simular 'i' (case-insensitive)
+    CONSTRAINT chk_archivos_extension
+        CHECK ( LOWER(nombre_archivo) LIKE '%.pdf'  OR LOWER(nombre_archivo) LIKE '%.doc'
+             OR LOWER(nombre_archivo) LIKE '%.docx' OR LOWER(nombre_archivo) LIKE '%.xls'
+             OR LOWER(nombre_archivo) LIKE '%.xlsx' OR LOWER(nombre_archivo) LIKE '%.ppt'
+             OR LOWER(nombre_archivo) LIKE '%.pptx' OR LOWER(nombre_archivo) LIKE '%.jpg'
+             OR LOWER(nombre_archivo) LIKE '%.jpeg' OR LOWER(nombre_archivo) LIKE '%.png'
+             OR LOWER(nombre_archivo) LIKE '%.gif'  OR LOWER(nombre_archivo) LIKE '%.bmp'
+             OR LOWER(nombre_archivo) LIKE '%.txt'  OR LOWER(nombre_archivo) LIKE '%.csv'
+             OR LOWER(nombre_archivo) LIKE '%.zip'  OR LOWER(nombre_archivo) LIKE '%.rar'
+             OR LOWER(nombre_archivo) LIKE '%.7z' )
+);
+ 
+CREATE TABLE tbl_bitacora (
+    id_registro      INTEGER NOT NULL,
+    id_usuario       INTEGER NOT NULL,
+    tipo_accion      TEXT    NOT NULL,
+    tipo_objeto      TEXT,
+    id_objeto        INTEGER,
+    fecha_accion     TEXT    NOT NULL,
+    campo_modificado TEXT,
+    valor_antiguo    TEXT,
+    valor_nuevo      TEXT,
+    CONSTRAINT tbl_bitacora_pk PRIMARY KEY ( id_registro ),
+    CONSTRAINT tbl_bitacora_tbl_usuarios_fk FOREIGN KEY ( id_usuario )
+        REFERENCES tbl_usuarios ( id_usuario ),
+    -- Corregido: se eliminó la coma sobrante después de 'RECHAZO' que
+    -- causaba un error de sintaxis en el archivo original.
+    CONSTRAINT chk_bitacora_tipo_accion
+        CHECK ( ( tipo_accion IN ( 'INSERT', 'UPDATE', 'DELETE', 'REVISION',
+                                    'EMISION', 'APROBACION', 'RECHAZO' )
+                  AND tipo_objeto IS NOT NULL AND id_objeto IS NOT NULL )
+                OR ( tipo_accion IN ( 'LOGIN', 'LOGOUT' )
+                     AND tipo_objeto IS NULL AND id_objeto IS NULL ) ),
+    CONSTRAINT chk_bitacora_tipo_objeto
+        CHECK ( tipo_objeto IS NULL
+                OR tipo_objeto IN ( 'USUARIO', 'PROYECTO', 'SOLICITUD', 'REPORTE', 'ARCHIVO' ) ),
+    CONSTRAINT chk_bitacora_sesion
+        CHECK ( NOT ( tipo_objeto = 'SESION' AND id_objeto IS NOT NULL ) )
+);
