@@ -31,6 +31,58 @@
   </div>
 </div>
 
+<!-- ===== MODAL: DESPACHO ===== -->
+<div class="modal-overlay" id="modal-despacho-logistica">
+    <div class="modal" style="max-width:520px">
+        <div class="modal-header">
+            <div class="modal-title">Registrar <em style="font-style:italic">Despacho</em></div>
+            <button class="close-btn" onclick="cerrarModalDespacho()">
+                <span class="material-symbols-rounded">close</span>
+            </button>
+        </div>
+        <div style="background:var(--cream);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;font-size:12.5px;color:var(--text-light)">
+            Solicitud: <strong id="despacho-solicitud-info"></strong>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Fecha de entrega <span style="color:var(--danger)">*</span></label>
+            <input type="date" class="form-control" id="despacho-fecha">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Responsable de entrega <span style="color:var(--danger)">*</span></label>
+            <input type="text" class="form-control" id="despacho-responsable" placeholder="Nombre del responsable que entrega">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Observaciones del despacho</label>
+            <textarea class="form-control" id="despacho-obs" rows="2" placeholder="Ej: Se entregaron todos los ítems en buen estado..."></textarea>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Remisión firmada <span style="color:var(--danger)">*</span></label>
+            <div class="dropzone" onclick="document.getElementById('file-remision-logistica').click()"
+                 ondragover="event.preventDefault();this.style.borderColor='var(--gold)'"
+                 ondragleave="this.style.borderColor=''"
+                 ondrop="event.preventDefault();this.style.borderColor='';mostrarArchivosLogistica('despacho-remision-files',event.dataTransfer.files)">
+                <span class="material-symbols-rounded" style="font-size:28px;color:var(--muted)">upload_file</span>
+                <div style="font-size:13px;color:var(--muted);margin-top:6px">Adjuntar acta / remisión firmada</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:3px">PDF o imagen · Documento obligatorio</div>
+                <input type="file" id="file-remision-logistica" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="mostrarArchivosLogistica('despacho-remision-files',this.files)">
+            </div>
+            <div id="despacho-remision-files" style="margin-top:8px;display:flex;flex-direction:column;gap:6px"></div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+            <button class="btn btn-outline" onclick="cerrarModalDespacho()">Cancelar</button>
+            <button class="btn btn-info" onclick="confirmarDespachoLogistica()">
+                <span class="material-symbols-rounded">local_shipping</span> Confirmar despacho
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div class="toast" id="toast">
+    <span class="material-symbols-rounded" id="toast-icon" style="font-size:18px">check_circle</span>
+    <span id="toast-msg"></span>
+</div>
+
 <script src="../js/api.js"></script>
 <script src="../js/shared.js"></script>
 <script src="../js/dashboard-logistica.js"></script>

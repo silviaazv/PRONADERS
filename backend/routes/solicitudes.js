@@ -77,8 +77,8 @@ router.get('/', async (req, res) => {
             params.push(parseInt(id_proyecto));
         }
         if (id_usuario) {
-            query += ' AND s.id_usuario = ?';
-            params.push(parseInt(id_usuario));
+            query += ` AND (s.id_usuario = ? OR p.id_supervisor = ?)`;
+            params.push(parseInt(id_usuario), parseInt(id_usuario));
         }
         if (id_equipo_log) {
             query += ' AND s.id_equipo_log = ?';
@@ -127,6 +127,77 @@ router.get('/resumen', async (req, res) => {
     }
 });
 
+// ============================================================
+// PATCH /api/solicitudes/:id/despachar - Registrar despacho
+// ============================================================
+
+router.patch('/:id/despachar', async (req, res) => {
+    try {
+        const { id_usuario, fecha_despacho, responsable_entrega, observaciones } = req.body;
+        const id_solicitud = parseInt(req.params.id);
+
+        console.log('[API] Despachando solicitud:', id_solicitud);
+        console.log('[API] Datos:', { id_usuario, fecha_despacho, responsable_entrega });
+
+        if (!id_usuario) return res.status(400).json({ error: 'Usuario es obligatorio' });
+        if (!fecha_despacho) return res.status(400).json({ error: 'La fecha de despacho es obligatoria' });
+
+        const sol = await db.queryOne(
+            'SELECT * FROM tbl_solicitudes WHERE id_solicitud = ?',
+            [id_solicitud]
+        );
+        if (!sol) return res.status(404).json({ error: 'Solicitud no encontrada' });
+
+        //Solo se puede despachar si está APROBADA
+        if (sol.estado_solicitud !== 'APROBADA') {
+            return res.status(400).json({
+                error: `La solicitud debe estar APROBADA. Estado actual: ${sol.estado_solicitud}`
+            });
+        }
+
+        const estadoAnterior = sol.estado_solicitud;
+
+        //Cambiar a EN DESPACHO
+        await db.execute(`
+            UPDATE tbl_solicitudes 
+            SET estado_solicitud = 'EN DESPACHO'
+            WHERE id_solicitud = ?
+        `, [id_solicitud]);
+
+        console.log('[API] Solicitud actualizada a EN DESPACHO');
+
+        // Registrar en bitácora
+        try {
+            await registrarBitacora({
+                id_usuario: parseInt(id_usuario),
+                tipo_accion: 'REVISION',
+                tipo_objeto: 'SOLICITUD',
+                id_objeto: id_solicitud,
+                campo_modificado: 'estado_solicitud',
+                valor_antiguo: estadoAnterior,
+                valor_nuevo: `EN DESPACHO - Responsable: ${responsable_entrega || 'N/A'} - ${observaciones || ''}`
+            });
+        } catch (e) {
+            console.warn('Error en bitácora:', e.message);
+        }
+
+        const solActualizada = await db.queryOne(
+            'SELECT * FROM tbl_solicitudes WHERE id_solicitud = ?',
+            [id_solicitud]
+        );
+
+        res.json({
+            success: true,
+            message: 'Despacho registrado. Solicitud en tránsito.',
+            solicitud: solActualizada
+        });
+
+    } catch (error) {
+        console.error('Error registrando despacho:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 /**
  * GET /api/solicitudes/:id
  * Obtiene una solicitud por ID
@@ -160,6 +231,28 @@ router.get('/:id', async (req, res) => {
         console.error('Error obteniendo solicitud:', error);
         res.status(500).json({ error: error.message });
     }
+});
+
+// PATCH /api/solicitudes/:id/entregar
+router.patch('/:id/entregar', async (req, res) => {
+  try {
+
+    await db.execute(`
+      UPDATE tbl_solicitudes
+      SET estado_solicitud = 'ENTREGADA'
+      WHERE id_solicitud = ?
+    `, [req.params.id]);
+
+    const solicitud = await db.queryOne(
+      'SELECT * FROM tbl_solicitudes WHERE id_solicitud = ?',
+      [req.params.id]
+    );
+
+    res.json(solicitud);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 /**
@@ -209,7 +302,7 @@ router.post('/', async (req, res) => {
             VALUES (?, ?, 'PENDIENTE', ?, ?)
         `, [parseInt(id_proyecto), parseInt(id_usuario), fechaActual, justificacion]);
 
-        const id_solicitud = result.lastInsertRowid;
+        const id_solicitud = result.lastId || result.lastInsertRowid;
 
         // Insertar filas/ítems
         for (const item of items) {

@@ -28,8 +28,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function cargarDatosIniciales() {
     try {
         const [solicitudes, proyectos, equipos] = await Promise.all([
-            API.solicitudes.listar({ id_usuario: ID_USUARIO }),
-            API.proyectos.listar({ id_usuario: ID_USUARIO }),
+            API.solicitudes.listar(),
+            API.proyectos.listar(),
             API.equipos.listar()
         ]);
 
@@ -62,7 +62,11 @@ async function cargarDatosIniciales() {
 function solicitudesVisibles() {
     const esAdmin = (ROLE === 'admin_oficina' || ROLE === 'Administrador de Oficina' || ROLE === 'admin');
     if (esAdmin) return solicitudesCache;
-    return solicitudesCache.filter(s => s.id_usuario === ID_USUARIO);
+    return solicitudesCache.filter(s => {
+        const proyecto = proyectosCache.find(p => p.id_proyecto === s.id_proyecto);
+        // Si el usuario es supervisor del proyecto, ve la solicitud
+        return proyecto && proyecto.id_supervisor === ID_USUARIO;
+    });
 }
 
 function solicitudesLogistica() {
@@ -280,29 +284,65 @@ function cardSolicitud(s, vistaRol = 'campo') {
         </tr>
     `).join('');
 
-    // ✅ ACCIONES SEGÚN ROL - CORREGIDO
+    // ACCIONES SEGÚN ROL - CORREGIDO
     let acciones = '';
     const esAdmin = (vistaRol === 'admin' || vistaRol === 'admin_oficina' || ROLE === 'admin_oficina' || ROLE === 'Administrador de Oficina');
 
     if (esAdmin && s.estado_solicitud === 'PENDIENTE') {
-        acciones = `
-            <button class="btn btn-danger btn-sm" onclick="abrirModalRechazar(${s.id_solicitud})">
-                <span class="material-symbols-rounded" style="font-size:14px">cancel</span> Rechazar
-            </button>
-            <button class="btn btn-success btn-sm" onclick="abrirModalAprobar(${s.id_solicitud})">
-                <span class="material-symbols-rounded" style="font-size:14px">check_circle</span> Aprobar
-            </button>`;
-    } else if (vistaRol === 'logistica' && s.estado_solicitud === 'APROBADA') {
-        acciones = `
-            <button class="btn btn-info btn-sm" onclick="abrirModalDespacho(${s.id_solicitud})">
-                <span class="material-symbols-rounded" style="font-size:14px">local_shipping</span> Registrar despacho
-            </button>`;
-    } else if (vistaRol === 'campo' && s.estado_solicitud === 'ENTREGADA') {
-        acciones = `
-            <button class="btn btn-success btn-sm" onclick="abrirModalRecepcion(${s.id_solicitud})">
-                <span class="material-symbols-rounded" style="font-size:14px">verified</span> Confirmar recepción
-            </button>`;
-    }
+
+    acciones = `
+        <button class="btn btn-danger btn-sm"
+            onclick="abrirModalRechazar(${s.id_solicitud})">
+            <span class="material-symbols-rounded"
+                style="font-size:14px">cancel</span>
+            Rechazar
+        </button>
+
+        <button class="btn btn-success btn-sm"
+            onclick="abrirModalAprobar(${s.id_solicitud})">
+            <span class="material-symbols-rounded"
+                style="font-size:14px">check_circle</span>
+            Aprobar
+        </button>
+    `;
+
+}
+else if (vistaRol === 'logistica' && s.estado_solicitud === 'APROBADA') {
+
+    acciones = `
+        <button class="btn btn-info btn-sm"
+            onclick="abrirModalDespacho(${s.id_solicitud})">
+            <span class="material-symbols-rounded"
+                style="font-size:14px">local_shipping</span>
+            Registrar despacho
+        </button>
+    `;
+
+}
+else if (vistaRol === 'campo' && s.estado_solicitud === 'EN DESPACHO') {
+
+    acciones = `
+        <button class="btn btn-info btn-sm"
+            onclick="marcarEntregada(${s.id_solicitud})">
+            <span class="material-symbols-rounded"
+                style="font-size:14px">inventory_2</span>
+            Marcar como entregada
+        </button>
+    `;
+
+}
+else if (vistaRol === 'campo' && s.estado_solicitud === 'ENTREGADA') {
+
+    acciones = `
+        <button class="btn btn-success btn-sm"
+            onclick="abrirModalRecepcion(${s.id_solicitud})">
+            <span class="material-symbols-rounded"
+                style="font-size:14px">verified</span>
+            Confirmar recepción
+        </button>
+    `;
+
+}
 
     const motivoRechazo = s.motivo_rechazo ? `
         <div style="background:var(--danger-bg);border-left:3px solid var(--danger);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px">
@@ -438,11 +478,24 @@ async function enviarSolicitudOficial() {
     const id_proyecto = parseInt(document.getElementById('sol-proyecto').value);
     const justificacion = document.getElementById('sol-justificacion').value.trim();
 
+    //Obtener documentos adjuntos
+    const fileChips = document.querySelectorAll('#sol-files .file-chip');
+    const documentos = [];
+    fileChips.forEach(chip => {
+        const nombre = chip.dataset.filename || 'adjunto';
+        documentos.push({
+            nombre: nombre,
+            tipo: nombre.split('.').pop() || 'pdf',
+            ruta: `/uploads/solicitudes/${nombre}` // Ruta temporal
+        });
+    });
+
     const datos = {
         id_proyecto: id_proyecto,
         id_usuario: ID_USUARIO,
         justificacion: justificacion,
-        items: items
+        items: items,
+        documentos: documentos
     };
 
     try {
@@ -602,6 +655,34 @@ async function confirmarDespacho() {
     }
 }
 
+async function marcarEntregada(idSolicitud) {
+
+    if (!confirm('¿Desea marcar esta solicitud como ENTREGADA?')) {
+        return;
+    }
+
+    try {
+
+        const result = await API.solicitudes.entregar(idSolicitud, {
+            id_usuario: ID_USUARIO
+        });
+
+        if (result.success) {
+
+            showToast('Solicitud marcada como entregada', 'success');
+
+            await cargarDatosIniciales();
+            renderVista();
+        }
+
+    } catch (error) {
+
+        showToast(error.message || 'Error al actualizar la solicitud', 'warning');
+
+    }
+
+}
+
 function abrirModalRecepcion(id) {
     _solActiva = id;
     document.getElementById('recep-conformidad').value = 'total';
@@ -729,4 +810,5 @@ window.proponerNecesidad = proponerNecesidad;
 window.mostrarArchivos = mostrarArchivos;
 window.mostrarArchivosSol = mostrarArchivosSol;
 window.handleDropAprob = handleDropAprob;
+window.marcarEntregada = marcarEntregada;
 window.showToast = showToast;

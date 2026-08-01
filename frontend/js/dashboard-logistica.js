@@ -12,6 +12,7 @@ let _usuariosMap = {};
 let _equiposMap = {};
 let _filasPorSolicitud = {}; // id_solicitud -> [ [tipo, descripcion, cantidad], ... ]
 let _equipoSeleccionado = ''; // '' = todos los equipos
+let _solicitudDespacharId = null; // id de la solicitud que se está despachando
 
 function formatearFecha(iso){
   if(!iso) return '—';
@@ -58,13 +59,106 @@ function cardPendiente(s){
         ${tablaItems(itemsDe(s))}
       </div>
       <div style="text-align:right;flex-shrink:0">
-        <a href="solicitudes.html" class="btn btn-info btn-sm" style="text-decoration:none"
-           onclick="sessionStorage.setItem('pron_vista_logistica','1');sessionStorage.setItem('pron_despachar','${codigo}')">
+        <button class="btn btn-info btn-sm" onclick="abrirModalDespacho(${s.id_solicitud})">
           <span class="material-symbols-rounded" style="font-size:14px">local_shipping</span> Despachar
-        </a>
+        </button>
       </div>
     </div>
   </div>`;
+}
+
+//MODAL DESPACHO
+function abrirModalDespacho(id) {
+    _solicitudDespacharId = id;
+    const s = buscarSolicitud(id);
+    if (!s) {
+        showToast('Solicitud no encontrada', 'warning');
+        return;
+    }
+
+    document.getElementById('despacho-solicitud-info').textContent = `SOL-${s.id_solicitud} - ${nombreProyecto(s)}`;
+    document.getElementById('despacho-fecha').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('despacho-responsable').value = '';
+    document.getElementById('despacho-obs').value = '';
+    document.getElementById('despacho-remision-files').innerHTML = '';
+    document.getElementById('modal-despacho-logistica').classList.add('open');
+}
+
+function cerrarModalDespacho() {
+    document.getElementById('modal-despacho-logistica').classList.remove('open');
+    _solicitudDespacharId = null;
+}
+
+async function confirmarDespachoLogistica() {
+    const fecha = document.getElementById('despacho-fecha').value;
+    const responsable = document.getElementById('despacho-responsable').value.trim();
+    const observaciones = document.getElementById('despacho-obs').value.trim();
+
+    if (!fecha) {
+        showToast('La fecha de entrega es obligatoria', 'warning');
+        return;
+    }
+    if (!responsable) {
+        showToast('El responsable de entrega es obligatorio', 'warning');
+        return;
+    }
+
+    try {
+        const result = await API.solicitudes.despachar(_solicitudDespacharId, {
+            id_usuario: parseInt(sessionStorage.getItem('pron_id_usuario')) || 1,
+            fecha_despacho: fecha,
+            responsable_entrega: responsable,
+            observaciones: observaciones || null
+        });
+
+        if (result.success) {
+            showToast('Despacho registrado exitosamente', 'success');
+            cerrarModalDespacho();
+
+            // Recargar datos
+            await cargarDatos();
+
+            render();
+        }
+    } catch (error) {
+        console.error('Error registrando despacho:', error);
+        showToast(error.message || 'Error al registrar despacho', 'warning');
+    }
+}
+
+// ── Función para mostrar archivos en el modal ──
+function mostrarArchivosLogistica(containerId, files) {
+    const c = document.getElementById(containerId);
+    if (!c || !files || !files.length) return;
+
+    Array.from(files).forEach(f => {
+        const d = document.createElement('div');
+        d.className = 'file-chip';
+        d.dataset.filename = f.name;
+        d.style.cssText = 'display:flex;align-items:center;gap:8px;background:var(--cream);border:1px solid var(--cream-dark);border-radius:8px;padding:6px 10px;font-size:12px';
+        d.innerHTML = `
+            <span class="material-symbols-rounded" style="font-size:16px;color:var(--navy)">description</span>
+            <span style="flex:1;color:var(--text)">${f.name}</span>
+            <span style="color:var(--muted)">${(f.size / 1024).toFixed(0)} KB</span>
+            <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:var(--muted)">✕</button>
+        `;
+        c.appendChild(d);
+    });
+}
+
+// ── Toast ──
+let _toastTimer;
+
+function showToast(msg, tipo = 'success') {
+    const t = document.getElementById('toast');
+    if (!t) return;
+    const icons = { success: 'check_circle', warning: 'warning', info: 'mail' };
+    t.className = `toast ${tipo}`;
+    document.getElementById('toast-icon').textContent = icons[tipo] || 'check_circle';
+    document.getElementById('toast-msg').textContent = msg;
+    t.classList.add('show');
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => t.classList.remove('show'), 4500);
 }
 
 /* ── Fila de "Historial de Despachos": clickeable, abre modal ── */
@@ -179,9 +273,6 @@ function render(){
           <div class="card-title">Despachos Pendientes</div>
           <div class="card-subtitle">Solicitudes aprobadas por Gerencia Técnica${_equipoSeleccionado?` · ${(_equiposMap[_equipoSeleccionado]||{}).nombre_equipo_log||''}`:' · todos los equipos'}</div>
         </div>
-        <a href="solicitudes.html" class="btn btn-info btn-sm" onclick="sessionStorage.setItem('pron_vista_logistica','1')">
-          <span class="material-symbols-rounded" style="font-size:14px">open_in_new</span> Ver todas
-        </a>
       </div>
       <div style="display:flex;flex-direction:column;gap:12px">
         ${pendientes.length ? pendientes.map(cardPendiente).join('') : `
@@ -242,3 +333,9 @@ async function cargarDatos(){
 }
 
 document.addEventListener('DOMContentLoaded', cargarDatos);
+
+window.abrirModalDespacho = abrirModalDespacho;
+window.cerrarModalDespacho = cerrarModalDespacho;
+window.confirmarDespachoLogistica = confirmarDespachoLogistica;
+window.mostrarArchivosLogistica = mostrarArchivosLogistica;
+window.showToast = showToast;

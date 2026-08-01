@@ -65,9 +65,7 @@
         'Equipo de Logistica': [
             { section: 'Principal' },
             { label: 'Dashboard', icon: 'dashboard', href: 'dashboard-logistica.html' },
-            { section: 'Operaciones' },
-            { label: 'Despachos Asignados', icon: 'local_shipping', href: 'solicitudes.html' },
-        ],
+        ]
     };
 
     /* ──────────────────────────────────────────────
@@ -125,10 +123,6 @@
         <header class="topbar">
             <div class="page-title">${pageTitle}</div>
             <div class="topbar-right">
-                <div class="icon-btn" id="btn-notificaciones" title="Notificaciones" onclick="toggleNotificaciones(event)">
-                    <span class="material-symbols-rounded">notifications</span>
-                    <span class="notif-dot" id="notif-dot"></span>
-                </div>
                 <div class="topbar-avatar" title="${nombreUsuario}">${iniciales}</div>
             </div>
         </header>

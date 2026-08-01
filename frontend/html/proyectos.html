@@ -122,6 +122,32 @@
         <span id="toast-msg"></span>
     </div>
 
+    <!-- ===== MODAL: FINALIZAR PROYECTO ===== -->
+<div class="modal-overlay" id="modal-finalizar">
+    <div class="modal" style="max-width:480px">
+        <div class="modal-header">
+            <div class="modal-title">Finalizar <em style="font-style:italic">Proyecto</em></div>
+            <button class="close-btn" onclick="cerrarModalFinalizar()">
+                <span class="material-symbols-rounded">close</span>
+            </button>
+        </div>
+        <div style="background:var(--cream);border-radius:var(--radius);padding:10px 14px;margin-bottom:16px;font-size:12.5px;color:var(--text-light)">
+            <strong id="modal-finalizar-nombre"></strong>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Monto ejecutado (L) <span style="color:var(--danger)">*</span></label>
+            <input type="number" class="form-control" id="finalizar-monto" placeholder="0.00" min="0" step="0.01">
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">Ingresa el monto total ejecutado del proyecto</div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+            <button class="btn btn-outline" onclick="cerrarModalFinalizar()">Cancelar</button>
+            <button class="btn btn-success" onclick="confirmarFinalizar()">
+                <span class="material-symbols-rounded">check_circle</span> Finalizar Proyecto
+            </button>
+        </div>
+    </div>
+</div>
+
     <script src="../js/api.js"></script>
     <script src="../js/shared.js"></script>
     <script src="../js/proyectos.js"></script>

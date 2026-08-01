@@ -13,6 +13,7 @@ let departamentosCache = [];
 let municipiosCache = [];
 let _proyectoEnEdicion = null;
 let colabsSeleccionados = new Set();
+let _proyectoFinalizarId = null;
 
 const ID_USUARIO = parseInt(sessionStorage.getItem('pron_id_usuario')) || null;
 const NOMBRE_USUARIO = sessionStorage.getItem('pron_nombre') || 'Usuario';
@@ -192,10 +193,7 @@ async function cargarMunicipios() {
 function proyectosVisibles() {
     if (esAdmin) return proyectosCache;
     // Campo/empleado: solo proyectos donde participa
-    return proyectosCache.filter(p => {
-        const usuarios = p.usuarios_ids || [];
-        return usuarios.map(Number).includes(ID_USUARIO);
-    });
+    return proyectosCache.filter(p => p.id_supervisor === ID_USUARIO );
 }
 
 // RENDER PRINCIPAL
@@ -422,6 +420,44 @@ function tarjetaProyecto(p) {
     const ubicacion = p.nombre_municipio || p.municipio || 'Sin ubicación';
     const departamento = p.nombre_departamento || p.departamento || '';
     const ubicacionCompleta = departamento ? `${ubicacion}, ${departamento}` : ubicacion;
+
+    const esAdmin = (ROLE === 'admin_oficina' || ROLE === 'Administrador de Oficina' || ROLE === 'admin');
+
+    //Botones de acción (Admin)
+    let accionesAdmin = '';
+    if (esAdmin) {
+        if (p.estado_proyecto === 'ACTIVO' || p.estado_proyecto === 'RETRASADO') {
+            accionesAdmin = `
+                <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+                    <button class="btn btn-success btn-sm" onclick="abrirModalFinalizar(${p.id_proyecto})" title="Finalizar proyecto">
+                        <span class="material-symbols-rounded" style="font-size:14px">check_circle</span> Finalizar
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="cancelarProyecto(${p.id_proyecto})" title="Cancelar proyecto">
+                        <span class="material-symbols-rounded" style="font-size:14px">block</span> Cancelar
+                    </button>
+                </div>
+            `;
+        } else if (p.estado_proyecto === 'FINALIZADO') {
+            accionesAdmin = `
+                <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+                    <span class="badge badge-success" style="font-size:11px">
+                        <span class="material-symbols-rounded" style="font-size:12px">check_circle</span> Finalizado
+                    </span>
+                    <button class="btn btn-danger btn-sm" onclick="cancelarProyecto(${p.id_proyecto})" title="Cancelar proyecto">
+                        <span class="material-symbols-rounded" style="font-size:14px">block</span> Cancelar
+                    </button>
+                </div>
+            `;
+        } else if (p.estado_proyecto === 'CANCELADO') {
+            accionesAdmin = `
+                <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+                    <span class="badge badge-danger" style="font-size:11px">
+                        <span class="material-symbols-rounded" style="font-size:12px">block</span> Cancelado
+                    </span>
+                </div>
+            `;
+        }
+    }
 
     return `
         <div class="project-card" role="button" tabindex="0" style="cursor:pointer"
@@ -808,6 +844,110 @@ async function guardarProyecto() {
 }
 
 // ─────────────────────────────────────────────────────────────
+// ABRIR MODAL DE FINALIZACIÓN
+// ─────────────────────────────────────────────────────────────
+
+function abrirModalFinalizar(id) {
+    const proyecto = proyectosCache.find(p => p.id_proyecto === id);
+    if (!proyecto) {
+        showToast('Proyecto no encontrado', 'warning');
+        return;
+    }
+
+    _proyectoFinalizarId = id;
+    document.getElementById('modal-finalizar-nombre').textContent = `Proyecto: ${proyecto.nombre_proyecto}`;
+    document.getElementById('finalizar-monto').value = proyecto.presupuesto_ejecutado || '';
+    document.getElementById('modal-finalizar').classList.add('open');
+    setTimeout(() => document.getElementById('finalizar-monto').focus(), 80);
+}
+
+// ─────────────────────────────────────────────────────────────
+// CERRAR MODAL DE FINALIZACIÓN
+// ─────────────────────────────────────────────────────────────
+
+function cerrarModalFinalizar() {
+    FormUtils.limpiarErrores(document.getElementById('modal-finalizar'));
+    document.getElementById('modal-finalizar').classList.remove('open');
+    _proyectoFinalizarId = null;
+}
+
+// ─────────────────────────────────────────────────────────────
+// CONFIRMAR FINALIZACIÓN
+// ─────────────────────────────────────────────────────────────
+
+async function confirmarFinalizar() {
+    const monto = document.getElementById('finalizar-monto').value.trim();
+
+    // Validar que el monto sea válido
+    if (!monto) {
+        FormUtils.marcarInvalido(document.getElementById('finalizar-monto'), 'El monto ejecutado es obligatorio.');
+        return;
+    }
+
+    const montoNum = parseFloat(monto);
+    if (isNaN(montoNum) || montoNum < 0) {
+        FormUtils.marcarInvalido(document.getElementById('finalizar-monto'), 'Ingresa un monto válido mayor o igual a 0.');
+        return;
+    }
+
+    try {
+        const result = await API.proyectos.finalizar(_proyectoFinalizarId, {
+            id_usuario: parseInt(sessionStorage.getItem('pron_id_usuario')) || 1,
+            presupuesto_ejecutado: montoNum
+        });
+
+        if (result.success) {
+            showToast('Proyecto finalizado exitosamente', 'success');
+            cerrarModalFinalizar();
+            await cargarDatosIniciales();
+            renderPaginaProyectos();
+        }
+    } catch (error) {
+        console.error('Error finalizando proyecto:', error);
+        showToast(error.message || 'Error al finalizar el proyecto', 'warning');
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// CANCELAR PROYECTO
+// ─────────────────────────────────────────────────────────────
+
+async function cancelarProyecto(id) {
+    const proyecto = proyectosCache.find(p => p.id_proyecto === id);
+    if (!proyecto) {
+        showToast('Proyecto no encontrado', 'warning');
+        return;
+    }
+
+    if (proyecto.estado_proyecto === 'CANCELADO') {
+        showToast('El proyecto ya está cancelado', 'info');
+        return;
+    }
+
+    const confirmar = confirm(
+        `¿Estás seguro de CANCELAR el proyecto "${proyecto.nombre_proyecto}"?\n\n` +
+        `Esta acción cambiará el estado a CANCELADO. El proyecto permanecerá visible pero con estado CANCELADO.`
+    );
+
+    if (!confirmar) return;
+
+    try {
+        const result = await API.proyectos.cancelar(id, {
+            id_usuario: parseInt(sessionStorage.getItem('pron_id_usuario')) || 1
+        });
+
+        if (result.success) {
+            showToast(`Proyecto "${proyecto.nombre_proyecto}" cancelado`, 'info');
+            await cargarDatosIniciales();
+            renderPaginaProyectos();
+        }
+    } catch (error) {
+        console.error('Error cancelando proyecto:', error);
+        showToast(error.message || 'Error al cancelar el proyecto', 'warning');
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
 // GEO — municipios
 // ─────────────────────────────────────────────────────────────
 
@@ -883,10 +1023,18 @@ function showToast(msg, tipo = 'success') {
 window.abrirModalNuevoProyecto = abrirModalNuevoProyecto;
 window.cerrarModalNuevo = cerrarModalNuevo;
 window.guardarProyecto = guardarProyecto;
+window.abrirModalFinalizar = abrirModalFinalizar;
+window.cerrarModalFinalizar = cerrarModalFinalizar;
+window.confirmarFinalizar = confirmarFinalizar;
+window.cancelarProyecto = cancelarProyecto;
 window.cargarMunicipios = cargarMunicipios;
 window.validarRangoFechas = validarRangoFechas;
 window.abrirDetalle = abrirDetalle;
 window.abrirEditarProyecto = abrirEditarProyecto;
 window.aplicarFiltros = aplicarFiltros;
 window.limpiarFiltros = limpiarFiltros;
+window.abrirModalFinalizar = abrirModalFinalizar;
+window.cerrarModalFinalizar = cerrarModalFinalizar;
+window.confirmarFinalizar = confirmarFinalizar;
+window.cancelarProyecto = cancelarProyecto;
 window.showToast = showToast;

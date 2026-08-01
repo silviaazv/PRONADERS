@@ -72,6 +72,8 @@ db.execute = (sql, params = []) => {
 
             resolve({
                 lastID: this.lastID,
+                lastId: this.lastID,
+                lastInsertRowid: this.lastID,
                 changes: this.changes
             });
 

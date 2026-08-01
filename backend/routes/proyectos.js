@@ -1,186 +1,239 @@
-// proyectos.js (backend) 
+// ============================================================
+// routes/proyectos.js (BACKEND) 
+// ============================================================
 
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { registrarBitacora } = require('../helpers/bitacora');
 
-/*const db = require('../db');
-const genericCrud = require('./genericCrud');
-const { registrarBitacora } = require('../helpers/bitacora');
+// ─────────────────────────────────────────────────────────────
+// GET /api/proyectos - Listar proyectos
+// ─────────────────────────────────────────────────────────────
 
-const router = genericCrud({
-    table: 'tbl_proyectos',
-    pk: 'id_proyecto',
-    columns: [
-        'id_proyecto',
-        'tipo_proyecto',
-        'estado_proyecto',
-        'id_ubicacion',
-        'nombre_proyecto',
-        'descripcion_proyecto',
-        'fecha_inicio',
-        'fecha_fin',
-        'presupuesto_inicial',
-        'presupuesto_ejecutado',
-        'id_supervisor'
-    ],
-});*/
-
-// ════════════════════════════════════════════════════
-// POST para agregar bitácora
-// ════════════════════════════════════════════════════
-
-/*router.post('/', async (req, res) => {
+router.get('/', async (req, res) => {
     try {
+        const { estado, id_usuario } = req.query;
 
-        //LOGS DE PRUEBA
-        console.log('========================================');
-        console.log('[API] POST /api/proyectos');
-        console.log('[API] Body recibido:', req.body);
+        let query = `
+            SELECT 
+                p.*,
+                m.nombre_municipio,
+                d.nombre_departamento,
+                s.nombre_usuario as supervisor_nombre,
+                s.id_usuario as supervisor_id
+            FROM tbl_proyectos p
+            LEFT JOIN tbl_municipios m ON p.id_ubicacion = m.id_municipio
+            LEFT JOIN tbl_departamentos d ON m.id_departamento = d.id_departamento
+            LEFT JOIN tbl_usuarios s ON p.id_supervisor = s.id_usuario
+            WHERE 1=1
+        `;
 
-        const {
-            tipo_proyecto,
-            nombre_proyecto,
-            descripcion_proyecto,
-            id_ubicacion,
-            fecha_inicio,
-            fecha_fin,
-            presupuesto_inicial,
-            id_usuario,
-            usuarios_asignados,
-            id_supervisor
-        } = req.body;
+        const params = [];
 
-        // ── VALIDACIONES ──
-        if (!tipo_proyecto) {
-            return res.status(400).json({ error: 'El tipo de proyecto es obligatorio' });
-        }
-        if (!nombre_proyecto || nombre_proyecto.trim().length === 0) {
-            return res.status(400).json({ error: 'El nombre del proyecto es obligatorio' });
-        }
-        if (!id_ubicacion) {
-            return res.status(400).json({ error: 'La ubicación es obligatoria' });
-        }
-        if (!fecha_inicio) {
-            return res.status(400).json({ error: 'La fecha de inicio es obligatoria' });
-        }
-        if (!presupuesto_inicial || presupuesto_inicial <= 0) {
-            return res.status(400).json({ error: 'El presupuesto inicial debe ser mayor a 0' });
+        if (estado) {
+            query += ' AND p.estado_proyecto = ?';
+            params.push(estado);
         }
 
-        const tipoUpper = tipo_proyecto.toUpperCase();
-        if (!['AGRICOLA', 'INFRAESTRUCTURA', 'SOCIAL'].includes(tipoUpper)) {
-            return res.status(400).json({ error: 'Tipo de proyecto inválido' });
-        }
-
-        // ── INSERT ──
-        const result = await db.execute(`
-            INSERT INTO tbl_proyectos 
-            (tipo_proyecto, estado_proyecto, id_ubicacion, nombre_proyecto, 
-             descripcion_proyecto, fecha_inicio, fecha_fin, presupuesto_inicial, 
-             presupuesto_ejecutado, id_supervisor)
-            VALUES (?, 'ACTIVO', ?, ?, ?, ?, ?, ?, 0, ?)
-        `, [
-            tipoUpper,
-            parseInt(id_ubicacion),
-            nombre_proyecto.trim(),
-            descripcion_proyecto || null,
-            fecha_inicio,
-            fecha_fin || null,
-            parseFloat(presupuesto_inicial),
-            id_supervisor || null
-        ]);
-
-        const id_proyecto = result.lastInsertRowid;
-        
-        const usariosParaAsignar = [];
-
+        // ✅ Si se filtra por usuario, buscar proyectos donde sea supervisor
         if (id_usuario) {
-            usariosParaAsignar.push(parseInt(id_usuario));
+            query += ' AND p.id_supervisor = ?';
+            params.push(parseInt(id_usuario));
         }
 
-        if (id_supervisor && !usariosParaAsignar.includes(parseInt(id_supervisor))) {
-            usariosParaAsignar.push(parseInt(id_supervisor));
+        query += ' ORDER BY p.fecha_inicio DESC';
+
+        const proyectos = await db.queryAll(query, params);
+
+        res.json(proyectos);
+
+    } catch (error) {
+        console.error('Error listando proyectos:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ─────────────────────────────────────────────────────────────
+// GET /api/proyectos/:id - Obtener proyecto por ID
+// ─────────────────────────────────────────────────────────────
+
+router.get('/:id', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+
+        const proyecto = await db.queryOne(`
+            SELECT 
+                p.*,
+                m.nombre_municipio,
+                d.nombre_departamento,
+                s.nombre_usuario as supervisor_nombre,
+                s.id_usuario as supervisor_id
+            FROM tbl_proyectos p
+            LEFT JOIN tbl_municipios m ON p.id_ubicacion = m.id_municipio
+            LEFT JOIN tbl_departamentos d ON m.id_departamento = d.id_departamento
+            LEFT JOIN tbl_usuarios s ON p.id_supervisor = s.id_usuario
+            WHERE p.id_proyecto = ?
+        `, [id]);
+
+        if (!proyecto) {
+            return res.status(404).json({ error: 'Proyecto no encontrado' });
         }
 
-        /*Asiganar usuarios al proyecto
-        // ── ASIGNAR USUARIOS AL PROYECTO ──
-        if (id_supervisor) {
-            try {
-                await db.execute(
-                    `INSERT INTO tbl_proyectos_usuarios (id_proyecto, id_usuario) VALUES (?, ?)`,
-                    [id_proyecto, parseInt(id_supervisor)]
-                );
-                console.log(`Supervisor ${id_supervisor} asignado al proyecto ${id_proyecto}`);
-            } catch (e) {
-                console.warn('Supervisor ya asignado:', e.message);
-            }
+        res.json(proyecto);
+
+    } catch (error) {
+        console.error('Error obteniendo proyecto:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ============================================================
+// PATCH /api/proyectos/:id/finalizar - Finalizar proyecto
+// ============================================================
+
+router.patch('/:id/finalizar', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const { id_usuario, presupuesto_ejecutado } = req.body;
+
+        if (!id_usuario) {
+            return res.status(400).json({ error: 'Usuario es obligatorio' });
+        }
+        if (presupuesto_ejecutado === undefined || presupuesto_ejecutado < 0) {
+            return res.status(400).json({ error: 'El monto ejecutado es obligatorio y debe ser mayor o igual a 0' });
         }
 
-        // Insertar asignaciones
-        if (id_usuario && id_usuario !== parseInt(id_supervisor)) {
-            try {
-                await db.execute(
-                    `INSERT INTO tbl_proyectos_usuarios (id_proyecto, id_usuario) VALUES (?, ?)`,
-                    [id_proyecto, parseInt(id_usuario)]
-                );
-            } catch (e) {
-                console.warn('Creador ya asignado:', e.message);
-            }
-        }*/
+        // Verificar que el proyecto existe
+        const proyecto = await db.queryOne(
+            'SELECT * FROM tbl_proyectos WHERE id_proyecto = ?',
+            [id]
+        );
+        if (!proyecto) {
+            return res.status(404).json({ error: 'Proyecto no encontrado' });
+        }
 
-        /*for (const uid of usuariosParaAsignar) {
-            try {
-                await db.execute(
-                    `INSERT INTO tbl_proyectos_usuarios (id_proyecto, id_usuario) VALUES (?, ?)`,
-                    [id_proyecto, uid]
-                );
-                console.log(`[API] Usuario ${uid} asignado al proyecto ${id_proyecto}`);
-            } catch (e) {
-                console.warn(`[API] Error asignando usuario ${uid}:`, e.message);
-            }
-        }    
+        if (proyecto.estado_proyecto === 'FINALIZADO') {
+            return res.status(400).json({ error: 'El proyecto ya está finalizado' });
+        }
 
-        // ── REGISTRAR EN BITÁCORA ──
-        try {
+        const estadoAnterior = proyecto.estado_proyecto;
+
+        // Actualizar estado a FINALIZADO y guardar presupuesto ejecutado
+        await db.execute(
+            'UPDATE tbl_proyectos SET estado_proyecto = ?, presupuesto_ejecutado = ? WHERE id_proyecto = ?',
+            ['FINALIZADO', parseFloat(presupuesto_ejecutado), id]
+        );
+
         await registrarBitacora({
-            id_usuario: id_usuario || 1,
-            tipo_accion: 'INSERT',
+            id_usuario: parseInt(id_usuario),
+            tipo_accion: 'UPDATE',
             tipo_objeto: 'PROYECTO',
-            id_objeto: id_proyecto,
-            valor_nuevo: `Proyecto "${nombre_proyecto}" creado con estado ACTIVO`
+            id_objeto: id,
+            campo_modificado: 'estado_proyecto',
+            valor_antiguo: estadoAnterior,
+            valor_nuevo: `FINALIZADO - Monto ejecutado: L ${parseFloat(presupuesto_ejecutado).toFixed(2)}`
         });
 
-        console.log('[API] Bitácora registrada');
-        } catch (e) {
-            console.warn('[API] Error en bitácora:', e.message);
-        }
-
-        // ── RESPUESTA ──
-        const nuevoProyecto = await db.queryOne(
+        const actualizado = await db.queryOne(
             `
-            SELECT p.*, s.nombre_usuario as supervisor_nombre
+            SELECT p.*, 
+                   m.nombre_municipio,
+                   d.nombre_departamento,
+                   s.nombre_usuario as supervisor_nombre
             FROM tbl_proyectos p
+            LEFT JOIN tbl_municipios m ON p.id_ubicacion = m.id_municipio
+            LEFT JOIN tbl_departamentos d ON m.id_departamento = d.id_departamento
             LEFT JOIN tbl_usuarios s ON p.id_supervisor = s.id_usuario
             WHERE p.id_proyecto = ?
             `,
-            [id_proyecto]
+            [id]
         );
 
-        res.status(201).json({
+        res.json({
             success: true,
-            message: `Proyecto "${nombre_proyecto}" creado exitosamente`,
-            proyecto: nuevoProyecto
+            message: 'Proyecto finalizado exitosamente',
+            proyecto: actualizado
         });
 
     } catch (error) {
-        console.error('Error creando proyecto:', error);
+        console.error('Error finalizando proyecto:', error);
         res.status(500).json({ error: error.message });
     }
-});*/
+});
 
-//PROBANDO UN NUEVO POST
+// ============================================================
+// PATCH /api/proyectos/:id/cancelar - Cancelar proyecto
+// ============================================================
+
+router.patch('/:id/cancelar', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const { id_usuario } = req.body;
+
+        if (!id_usuario) {
+            return res.status(400).json({ error: 'Usuario es obligatorio' });
+        }
+
+        const proyecto = await db.queryOne(
+            'SELECT * FROM tbl_proyectos WHERE id_proyecto = ?',
+            [id]
+        );
+        if (!proyecto) {
+            return res.status(404).json({ error: 'Proyecto no encontrado' });
+        }
+
+        if (proyecto.estado_proyecto === 'CANCELADO') {
+            return res.status(400).json({ error: 'El proyecto ya está cancelado' });
+        }
+
+        const estadoAnterior = proyecto.estado_proyecto;
+
+        await db.execute(
+            'UPDATE tbl_proyectos SET estado_proyecto = ? WHERE id_proyecto = ?',
+            ['CANCELADO', id]
+        );
+
+        await registrarBitacora({
+            id_usuario: parseInt(id_usuario),
+            tipo_accion: 'UPDATE',
+            tipo_objeto: 'PROYECTO',
+            id_objeto: id,
+            campo_modificado: 'estado_proyecto',
+            valor_antiguo: estadoAnterior,
+            valor_nuevo: 'CANCELADO'
+        });
+
+        const actualizado = await db.queryOne(
+            `
+            SELECT p.*, 
+                   m.nombre_municipio,
+                   d.nombre_departamento,
+                   s.nombre_usuario as supervisor_nombre
+            FROM tbl_proyectos p
+            LEFT JOIN tbl_municipios m ON p.id_ubicacion = m.id_municipio
+            LEFT JOIN tbl_departamentos d ON m.id_departamento = d.id_departamento
+            LEFT JOIN tbl_usuarios s ON p.id_supervisor = s.id_usuario
+            WHERE p.id_proyecto = ?
+            `,
+            [id]
+        );
+
+        res.json({
+            success: true,
+            message: 'Proyecto cancelado exitosamente',
+            proyecto: actualizado
+        });
+
+    } catch (error) {
+        console.error('Error cancelando proyecto:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+// ─────────────────────────────────────────────────────────────
+// POST /api/proyectos - Crear proyecto
+// ─────────────────────────────────────────────────────────────
+
 router.post('/', async (req, res) => {
     try {
         const {
@@ -194,12 +247,6 @@ router.post('/', async (req, res) => {
             id_usuario,
             id_supervisor
         } = req.body;
-
-        console.log('[API] Creando proyecto con datos:', {
-            nombre_proyecto,
-            id_usuario,
-            id_supervisor
-        });
 
         // ── VALIDACIONES ──
         if (!tipo_proyecto) {
@@ -242,47 +289,6 @@ router.post('/', async (req, res) => {
         ]);
 
         const id_proyecto = result.lastInsertRowid;
-        console.log('[API] Proyecto creado con ID:', id_proyecto);
-
-        
-        // INSERTAR EN tbl_proyectos_usuarios
-
-        // Array para almacenar los IDs de usuarios a asignar
-        const usuariosIds = [];
-
-        // 1. SIEMPRE asignar al creador (id_usuario)
-        if (id_usuario) {
-            usuariosIds.push(parseInt(id_usuario));
-            console.log('[API] Creador a asignar:', id_usuario);
-        }
-
-        // 2. Asignar al supervisor si existe y es diferente al creador
-        if (id_supervisor && !usuariosIds.includes(parseInt(id_supervisor))) {
-            usuariosIds.push(parseInt(id_supervisor));
-            console.log('[API] Supervisor a asignar:', id_supervisor);
-        }
-
-        console.log('[API] Usuarios a asignar:', usuariosIds);
-
-        // Insertar cada usuario en tbl_proyectos_usuarios
-        for (const uid of usuariosIds) {
-            try {
-                await db.execute(
-                    `INSERT INTO tbl_proyectos_usuarios (id_proyecto, id_usuario) VALUES (?, ?)`,
-                    [id_proyecto, uid]
-                );
-                console.log(`[API] Usuario ${uid} asignado al proyecto ${id_proyecto}`);
-            } catch (error) {
-                console.error(`[API] Error asignando usuario ${uid}:`, error.message);
-            }
-        }
-
-        // ── VERIFICAR ASIGNACIONES ──
-        const asignaciones = await db.queryAll(
-            'SELECT * FROM tbl_proyectos_usuarios WHERE id_proyecto = ?',
-            [id_proyecto]
-        );
-        console.log('[API] Asignaciones finales:', asignaciones);
 
         // ── REGISTRAR EN BITÁCORA ──
         try {
@@ -291,30 +297,25 @@ router.post('/', async (req, res) => {
                 tipo_accion: 'INSERT',
                 tipo_objeto: 'PROYECTO',
                 id_objeto: id_proyecto,
-                valor_nuevo: `Proyecto "${nombre_proyecto}" creado con ${usuariosIds.length} colaborador(es)`
+                valor_nuevo: `Proyecto "${nombre_proyecto}" creado con supervisor ${id_supervisor || 'sin asignar'}`
             });
         } catch (e) {
             console.warn('Error en bitácora:', e.message);
         }
 
         // ── RESPUESTA ──
-        const nuevoProyecto = await db.queryOne(
-            'SELECT * FROM tbl_proyectos WHERE id_proyecto = ?',
-            [id_proyecto]
-        );
-
-        // Obtener usuarios asignados para la respuesta
-        const usuarios = await db.queryAll(
-            `
-            SELECT u.id_usuario, u.nombre_usuario
-            FROM tbl_proyectos_usuarios pu
-            INNER JOIN tbl_usuarios u ON pu.id_usuario = u.id_usuario
-            WHERE pu.id_proyecto = ?
-            `,
-            [id_proyecto]
-        );
-
-        nuevoProyecto.usuarios_asignados = usuarios;
+        const nuevoProyecto = await db.queryOne(`
+            SELECT 
+                p.*,
+                m.nombre_municipio,
+                d.nombre_departamento,
+                s.nombre_usuario as supervisor_nombre
+            FROM tbl_proyectos p
+            LEFT JOIN tbl_municipios m ON p.id_ubicacion = m.id_municipio
+            LEFT JOIN tbl_departamentos d ON m.id_departamento = d.id_departamento
+            LEFT JOIN tbl_usuarios s ON p.id_supervisor = s.id_usuario
+            WHERE p.id_proyecto = ?
+        `, [id_proyecto]);
 
         res.status(201).json({
             success: true,
@@ -323,21 +324,21 @@ router.post('/', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('[API] Error creando proyecto:', error);
+        console.error('Error creando proyecto:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// ════════════════════════════════════════════════════
-//PUT para agregar bitácora
-// ════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────
+// PUT /api/proyectos/:id - Actualizar proyecto
+// ─────────────────────────────────────────────────────────────
 
 router.put('/:id', async (req, res) => {
     try {
         const id = parseInt(req.params.id);
         const { id_usuario, id_supervisor, ...datos } = req.body;
 
-        // Obtener proyecto anterior
+        // ── OBTENER PROYECTO ANTERIOR ──
         const anterior = await db.queryOne(
             'SELECT * FROM tbl_proyectos WHERE id_proyecto = ?',
             [id]
@@ -346,10 +347,11 @@ router.put('/:id', async (req, res) => {
             return res.status(404).json({ error: 'Proyecto no encontrado' });
         }
 
+        // ── ACTUALIZAR CAMPOS ──
         const camposPermitidos = [
             'tipo_proyecto', 'estado_proyecto', 'id_ubicacion', 'nombre_proyecto',
             'descripcion_proyecto', 'fecha_inicio', 'fecha_fin',
-            'presupuesto_inicial', 'presupuesto_ejecutado', 'id_supervisor'
+            'presupuesto_inicial', 'presupuesto_ejecutado'
         ];
 
         const sets = [];
@@ -368,16 +370,16 @@ router.put('/:id', async (req, res) => {
             }
         });
 
-        // ── ACTUALIZAR SUPERVISOR ──
+        // Actualizar supervisor
         if (id_supervisor !== undefined) {
             const valorAnterior = anterior.id_supervisor;
             if (String(valorAnterior) !== String(id_supervisor)) {
                 sets.push('id_supervisor = ?');
                 values.push(id_supervisor || null);
-                cambios.push({ 
-                    campo: 'id_supervisor', 
-                    anterior: valorAnterior, 
-                    nuevo: id_supervisor 
+                cambios.push({
+                    campo: 'id_supervisor',
+                    anterior: valorAnterior,
+                    nuevo: id_supervisor
                 });
             }
         }
@@ -385,60 +387,43 @@ router.put('/:id', async (req, res) => {
         if (sets.length === 0) {
             return res.status(400).json({ error: 'No hay cambios para actualizar' });
         }
+
         values.push(id);
         await db.execute(
             `UPDATE tbl_proyectos SET ${sets.join(', ')} WHERE id_proyecto = ?`,
             values
         );
 
-        // ── ACTUALIZAR ASIGNACIONES DE USUARIOS ──
-        if (usuarios_asignados && Array.isArray(usuarios_asignados)) {
-            // Eliminar asignaciones existentes
-            await db.execute(
-                'DELETE FROM tbl_proyectos_usuarios WHERE id_proyecto = ?',
-                [id]
-            );
-
-            // Insertar nuevas asignaciones (incluir al creador)
-            const usuariosUnicos = [...new Set(usuarios_asignados.map(Number))];
-            
-            // Asegurar que el creador esté incluido
-            if (id_usuario && !usuariosUnicos.includes(parseInt(id_usuario))) {
-                usuariosUnicos.push(parseInt(id_usuario));
-            }
-
-            if (id_supervisor && !usuariosUnicos.includes(parseInt(id_supervisor))) {
-                usuariosUnicos.push(parseInt(id_supervisor));
-            }
-
-            for (const uid of usuariosUnicos) {
-                await db.execute(
-                    `INSERT INTO tbl_proyectos_usuarios (id_proyecto, id_usuario) VALUES (?, ?)`,
-                    [id, uid]
-                );
-            }
-        }
-
-        //REGISTRAR EN BITÁCORA
+        // ── REGISTRAR EN BITÁCORA ──
         for (const cambio of cambios) {
-            await registrarBitacora({
-                id_usuario: id_usuario || 1,
-                tipo_accion: 'UPDATE',
-                tipo_objeto: 'PROYECTO',
-                id_objeto: id,
-                campo_modificado: cambio.campo,
-                valor_antiguo: String(cambio.anterior || null),
-                valor_nuevo: String(cambio.nuevo || null)
-            });
+            try {
+                await registrarBitacora({
+                    id_usuario: id_usuario || 1,
+                    tipo_accion: 'UPDATE',
+                    tipo_objeto: 'PROYECTO',
+                    id_objeto: id,
+                    campo_modificado: cambio.campo,
+                    valor_antiguo: String(cambio.anterior || null),
+                    valor_nuevo: String(cambio.nuevo || null)
+                });
+            } catch (e) {
+                console.warn('Error en bitácora:', e.message);
+            }
         }
 
-        const actualizado = await db.queryOne(
-            `SELECT p.*, s.nombre_usuario as supervisor_nombre
+        // ── RESPUESTA ──
+        const actualizado = await db.queryOne(`
+            SELECT 
+                p.*,
+                m.nombre_municipio,
+                d.nombre_departamento,
+                s.nombre_usuario as supervisor_nombre
             FROM tbl_proyectos p
+            LEFT JOIN tbl_municipios m ON p.id_ubicacion = m.id_municipio
+            LEFT JOIN tbl_departamentos d ON m.id_departamento = d.id_departamento
             LEFT JOIN tbl_usuarios s ON p.id_supervisor = s.id_usuario
-            WHERE p.id_proyecto = ? `,
-            [id]
-        );
+            WHERE p.id_proyecto = ?
+        `, [id]);
 
         res.json({
             success: true,
@@ -452,9 +437,9 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// ════════════════════════════════════════════════════
-//DELETE para agregar bitácora
-// ════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────
+// DELETE /api/proyectos/:id - Eliminar proyecto
+// ─────────────────────────────────────────────────────────────
 
 router.delete('/:id', async (req, res) => {
     try {
@@ -485,7 +470,6 @@ router.delete('/:id', async (req, res) => {
             [id]
         );
 
-        //REGISTRAR EN BITÁCORA
         await registrarBitacora({
             id_usuario: id_usuario || 1,
             tipo_accion: 'DELETE',
@@ -505,85 +489,9 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
-//GET /api/proyectos/:id
-
-router.get('/:id', async (req, res) => {
-    try {
-        const id = parseInt(req.params.id);
-
-        const proyecto = await db.queryOne(`
-            SELECT 
-                p.*,
-                m.nombre_municipio,
-                d.nombre_departamento,
-                s.nombre_usuario as supervisor_nombre,
-                s.id_usuario as supervisor_id
-            FROM tbl_proyectos p
-            LEFT JOIN tbl_municipios m ON p.id_ubicacion = m.id_municipio
-            LEFT JOIN tbl_departamentos d ON m.id_departamento = d.id_departamento
-            LEFT JOIN tbl_usuarios s ON p.id_supervisor = s.id_usuario
-            WHERE p.id_proyecto = ?
-        `, [id]);
-
-        if (!proyecto) {
-            return res.status(404).json({ error: 'Proyecto no encontrado' });
-        }
-
-        res.json(proyecto);
-
-    } catch (error) {
-        console.error('Error obteniendo proyecto:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// GET /api/proyectos/usuario/:idUsuario
-router.get('/usuario/:idUsuario', (req, res) => {
-  try {
-    const proyectos = db.prepare(`
-      SELECT p.*
-      FROM tbl_proyectos p
-      INNER JOIN tbl_proyectos_usuarios pu
-        ON pu.id_proyecto = p.id_proyecto
-      WHERE pu.id_usuario = ?
-      ORDER BY p.nombre_proyecto
-    `).all(req.params.idUsuario);
-
-    res.json(proyectos);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ======================================================
-// GET /api/proyectos/:id/colaboradores
-// ======================================================
-
-/*router.get('/:id/colaboradores', async (req, res) => {
-    try {
-        const filas = await db.queryAll(
-            `
-            SELECT
-                u.id_usuario,
-                u.nombre_usuario,
-                u.correo,
-                u.id_rol
-            FROM tbl_proyectos_usuarios pu
-            INNER JOIN tbl_usuarios u
-                ON u.id_usuario = pu.id_usuario
-            WHERE pu.id_proyecto = ?
-            `,
-            [req.params.id]
-        );
-        res.json(filas);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});*/
-
-// ======================================================
+// ─────────────────────────────────────────────────────────────
 // GET /api/proyectos/:id/reportes
-// ======================================================
+// ─────────────────────────────────────────────────────────────
 
 router.get('/:id/reportes', async (req, res) => {
     try {
@@ -599,78 +507,6 @@ router.get('/:id/reportes', async (req, res) => {
         res.json(filas);
     } catch (err) {
         res.status(500).json({ error: err.message });
-    }
-});
-
-// ======================================================
-// GET /api/proyectos
-// ======================================================
-
-router.get('/', async (req, res) => {
-    try {
-        const { estado, id_usuario } = req.query;
-
-        //LOGS DE PRUEBA
-                console.log('========================================');
-        console.log('[API] GET /api/proyectos');
-        console.log('[API] Filtros recibidos:', { estado, id_usuario });
-        console.log('[API] ID Usuario (raw):', id_usuario);
-        console.log('[API] ID Usuario (parsed):', id_usuario ? parseInt(id_usuario) : 'N/A');
-
-        let query = `
-            SELECT p.*, m.nombre_municipio, d.nombre_departamento
-            FROM tbl_proyectos p
-            LEFT JOIN tbl_municipios m ON p.id_ubicacion = m.id_municipio
-            LEFT JOIN tbl_departamentos d ON m.id_departamento = d.id_departamento
-            LEFT JOIN tbl_usuarios s ON p.id_supervisor = s.id_usuario
-        `;
-        const params = [];
-        const conditions = [];
-
-        if (estado) {
-            conditions.push('p.estado_proyecto = ?');
-            params.push(estado);
-        }
-
-        if (id_usuario) {
-            query += ` INNER JOIN tbl_proyectos_usuarios pu ON p.id_proyecto = pu.id_proyecto`;
-            conditions.push('pu.id_usuario = ?');
-            params.push(parseInt(id_usuario));
-        }
-
-        if (conditions.length > 0) {
-            query += ' WHERE ' + conditions.join(' AND ');
-        }
-
-        query += ' ORDER BY p.fecha_inicio DESC';
-
-        console.log('[API] Query final:', query);
-        console.log('[API] Params:', params);
-
-        const proyectos = await db.queryAll(query, params);
-
-                // Obtener usuarios asignados a cada proyecto
-        for (const p of proyectos) {
-            const usuarios = await db.queryAll(
-                `
-                SELECT u.id_usuario, u.nombre_usuario
-                FROM tbl_proyectos_usuarios pu
-                INNER JOIN tbl_usuarios u ON pu.id_usuario = u.id_usuario
-                WHERE pu.id_proyecto = ?
-                `,
-                [p.id_proyecto]
-            );
-            p.usuarios_ids = usuarios.map(u => u.id_usuario);
-            p.usuarios_nombres = usuarios.map(u => u.nombre_usuario);
-        }
-
-        console.log('[API] Proyectos encontrados:', proyectos.length);
-        console.log('[API] Proyectos:', JSON.stringify(proyectos, null, 2));
-
-        res.json(proyectos);
-    } catch (error) {
-        console.error('Error listando proyectos:', error);
-        res.status(500).json({ error: error.message });
     }
 });
 

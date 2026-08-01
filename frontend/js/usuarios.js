@@ -249,15 +249,14 @@ async function guardarUsuario(){
 /* ──────────────────────────────────────────────
    VER PROYECTOS VINCULADOS A UN USUARIO
    ────────────────────────────────────────────── */
-async function obtenerProyectosDeUsuario(id){
-  const [relaciones, todosLosProyectos] = await Promise.all([
-    API.proyectosUsuarios.listar({ id_usuario: id }),
-    API.proyectos.listar(),
-  ]);
-  const proyectosMap = Object.fromEntries(todosLosProyectos.map(p => [p.id_proyecto, p]));
-  return relaciones
-    .map(rel => proyectosMap[rel.id_proyecto])
-    .filter(Boolean);
+async function obtenerProyectosDeUsuario(id) {
+    try {
+        const todosLosProyectos = await API.proyectos.listar();
+        return todosLosProyectos.filter(p => p.id_supervisor === id);
+    } catch (error) {
+        console.error('Error obteniendo proyectos del usuario:', error);
+        return [];
+    }
 }
 
 async function verProyectos(id){

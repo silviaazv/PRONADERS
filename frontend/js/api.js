@@ -70,6 +70,8 @@ const API = {
         obtener: (id) => API.get(`/proyectos/${id}`),
         crear: (datos) => API.post('/proyectos', datos),
         actualizar: (id, datos) => API.put(`/proyectos/${id}`, datos),
+        finalizar: (id, datos) => API.patch(`/proyectos/${id}/finalizar`, datos),  
+        cancelar: (id, datos) => API.patch(`/proyectos/${id}/cancelar`, datos),
         eliminar: (id) => API.del(`/proyectos/${id}`),
         obtenerEstados: () => API.get('/proyectos/estados'),
         obtenerResumen: () => API.get('/proyectos/resumen'),
@@ -92,6 +94,7 @@ const API = {
         obtener: (id) => API.get(`/reportes/${id}`),
         crear: (datos) => API.post('/reportes', datos),
         aprobar: (id, datos) => API.patch(`/reportes/${id}/aprobar`, datos),
+        rechazar: (id, datos) => API.patch(`/reportes/${id}/rechazar`, datos),
         eliminar: (id) => API.del(`/reportes/${id}`),
     },
 

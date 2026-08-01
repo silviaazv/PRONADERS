@@ -215,29 +215,33 @@ router.patch('/:id/aprobar', async (req, res) => {
     }
 });
 
-/**
- * PATCH /api/reportes/:id/rechazar
- * Rechaza un reporte de avance
- * Body: { id_usuario, motivo }
- */
+// ============================================================
+// PATCH /api/reportes/:id/rechazar - Rechazar reporte
+// ============================================================
+
 router.patch('/:id/rechazar', async (req, res) => {
     try {
-        const { id_usuario, motivo } = req.body;
+        const { id_usuario } = req.body;
         const id_reporte = parseInt(req.params.id);
 
-        if (!id_usuario) return res.status(400).json({ error: 'Usuario es obligatorio' });
-        if (!motivo || motivo.trim().length === 0) {
-            return res.status(400).json({ error: 'El motivo del rechazo es obligatorio' });
+        console.log('[API] Rechazando reporte:', id_reporte, 'Usuario:', id_usuario);
+
+        if (!id_usuario) {
+            return res.status(400).json({ error: 'Usuario es obligatorio' });
         }
 
         const reporte = await db.queryOne(
             'SELECT * FROM tbl_reportes WHERE id_reporte = ?',
             [id_reporte]
         );
-        if (!reporte) return res.status(404).json({ error: 'Reporte no encontrado' });
+        if (!reporte) {
+            return res.status(404).json({ error: 'Reporte no encontrado' });
+        }
+
+        //SOLO permitir rechazar si está PENDIENTE (estado 0)
         if (reporte.estado_reporte !== 0) {
-            return res.status(400).json({
-                error: `El reporte ya está ${reporte.estado_reporte === 1 ? 'aprobado' : 'en otro estado'}`
+            return res.status(400).json({ 
+                error: `El reporte ya está ${reporte.estado_reporte === 1 ? 'aprobado' : 'rechazado'} y no se puede modificar`
             });
         }
 
@@ -246,38 +250,42 @@ router.patch('/:id/rechazar', async (req, res) => {
         await db.execute(`
             UPDATE tbl_reportes 
             SET estado_reporte = 2, 
-                fecha_revision_reporte = ?,
-                motivo_rechazo = ?
+                fecha_revision_reporte = ?
             WHERE id_reporte = ?
-        `, [fechaActual, motivo, id_reporte]);
+        `, [fechaActual, id_reporte]);
 
-        // Registrar en bitácora
+        //REGISTRAR EN BITÁCORA
         await registrarBitacora({
             id_usuario: parseInt(id_usuario),
-            tipo_accion: 'RECHAZO',
-            tipo_objeto: 'REPORTE',
-            id_objeto: id_reporte,
+            tipo_accion: 'RECHAZO',       
+            tipo_objeto: 'REPORTE',        
+            id_objeto: id_reporte,         
             campo_modificado: 'estado_reporte',
             valor_antiguo: '0 (Pendiente)',
-            valor_nuevo: `2 (Rechazado) - Motivo: ${motivo}`
+            valor_nuevo: '2 (Rechazado)'
         });
 
-        const reporteActualizado = await db.queryOne(
-            'SELECT * FROM tbl_reportes WHERE id_reporte = ?',
-            [id_reporte]
-        );
+        const reporteActualizado = await db.queryOne(`
+            SELECT r.*, 
+                   p.nombre_proyecto,
+                   u.nombre_usuario as autor_nombre
+            FROM tbl_reportes r
+            LEFT JOIN tbl_proyectos p ON r.id_proyecto = p.id_proyecto
+            LEFT JOIN tbl_usuarios u ON r.id_usuario = u.id_usuario
+            WHERE r.id_reporte = ?
+        `, [id_reporte]);
 
         res.json({
             success: true,
             message: 'Reporte rechazado',
             reporte: reporteActualizado
         });
+
     } catch (error) {
         console.error('Error rechazando reporte:', error);
         res.status(500).json({ error: error.message });
     }
 });
-
 /**
  * DELETE /api/reportes/:id
  * Elimina un reporte (solo si está pendiente)

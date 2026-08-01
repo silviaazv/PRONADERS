@@ -115,9 +115,6 @@ function calcularEstadisticas() {
     dashboardData.estadisticas.reportesAprobados = reportes.filter(r => 
         r.estado_reporte === 1
     ).length;
-
-    // Mensajes no leídos (simulado - se puede conectar con notificaciones)
-    dashboardData.estadisticas.mensajesNoLeidos = 3; // Placeholder
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -149,7 +146,7 @@ function renderizarDashboard() {
             ${renderMetricCard('Proyectos Activos', est.proyectosActivos, 'folder_open', '#E6F1FB', 'var(--info)')}
             ${renderMetricCard('Reportes Pendientes', est.reportesPendientes, 'pending_actions', 'var(--warning-bg)', 'var(--warning)')}
             ${renderMetricCard('Solicitudes Activas', est.solicitudesPendientes, 'inventory_2', 'var(--danger-bg)', 'var(--danger)')}
-            ${renderMetricCard('Mensajes No Leídos', est.mensajesNoLeidos, 'forum', 'var(--success-bg)', 'var(--success)')}
+            ${renderMetricCard('Proyectos Retrasados', est.proyectosRetrasados, 'warning', 'var(--danger-bg)', 'var(--danger)')}
         </div>
 
         <!-- MIS PROYECTOS + ACTIVIDAD -->
@@ -332,7 +329,7 @@ function renderReportesRecientes() {
 function renderSolicitudesRecientes() {
     const solicitudes = dashboardData.solicitudes
         .sort((a, b) => new Date(b.fecha_solicitud) - new Date(a.fecha_solicitud))
-        .slice(0, 3);
+        .slice(0, 2);
 
     if (solicitudes.length === 0) {
         return `<div class="empty-state">No hay solicitudes recientes</div>`;
@@ -359,10 +356,15 @@ function renderSolicitudesRecientes() {
     return solicitudes.map(s => {
         const badge = estadoBadge[s.estado_solicitud] || 'badge-warning';
         const label = estadoLabel[s.estado_solicitud] || s.estado_solicitud || 'Pendiente';
+        
         // Obtener descripción del primer ítem
         const descItem = s.items && s.items.length > 0 
             ? s.items[0].descripcion_recurso || s.items[0].desc || 'Sin descripción'
             : 'Sin recursos';
+
+        if (descItem.length > 30) {
+            descItem = descItem.substring(0, 30) + '...';
+        }
 
         return `
             <div class="flex-between">
@@ -372,10 +374,54 @@ function renderSolicitudesRecientes() {
                 </div>
                 <span class="badge ${badge}">${label}</span>
             </div>
+        ${
+                    s.estado_solicitud === 'EN DESPACHO'
+                    ? `
+                        <div style="margin-top:10px;text-align:right">
+                            <button
+                                class="btn btn-success btn-sm"
+                                onclick="confirmarRecepcion(${s.id_solicitud})">
+
+                                <span class="material-symbols-rounded">
+                                    inventory
+                                </span>
+
+                                Confirmar recepción
+
+                            </button>
+                        </div>
+                    `
+                    : ''
+                }
+
+            </div>
         `;
     }).join('');
 }
 
+async function confirmarRecepcion(idSolicitud){
+
+    if(!confirm('¿Confirmar que la solicitud fue recibida?')){
+        return;
+    }
+
+    try{
+
+        await API.solicitudes.entregar(idSolicitud);
+
+        showToast('Solicitud marcada como ENTREGADA');
+
+        await cargarDashboard();
+
+    }catch(error){
+
+        console.error(error);
+
+        showToast(error.message,'warning');
+
+    }
+
+}
 // ─────────────────────────────────────────────────────────────
 // HELPERS
 // ─────────────────────────────────────────────────────────────
@@ -424,4 +470,6 @@ function showToast(msg, tipo = 'success') {
 // ─────────────────────────────────────────────────────────────
 
 window.cargarDashboard = cargarDashboard;
+window.renderSolicitudesRecientes = renderSolicitudesRecientes;
+window.confirmarRecepcion = confirmarRecepcion;
 window.showToast = showToast;

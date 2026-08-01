@@ -24,6 +24,7 @@
 let reportesCache = [];
 let proyectosCache = [];
 let usuariosCache = [];
+let _reporteRechazarId = null;
 
 const ID_USUARIO = parseInt(sessionStorage.getItem('pron_id_usuario')) || null;
 const NOMBRE_USUARIO = sessionStorage.getItem('pron_nombre') || 'Usuario';
@@ -201,11 +202,14 @@ function cardReporte(r) {
     const esRevisado = r.estado_reporte === 1;
     const esRechazado = r.estado_reporte === 2;
     
-    const badge = esPendiente
-        ? '<span class="badge badge-warning"><span class="material-symbols-rounded" style="font-size:12px">pending</span>Pendiente</span>'
-        : esRevisado
-            ? '<span class="badge badge-success"><span class="material-symbols-rounded" style="font-size:12px">check_circle</span>Aprobado</span>'  
-            : '<span class="badge badge-danger"><span class="material-symbols-rounded" style="font-size:12px">cancel</span>Rechazado</span>';  
+    let badge = '';
+    if (esPendiente) {
+        badge = '<span class="badge badge-warning"><span class="material-symbols-rounded" style="font-size:12px">pending</span>Pendiente</span>';
+    } else if (esRechazado) {
+        badge = '<span class="badge badge-danger"><span class="material-symbols-rounded" style="font-size:12px">cancel</span>Rechazado</span>';
+    } else {
+        badge = '<span class="badge badge-success"><span class="material-symbols-rounded" style="font-size:12px">check_circle</span>Aprobado</span>';
+    }
 
     const fechaEmision = r.fecha_reporte ? new Date(r.fecha_reporte).toLocaleDateString('es-HN', {
         day: '2-digit', month: 'short', year: 'numeric'
@@ -222,27 +226,21 @@ function cardReporte(r) {
     // Acciones según rol
     let acciones = '';
 
-    if (esPendiente) {
-        if (ES_ADMIN) {
-            acciones = `
-                <button class="btn btn-success btn-sm" onclick="aprobarReporte(${r.id_reporte})">
-                    <span class="material-symbols-rounded" style="font-size:14px">check</span> Aprobar
-                </button>
-            `;
-        } else if (ES_CAMPO) {
-            acciones = `<span class="text-xs text-muted" style="align-self:center">En revisión por oficina</span>`;
-        }
+    if (ES_ADMIN && esPendiente) {
+        acciones = `
+            <button class="btn btn-danger btn-sm" onclick="rechazarReporte(${r.id_reporte})">
+                <span class="material-symbols-rounded" style="font-size:14px">cancel</span> Rechazar
+            </button>
+            <button class="btn btn-success btn-sm" onclick="aprobarReporte(${r.id_reporte})">
+                <span class="material-symbols-rounded" style="font-size:14px">check</span> Aprobar
+            </button>
+        `;
+    } else if (ES_CAMPO && esPendiente) {
+        acciones = `<span class="text-xs text-muted" style="align-self:center">En revisión por oficina</span>`;
+    } else if (esRechazado) {
+        acciones = `<span class="text-xs text-muted" style="align-self:center">Reporte rechazado</span>`;
     }
 
-    if (esRechazado) {
-        if (ES_ADMIN) {
-            acciones = `<button class="btn btn-success btn-sm" onclick="abrirModalRechazarReporte(${r.id_reporte})">
-                    <span class="material-symbols-rounded" style="font-size:14px">check</span> Rechazar
-                </button>`;
-        } else if (ES_CAMPO) {  
-            acciones = `<span class="text-xs text-muted" style="align-self:center">Rechazado por oficina</span>`;
-        }
-    }
     // Calcular avance desde presupuesto si está disponible
     const avanceFisico = r.avance_fisico || 0;
     const avanceFinanciero = r.avance_financiero || 0;
@@ -377,40 +375,39 @@ async function aprobarReporte(id) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// RECHAZAR REPORTE (Admin)
-//
+// RECHAZAR REPORTE 
+// ─────────────────────────────────────────────────────────────
 
-function abrirModalRechazarReporte(id) {
-    _reporteActivo = id;
-    document.getElementById('rechazo-reporte-motivo').value = '';
-    document.getElementById('modal-rechazar-reporte').classList.add('open');
-}
-
-async function confirmarRechazoReporte() {
-    const motivo = document.getElementById('rechazo-reporte-motivo')?.value.trim() || '';
-
-    if (!motivo) {
-        showToast('El motivo del rechazo es obligatorio', 'warning');
+async function rechazarReporte(id) {
+    const reporte = reportesCache.find(r => r.id_reporte === id);
+    if (!reporte) {
+        showToast('Reporte no encontrado', 'warning');
         return;
     }
 
+    const confirmar = confirm(
+        `¿Estás seguro de RECHAZAR el reporte?\n\n` +
+        `"${reporte.descripcion_reporte || 'Reporte sin descripción'}"\n` +
+        `Proyecto: ${reporte.nombre_proyecto || 'Sin proyecto'}`
+    );
+
+    if (!confirmar) return;
+
     try {
-        const result = await API.reportes.rechazar(_reporteActivo, {
-            id_usuario: ID_USUARIO,
-            motivo: motivo
+        const result = await API.reportes.rechazar(id, {
+            id_usuario: parseInt(sessionStorage.getItem('pron_id_usuario')) || 1
         });
 
         if (result.success) {
             showToast('Reporte rechazado', 'info');
-            document.getElementById('modal-rechazar-reporte').classList.remove('open');
             await cargarDatosIniciales();
             renderReportes();
         }
     } catch (error) {
+        console.error('Error rechazando reporte:', error);
         showToast(error.message || 'Error al rechazar el reporte', 'warning');
     }
 }
-
 // ─────────────────────────────────────────────────────────────
 // MODAL NUEVO REPORTE
 // ─────────────────────────────────────────────────────────────
@@ -571,6 +568,7 @@ function showToast(msg, tipo = 'success') {
 
 window.abrirModalReporte = abrirModalReporte;
 window.cerrarModalReporte = cerrarModalReporte;
+window.rechazarReporte = rechazarReporte;
 window.enviarReporte = enviarReporte;
 window.aprobarReporte = aprobarReporte;
 window.limpiarFiltrosReportes = limpiarFiltrosReportes;

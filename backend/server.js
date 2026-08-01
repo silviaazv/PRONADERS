@@ -32,7 +32,7 @@ app.use('/api/departamentos', require('./routes/departamentos'));
 app.use('/api/municipios', require('./routes/municipios'));
 app.use('/api/equipos', require('./routes/equipos'));
 app.use('/api/proyectos', require('./routes/proyectos'));
-app.use('/api/proyectos-usuarios', require('./routes/proyectosUsuarios'));
+//app.use('/api/proyectos-usuarios', require('./routes/proyectosUsuarios'));
 app.use('/api/solicitudes', require('./routes/solicitudes'));
 app.use('/api/fila-solicitud', require('./routes/filaSolicitud'));
 app.use('/api/reportes', require('./routes/reportes'));
