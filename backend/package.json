@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "crear-bd": "node scripts/crear-bd.js",
+    "exportar-bd": "node scripts/exportar-bd.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

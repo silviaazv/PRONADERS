@@ -1,2 +1,14 @@
 # Adjuntos subidos desde la aplicación (se generan en cada máquina)
 backend/uploads/
+
+# La base con la que trabaja cada quien en su máquina. No viaja en el
+# repositorio: adentro están los datos de prueba de cada una y, al ser un
+# archivo binario, git no las podía fusionar y una le terminaba pisando los
+# datos a la otra. Lo que se comparte es BD/pronaders-sqlite.sql, que es
+# texto y sí se puede fusionar.
+BD/pronaders-local.db
+BD/pronaders-local.db.respaldo-*
+BD/.bd-version
+BD/*.db-journal
+BD/*.db-wal
+BD/*.db-shm
