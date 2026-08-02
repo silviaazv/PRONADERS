@@ -421,8 +421,6 @@ function tarjetaProyecto(p) {
     const departamento = p.nombre_departamento || p.departamento || '';
     const ubicacionCompleta = departamento ? `${ubicacion}, ${departamento}` : ubicacion;
 
-    const esAdmin = (ROLE === 'admin_oficina' || ROLE === 'Administrador de Oficina' || ROLE === 'admin');
-
     //Botones de acción (Admin)
     let accionesAdmin = '';
     if (esAdmin) {
@@ -618,8 +616,16 @@ async function abrirDetalle(id) {
             ${esAdmin ? `
             <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:24px;padding-top:16px;border-top:1px solid var(--cream-dark)">
                 <button class="btn btn-outline btn-sm" onclick="abrirEditarProyecto(${p.id_proyecto})">
-                    <span class="material-symbols-rounded" style="font-size:14px">edit</span> Editar
+                <span class="material-symbols-rounded" style="font-size:14px">edit</span> Editar
                 </button>
+                ${p.estado_proyecto !== 'FINALIZADO' ? `
+                <button class="btn btn-success btn-sm" onclick="abrirModalFinalizar(${p.id_proyecto})">
+                <span class="material-symbols-rounded" style="font-size:14px">check_circle</span> Finalizar
+                </button>` : ''}
+                ${p.estado_proyecto !== 'CANCELADO' ? `
+                <button class="btn btn-danger btn-sm" onclick="cancelarProyecto(${p.id_proyecto})">
+                <span class="material-symbols-rounded" style="font-size:14px">block</span> Cancelar
+                </button>` : ''}
             </div>` : ''}
         `;
 

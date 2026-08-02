@@ -125,9 +125,9 @@ router.post('/', async (req, res) => {
 
         const result = await db.execute(`
             INSERT INTO tbl_reportes 
-            (id_proyecto, id_usuario, descripcion_reporte, fecha_reporte, estado_reporte)
-            VALUES (?, ?, ?, ?, 0)
-        `, [parseInt(id_proyecto), parseInt(id_usuario), descripcion_reporte.trim(), fechaActual]);
+            (id_proyecto, id_usuario, descripcion_reporte, fecha_reporte, estado_reporte, avance_fisico, avance_financiero)
+            VALUES (?, ?, ?, ?, 0, ?, ?)
+        `, [parseInt(id_proyecto), parseInt(id_usuario), descripcion_reporte.trim(), fechaActual, avance_fisico || 0, avance_financiero || 0]);
 
         const id_reporte = result.lastInsertRowid;
 

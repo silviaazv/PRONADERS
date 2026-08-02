@@ -22,8 +22,8 @@
       </p>
     </div>
     <div style="display:flex;gap:8px">
-      <button class="icon-btn" title="Exportar CSV" onclick="alert('Exportar a CSV — funcionalidad pendiente de integración con BD')" style="width:auto;padding:0 14px;gap:6px;font-size:13px;font-weight:500">
-        <span class="material-symbols-rounded" style="font-size:16px">download</span> Exportar
+      <button class="icon-btn" title="Exportar PDF" onclick="exportarBitacoraPDF()" style="width:auto;padding:0 14px;gap:6px;font-size:13px;font-weight:500">
+        <span class="material-symbols-rounded" style="font-size:16px">picture_as_pdf</span> Exportar PDF
       </button>
     </div>
   </div>
@@ -64,7 +64,7 @@
   <div class="filter-bar fade-up fade-up-2">
     <div class="search-wrap">
       <span class="material-symbols-rounded">search</span>
-      <input type="text" class="search-input" placeholder="Buscar por usuario, objeto o IP..." oninput="filtrarBitacora(this.value)">
+      <input type="text" class="search-input" placeholder="Buscar por usuario, objeto..." oninput="filtrarBitacora(this.value)">
     </div>
     <label>Usuario:</label>
     <select class="filter-select" id="f-usuario" onchange="filtrarBitacora()">
@@ -95,7 +95,7 @@
       <option value="ARCHIVO">Archivo</option>
     </select>
     <label>Fecha:</label>
-    <input type="date" class="filter-select" id="f-fecha" value="2026-04-26" onchange="filtrarBitacora()">
+    <input type="date" class="filter-select" id="f-fecha" onchange="filtrarBitacora()">
   </div>
 
   <!-- LOG TABLE -->
@@ -116,32 +116,36 @@
         <thead>
           <tr>
             <th style="width:40px">#</th>
-            <th style="width:150px">Fecha / Hora</th>
-            <th style="width:160px">Usuario</th>
-            <th style="width:90px">Rol</th>
-            <th>Objeto asociado</th>
-            <th style="width:120px">IP / Ubicación</th>
-            <th style="width:110px">Tipo</th>
+            <th style="width:160px">Fecha / Hora</th>
+            <th style="width:180px">Usuario</th>
+            <th style="width:100px">Rol</th>
+            <th style="width:140px">Objeto asociado</th>
+            <th style="width:120px">Tipo</th>
           </tr>
         </thead>
         <tbody id="log-tbody">
-          <!-- Filas generadas por JS -->
         </tbody>
       </table>
     </div>
 
     <!-- PAGINATION -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px;padding-top:16px;border-top:1px solid var(--cream-dark)">
-      <span style="font-size:12px;color:var(--muted)">Página 1 de 63</span>
-      <div style="display:flex;gap:6px">
-        <button class="icon-btn" style="width:auto;padding:0 12px;font-size:12px;gap:4px">
-          <span class="material-symbols-rounded" style="font-size:14px">chevron_left</span> Anterior
+<div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px;padding-top:16px;border-top:1px solid var(--cream-dark)">
+    <span style="font-size:12px;color:var(--muted);" id="info-pagina">Página 1 de 1</span>
+    <div style="display:flex;gap:6px">
+        <button class="icon-btn" id="btn-primera" onclick="irPagina(1)" style="width:auto;padding:0 10px;font-size:12px;gap:4px;">
+            <span class="material-symbols-rounded" style="font-size:14px">first_page</span>
         </button>
-        <button class="icon-btn" style="width:auto;padding:0 12px;font-size:12px;gap:4px;background:var(--navy);color:var(--white);border-color:var(--navy)">
-          Siguiente <span class="material-symbols-rounded" style="font-size:14px">chevron_right</span>
+        <button class="icon-btn" id="btn-anterior" onclick="paginaAnterior()" style="width:auto;padding:0 12px;font-size:12px;gap:4px;">
+            <span class="material-symbols-rounded" style="font-size:14px">chevron_left</span> Anterior
         </button>
-      </div>
+        <button class="icon-btn" id="btn-siguiente" onclick="paginaSiguiente()" style="width:auto;padding:0 12px;font-size:12px;gap:4px;">
+            Siguiente <span class="material-symbols-rounded" style="font-size:14px">chevron_right</span>
+        </button>
+        <button class="icon-btn" id="btn-ultima" onclick="irPagina(999)" style="width:auto;padding:0 10px;font-size:12px;gap:4px;">
+            <span class="material-symbols-rounded" style="font-size:14px">last_page</span>
+        </button>
     </div>
+</div>
   </div>
 </main>
 
