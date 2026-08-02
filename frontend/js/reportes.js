@@ -26,6 +26,11 @@ let proyectosCache = [];
 let usuariosCache = [];
 let _reporteRechazarId = null;
 
+// Adjuntos elegidos en el modal de "Nuevo Reporte". Se guardan aquí porque el
+// reporte se crea primero y los archivos se suben después, ya con su id_reporte.
+let _repArchivos = [];
+let _repArchivoSeq = 0;
+
 const ID_USUARIO = parseInt(sessionStorage.getItem('pron_id_usuario')) || null;
 const NOMBRE_USUARIO = sessionStorage.getItem('pron_nombre') || 'Usuario';
 const ROLE = sessionStorage.getItem('pron_role') || 'Supervisor de Campo';
@@ -194,6 +199,46 @@ function renderReportes() {
 }
 
 // ─────────────────────────────────────────────────────────────
+// ADJUNTOS: TIPO E ÍCONO SEGÚN LA EXTENSIÓN
+// ─────────────────────────────────────────────────────────────
+
+function extensionArchivo(a) {
+    return (a && a.nombre_archivo ? a.nombre_archivo : '').split('.').pop().toLowerCase();
+}
+
+function esImagenArchivo(a) {
+    return ['jpg', 'jpeg', 'png', 'gif', 'bmp'].includes(extensionArchivo(a));
+}
+
+function iconoArchivo(a) {
+    if (esImagenArchivo(a)) return 'image';
+    return extensionArchivo(a) === 'pdf' ? 'picture_as_pdf' : 'description';
+}
+
+// Abre el visor con el adjunto real (se busca en la caché ya cargada).
+function abrirVisorAdjunto(idReporte, idArchivo) {
+    const reporte = reportesCache.find(r => r.id_reporte === idReporte);
+    const archivo = (reporte && reporte.adjuntos || []).find(a => a.id_archivo === idArchivo);
+
+    if (!archivo) {
+        showToast('No se encontró el archivo adjunto', 'warning');
+        return;
+    }
+
+    const extension = extensionArchivo(archivo);
+    const tipo = esImagenArchivo(archivo) ? 'img' : (extension === 'pdf' ? 'pdf' : 'doc');
+
+    abrirVisor({
+        tipo,
+        nombre: archivo.nombre_archivo,
+        url: archivo.ruta_archivo || '',
+        codigo: `REP-${String(idReporte).padStart(4, '0')}`,
+        tipoCodigo: 'reporte',
+        descripcion: reporte.descripcion_reporte || 'Reporte de avance'
+    });
+}
+
+// ─────────────────────────────────────────────────────────────
 // CARD DE REPORTE
 // ─────────────────────────────────────────────────────────────
 
@@ -247,15 +292,15 @@ function cardReporte(r) {
 
     const progressColor = avanceFisico >= 75 ? 'success' : avanceFisico >= 40 ? 'gold' : 'danger';
 
-    // Adjuntos
+    // Adjuntos: la tabla no guarda el tipo, se deduce de la extensión del nombre.
     const adjuntos = r.adjuntos || [];
-    const fotos = adjuntos.filter(a => a.tipo_archivo && ['jpg', 'jpeg', 'png'].includes(a.tipo_archivo.toLowerCase()));
-    const docs = adjuntos.filter(a => a.tipo_archivo && ['pdf', 'docx', 'xlsx'].includes(a.tipo_archivo.toLowerCase()));
+    const fotos = adjuntos.filter(esImagenArchivo);
+    const docs = adjuntos.filter(a => !esImagenArchivo(a));
 
     const thumb = (a) => `
         <div class="evidence-thumb" title="${a.nombre_archivo}"
-             onclick='abrirVisor({tipo:"${a.tipo_archivo && ['jpg','jpeg','png'].includes(a.tipo_archivo.toLowerCase()) ? "img" : "pdf"}",nombre:"${a.nombre_archivo}",codigo:"REP-${String(r.id_reporte).padStart(4,'0')}",tipoCodigo:"reporte",descripcion:${JSON.stringify(r.descripcion_reporte || 'Reporte de avance')}})'>
-            <span class="material-symbols-rounded">${a.tipo_archivo && ['jpg','jpeg','png'].includes(a.tipo_archivo.toLowerCase()) ? 'image' : 'picture_as_pdf'}</span>
+             onclick="abrirVisorAdjunto(${r.id_reporte}, ${a.id_archivo})">
+            <span class="material-symbols-rounded">${iconoArchivo(a)}</span>
         </div>
     `;
 
@@ -446,6 +491,9 @@ async function abrirModalReporte() {
     document.getElementById('rep-incidencias').value = '';
     document.getElementById('rep-observaciones').value = '';
     document.getElementById('rep-files').innerHTML = '';
+    _repArchivos = [];
+    const inputArchivos = document.getElementById('rep-file-input');
+    if (inputArchivos) inputArchivos.value = '';
     document.getElementById('val-fisico').textContent = '50%';
     document.getElementById('val-fin').textContent = '40%';
 
@@ -510,7 +558,19 @@ async function enviarReporte() {
         const result = await API.reportes.crear(datos);
 
         if (result.success) {
-            showToast('Reporte registrado y enviado. El Administrador de Oficina fue notificado.', 'success');
+            // Los adjuntos van después: recién ahora existe el id_reporte al
+            // que hay que amarrarlos.
+            const id_reporte = result.reporte && result.reporte.id_reporte;
+            let adjuntados = 0;
+            if (id_reporte && _repArchivos.length) {
+                adjuntados = await subirAdjuntosReporte(id_reporte);
+            }
+
+            const detalleAdjuntos = adjuntados
+                ? ` Se adjuntó ${adjuntados} archivo${adjuntados !== 1 ? 's' : ''}.`
+                : '';
+
+            showToast(`Reporte registrado y enviado. El Administrador de Oficina fue notificado.${detalleAdjuntos}`, 'success');
             cerrarModalReporte();
             await cargarDatosIniciales();
             renderPaginaReportes();
@@ -530,18 +590,66 @@ function mostrarArchivosRep(files) {
     if (!c || !files || !files.length) return;
 
     Array.from(files).forEach(f => {
+        const id = ++_repArchivoSeq;
+        _repArchivos.push({ id, file: f });
+
         const d = document.createElement('div');
         d.className = 'file-chip';
         d.dataset.filename = f.name;
+        d.dataset.archivoId = id;
         d.style.cssText = 'display:flex;align-items:center;gap:8px;background:var(--cream);border:1px solid var(--cream-dark);border-radius:8px;padding:6px 10px;font-size:12px';
         d.innerHTML = `
             <span class="material-symbols-rounded" style="font-size:16px;color:var(--navy)">description</span>
             <span style="flex:1;color:var(--text)">${f.name}</span>
             <span style="color:var(--muted)">${(f.size / 1024).toFixed(0)} KB</span>
-            <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:var(--muted)">✕</button>
+            <button type="button" onclick="quitarArchivoRep(${id})" style="background:none;border:none;cursor:pointer;color:var(--muted)">✕</button>
         `;
         c.appendChild(d);
     });
+
+    // Se limpia el input para poder volver a elegir el mismo archivo si se quitó.
+    const input = document.getElementById('rep-file-input');
+    if (input) input.value = '';
+}
+
+function quitarArchivoRep(id) {
+    _repArchivos = _repArchivos.filter(a => a.id !== id);
+    const chip = document.querySelector(`#rep-files [data-archivo-id="${id}"]`);
+    if (chip) chip.remove();
+}
+
+// Lee el archivo del disco y lo devuelve como data URL ("data:...;base64,...").
+function leerArchivoBase64(file) {
+    return new Promise((resolve, reject) => {
+        const lector = new FileReader();
+        lector.onload = () => resolve(lector.result);
+        lector.onerror = () => reject(new Error(`No se pudo leer ${file.name}`));
+        lector.readAsDataURL(file);
+    });
+}
+
+// Sube al servidor los adjuntos del modal y los deja asociados al reporte.
+// Devuelve cuántos se guardaron bien.
+async function subirAdjuntosReporte(id_reporte) {
+    let guardados = 0;
+
+    for (const { file } of _repArchivos) {
+        try {
+            const contenido_base64 = await leerArchivoBase64(file);
+            await API.archivos.subir({
+                id_usuario: ID_USUARIO,
+                id_reporte,
+                nombre_archivo: file.name,
+                contenido_base64
+            });
+            guardados++;
+        } catch (error) {
+            console.error('Error subiendo adjunto:', file.name, error);
+            showToast(`No se pudo adjuntar "${file.name}": ${error.message}`, 'warning');
+        }
+    }
+
+    return guardados;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -574,4 +682,6 @@ window.aprobarReporte = aprobarReporte;
 window.limpiarFiltrosReportes = limpiarFiltrosReportes;
 window.renderReportes = renderReportes;
 window.mostrarArchivosRep = mostrarArchivosRep;
+window.quitarArchivoRep = quitarArchivoRep;
+window.abrirVisorAdjunto = abrirVisorAdjunto;
 window.showToast = showToast;

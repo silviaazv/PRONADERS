@@ -1039,8 +1039,38 @@ function abrirVisor(archivo) {
                     max-width: 860px;
                 }
                 #visor-evidencias .v-cod .material-symbols-rounded { font-size: 13px; }
+                /* Cuando hay archivo real, el marco se agranda y lo muestra completo. */
+                #visor-evidencias .v-frame.v-con-archivo {
+                    max-width: 980px;
+                    height: 100%;
+                    padding: 0;
+                    justify-content: stretch;
+                }
+                #visor-evidencias .v-doc {
+                    width: 100%;
+                    height: 100%;
+                    border: none;
+                    border-radius: 14px;
+                }
+                #visor-evidencias .v-img {
+                    max-width: 100%;
+                    max-height: 100%;
+                    object-fit: contain;
+                    border-radius: 14px;
+                }
+                #visor-evidencias .v-abrir {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: 12.5px;
+                    font-weight: 600;
+                    color: var(--navy, #0D1B3E);
+                    text-decoration: none;
+                }
+                #visor-evidencias .v-abrir:hover { text-decoration: underline; }
                 @media (max-width: 600px) {
                     #visor-evidencias .v-frame { padding: 24px; }
+                    #visor-evidencias .v-frame.v-con-archivo { padding: 0; }
                     #visor-evidencias .v-ico { font-size: 56px !important; }
                     #visor-evidencias .v-body { padding: 0 16px; }
                 }
@@ -1071,11 +1101,41 @@ function abrirVisor(archivo) {
     const iconos = { img: 'image', pdf: 'picture_as_pdf', doc: 'description', xls: 'table' };
     const tags = { img: 'Fotografía de evidencia', pdf: 'Documento PDF', doc: 'Documento adjunto', xls: 'Hoja de cálculo' };
 
-    document.getElementById('visor-frame').innerHTML = `
-        <span class="material-symbols-rounded v-ico">${iconos[archivo.tipo] || 'description'}</span>
-        <div class="v-nombre">${archivo.nombre || 'Archivo adjunto'}</div>
-        <div class="v-tag">${tags[archivo.tipo] || 'Adjunto'} · Vista previa</div>
-    `;
+    const marco = document.getElementById('visor-frame');
+    const nombre = archivo.nombre || 'Archivo adjunto';
+    const url = archivo.url || '';
+
+    if (url && archivo.tipo === 'img') {
+        // Fotografía: se muestra directo.
+        marco.className = 'v-frame v-con-archivo';
+        marco.innerHTML = `<img class="v-img" src="${url}" alt="${nombre}">`;
+
+    } else if (url && archivo.tipo === 'pdf') {
+        // PDF: lo abre el visor propio del navegador dentro del marco.
+        marco.className = 'v-frame v-con-archivo';
+        marco.innerHTML = `<iframe class="v-doc" src="${url}" title="${nombre}"></iframe>`;
+
+    } else if (url) {
+        // Word, Excel y demás: el navegador no los previsualiza, se ofrece descarga.
+        marco.className = 'v-frame';
+        marco.innerHTML = `
+            <span class="material-symbols-rounded v-ico">${iconos[archivo.tipo] || 'description'}</span>
+            <div class="v-nombre">${nombre}</div>
+            <div class="v-tag">${tags[archivo.tipo] || 'Adjunto'}</div>
+            <a class="v-abrir" href="${url}" target="_blank" rel="noopener" download="${nombre}">
+                <span class="material-symbols-rounded" style="font-size:16px">download</span> Descargar archivo
+            </a>
+        `;
+
+    } else {
+        // Sin ruta guardada: se conserva la vista previa de siempre.
+        marco.className = 'v-frame';
+        marco.innerHTML = `
+            <span class="material-symbols-rounded v-ico">${iconos[archivo.tipo] || 'description'}</span>
+            <div class="v-nombre">${nombre}</div>
+            <div class="v-tag">${tags[archivo.tipo] || 'Adjunto'} · Vista previa</div>
+        `;
+    }
 
     document.getElementById('visor-cod').innerHTML = `
         <span class="material-symbols-rounded">${archivo.tipoCodigo === 'solicitud' ? 'inventory_2' : 'bar_chart'}</span>

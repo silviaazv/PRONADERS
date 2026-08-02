@@ -157,12 +157,8 @@ const API = {
     // ============================================================
     archivos: {
         listar: (params) => API.get('/archivos' + _qs(params)),
-        subir: (formData) => {
-            return fetch(API_BASE + '/archivos', {
-                method: 'POST',
-                body: formData,
-            }).then(resp => resp.json());
-        },
+        // El archivo viaja como base64 dentro del JSON, en 'contenido_base64'.
+        subir: (datos) => API.post('/archivos', datos),
         descargar: (id) => API.get(`/archivos/${id}/descargar`),
         eliminar: (id) => API.del(`/archivos/${id}`),
     },

@@ -6,7 +6,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
+// Los adjuntos de los reportes viajan en base64 dentro del JSON, así que el
+// tope por defecto (100 kb) se queda corto para un PDF.
+app.use(express.json({ limit: '25mb' }));
 
 // ---------------------------------------------------------------
 // 1) Servir el front-end estático (html / css / js) desde el mismo
@@ -19,6 +21,8 @@ app.use(express.static(path.join(RAIZ_PROYECTO, 'frontend', 'html')));
 app.use('/css', express.static(path.join(RAIZ_PROYECTO, 'frontend', 'css')));
 app.use('/js', express.static(path.join(RAIZ_PROYECTO, 'frontend', 'js')));
 app.use('/img', express.static(path.join(RAIZ_PROYECTO, 'img')));
+// Adjuntos subidos desde la aplicación (evidencias de reportes).
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(RAIZ_PROYECTO, 'frontend', 'html', 'index.html'));
