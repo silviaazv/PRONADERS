@@ -94,7 +94,7 @@
     const sidebar = `
         <aside class="sidebar">
             <div class="sidebar-brand">
-                <div class="brand-logo">P</div>
+                <img class="brand-logo" src="/img/imagen-Escudo.png" alt="Escudo de Honduras">
                 <div>
                     <div class="brand-name">PRONADERS</div>
                     <div class="brand-sub">Sistema de Gestión</div>
@@ -160,17 +160,17 @@
             border-bottom: 1px solid rgba(255,255,255,0.08);
             margin-bottom: 16px;
         }
-        .brand-logo {
+        /* El escudo es un PNG vertical (140x170) con fondo transparente:
+           se mantiene la caja de 40x40 del logo anterior para no mover nada
+           del sidebar, y object-fit lo encaja dentro sin deformarlo. */
+        img.brand-logo {
             width: 40px;
             height: 40px;
-            border-radius: 10px;
-            background: var(--gold, #C9A84C);
-            color: var(--navy, #0D1B3E);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            font-weight: 700;
+            object-fit: contain;
+            flex-shrink: 0;
+            background: none;
+            border-radius: 0;
+            display: block;
         }
         .brand-name {
             font-size: 16px;

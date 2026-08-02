@@ -30,7 +30,7 @@ body{font-family:var(--font-sans);background:var(--navy);color:var(--text);min-h
 .geo-circle:nth-child(3){width:700px;height:700px;bottom:-250px;left:-200px;border-color:rgba(255,255,255,0.03);}
 
 .brand{display:flex;align-items:center;gap:12px;position:relative;z-index:2;}
-.brand-logo{width:44px;height:44px;background:var(--gold);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);font-size:16px;color:var(--navy);}
+.brand-logo{width:44px;height:44px;object-fit:contain;flex-shrink:0;display:block;}
 .brand-text .name{font-size:14px;font-weight:600;color:var(--white);letter-spacing:1px;text-transform:uppercase;}
 .brand-text .sub{font-size:10px;color:rgba(255,255,255,0.4);margin-top:1px;}
 

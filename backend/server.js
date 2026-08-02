@@ -18,6 +18,7 @@ const RAIZ_PROYECTO = path.join(__dirname, '..');
 app.use(express.static(path.join(RAIZ_PROYECTO, 'frontend', 'html')));
 app.use('/css', express.static(path.join(RAIZ_PROYECTO, 'frontend', 'css')));
 app.use('/js', express.static(path.join(RAIZ_PROYECTO, 'frontend', 'js')));
+app.use('/img', express.static(path.join(RAIZ_PROYECTO, 'img')));
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(RAIZ_PROYECTO, 'frontend', 'html', 'index.html'));
