@@ -915,6 +915,28 @@ const FormUtils = {
     emailValido(txt) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(txt);
     },
+
+    /* Deja un campo en modo "solo dígitos": filtra en cada tecleo, pegado
+       o autocompletado, así que la letra nunca se queda escrita — no hay
+       que esperar a enviar el formulario para avisar del error.
+       maxLen cuenta dígitos (no caracteres) y se conserva la posición del
+       cursor para poder corregir en medio del número. */
+    soloDigitos(el, maxLen) {
+        if (!el) return;
+        el.setAttribute('inputmode', 'numeric');
+        el.addEventListener('input', () => {
+            const original = el.value;
+            let limpio = original.replace(/\D/g, '');
+            if (maxLen) limpio = limpio.slice(0, maxLen);
+            if (limpio === original) return;
+
+            const cursor = el.selectionStart;
+            const descartados = (original.slice(0, cursor).match(/\D/g) || []).length;
+            el.value = limpio;
+            const pos = Math.min(Math.max(cursor - descartados, 0), limpio.length);
+            el.setSelectionRange(pos, pos);
+        });
+    },
 };
 
 window.FormUtils = FormUtils;

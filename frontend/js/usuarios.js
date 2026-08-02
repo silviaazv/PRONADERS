@@ -404,6 +404,9 @@ function limpiarFiltros() {
    INICIALIZACIÓN
    ────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', async () => {
+  // El teléfono solo admite dígitos (8, formato de Honduras): se bloquea
+  // al escribir, no al guardar. Aplica al modal de nuevo Y de editar.
+  FormUtils.soloDigitos(document.getElementById('u-telefono'), 8);
   await cargarUsuarios();
   if(sessionStorage.getItem('pron_abrir_modal_usuario') === '1'){
     sessionStorage.removeItem('pron_abrir_modal_usuario');
