@@ -6,17 +6,10 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
-// ─────────────────────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────────────────────
-
-async function registrarBitacora(id_usuario, tipo_accion, tipo_objeto, id_objeto, campo_modificado, valor_antiguo, valor_nuevo) {
-    await db.execute(`
-        INSERT INTO tbl_bitacora 
-        (id_usuario, tipo_accion, tipo_objeto, id_objeto, fecha_accion, campo_modificado, valor_antiguo, valor_nuevo)
-        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?)
-    `, [id_usuario, tipo_accion, tipo_objeto, id_objeto, campo_modificado, valor_antiguo, valor_nuevo]);
-}
+// Se usa el helper compartido (el mismo del resto de routers) en lugar de una
+// copia local. La copia recibía los datos por orden y aquí se la llamaba con un
+// objeto, así que tipo_accion quedaba vacío y rechazar/eliminar tronaban con 500.
+const { registrarBitacora } = require('../helpers/bitacora');
 
 // ─────────────────────────────────────────────────────────────
 // ENDPOINTS
@@ -131,15 +124,13 @@ router.post('/', async (req, res) => {
 
         const id_reporte = result.lastInsertRowid;
 
-        await registrarBitacora(
-            parseInt(id_usuario),
-            'INSERT',
-            'REPORTE',
-            id_reporte,
-            null,
-            null,
-            `Reporte creado para proyecto ${id_proyecto}`
-        );
+        await registrarBitacora({
+            id_usuario: parseInt(id_usuario),
+            tipo_accion: 'INSERT',
+            tipo_objeto: 'REPORTE',
+            id_objeto: id_reporte,
+            valor_nuevo: `Reporte creado para proyecto ${id_proyecto}`
+        });
 
         const nuevoReporte = await db.queryOne(
             'SELECT * FROM tbl_reportes WHERE id_reporte = ?',
@@ -189,15 +180,15 @@ router.patch('/:id/aprobar', async (req, res) => {
             WHERE id_reporte = ?
         `, [fechaActual, id_reporte]);
 
-        await registrarBitacora(
-            parseInt(id_usuario),
-            'REVISION',
-            'REPORTE',
-            id_reporte,
-            'estado_reporte',
-            '0',
-            '1 (Aprobado)'
-        );
+        await registrarBitacora({
+            id_usuario: parseInt(id_usuario),
+            tipo_accion: 'REVISION',
+            tipo_objeto: 'REPORTE',
+            id_objeto: id_reporte,
+            campo_modificado: 'estado_reporte',
+            valor_antiguo: '0 (Pendiente)',
+            valor_nuevo: '1 (Aprobado)'
+        });
 
         const reporteActualizado = await db.queryOne(
             'SELECT * FROM tbl_reportes WHERE id_reporte = ?',
