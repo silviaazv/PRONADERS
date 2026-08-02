@@ -1091,6 +1091,90 @@ function cerrarVisor() {
 }
 
 /* ============================================================
+   NAVEGACIÓN CON TAB DENTRO DE LOS MODALES
+   ------------------------------------------------------------
+   Los modales son overlays sobre la página, así que sin esto el
+   Tab se sale del formulario y sigue recorriendo el sidebar y la
+   tabla de atrás, que no se ven. Aquí se hace que:
+     - al abrirse, el foco entre al primer campo del modal;
+     - el Tab (y Shift+Tab) den la vuelta dentro del modal;
+     - al cerrarse, el foco vuelva al botón que lo abrió.
+   Funciona por observación de la clase .open, así que aplica a
+   todos los modales de todas las vistas sin tocarlos uno por uno.
+   ============================================================ */
+(function () {
+    const CONTENEDORES = '.modal-overlay, .confirm-dialog, #visor-evidencias';
+    const ABIERTOS = '.modal-overlay.open, .confirm-dialog.open, #visor-evidencias.open';
+    const FOCUSABLES = 'a[href], button, input, select, textarea, [tabindex]';
+
+    let disparador = null;   // quién abrió el modal, para devolverle el foco
+
+    function modalActivo() {
+        const abiertos = document.querySelectorAll(ABIERTOS);
+        return abiertos.length ? abiertos[abiertos.length - 1] : null;
+    }
+
+    function camposEnfocables(modal) {
+        return Array.from(modal.querySelectorAll(FOCUSABLES)).filter(el =>
+            !el.disabled &&
+            el.tabIndex !== -1 &&
+            el.getClientRects().length > 0   // descarta lo oculto
+        );
+    }
+
+    new MutationObserver(cambios => {
+        cambios.forEach(c => {
+            const el = c.target;
+            if (!el.matches || !el.matches(CONTENEDORES)) return;
+
+            const abierto = el.classList.contains('open');
+            const estaba = (c.oldValue || '').split(/\s+/).includes('open');
+            if (abierto === estaba) return;
+
+            if (abierto) {
+                if (!el.contains(document.activeElement)) disparador = document.activeElement;
+                const campos = camposEnfocables(el);
+                if (campos.length) campos[0].focus();
+            } else if (disparador && document.body.contains(disparador)) {
+                disparador.focus();
+                disparador = null;
+            }
+        });
+    }).observe(document.body, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['class'],
+        attributeOldValue: true
+    });
+
+    document.addEventListener('keydown', ev => {
+        if (ev.key !== 'Tab') return;
+        const modal = modalActivo();
+        if (!modal) return;
+
+        const campos = camposEnfocables(modal);
+        if (!campos.length) return;
+
+        const primero = campos[0];
+        const ultimo = campos[campos.length - 1];
+
+        // Si el foco se escapó del modal, se lo devuelve.
+        if (!modal.contains(document.activeElement)) {
+            ev.preventDefault();
+            (ev.shiftKey ? ultimo : primero).focus();
+            return;
+        }
+        if (ev.shiftKey && document.activeElement === primero) {
+            ev.preventDefault();
+            ultimo.focus();
+        } else if (!ev.shiftKey && document.activeElement === ultimo) {
+            ev.preventDefault();
+            primero.focus();
+        }
+    });
+})();
+
+/* ============================================================
    MANEJO GLOBAL DE ERRORES
    ============================================================ */
 window.addEventListener('error', function(ev) {

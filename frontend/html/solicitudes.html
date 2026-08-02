@@ -170,7 +170,9 @@
             </div>
             <div class="form-group">
                 <label class="form-label">Documentación de respaldo <span style="color:var(--muted);font-weight:400">(opcional)</span></label>
-                <div class="dropzone" onclick="document.getElementById('file-aprob').click()"
+                <div class="dropzone" tabindex="0" role="button"
+                     onclick="document.getElementById('file-aprob').click()"
+                     onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('file-aprob').click()}"
                      ondragover="event.preventDefault();this.style.borderColor='var(--gold)'"
                      ondragleave="this.style.borderColor=''"
                      ondrop="handleDropAprob(event)">
@@ -242,7 +244,9 @@
             </div>
             <div class="form-group">
                 <label class="form-label">Remisión firmada <span style="color:var(--danger)">*</span></label>
-                <div class="dropzone" onclick="document.getElementById('file-remision').click()"
+                <div class="dropzone" tabindex="0" role="button"
+                     onclick="document.getElementById('file-remision').click()"
+                     onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('file-remision').click()}"
                      ondragover="event.preventDefault();this.style.borderColor='var(--gold)'"
                      ondragleave="this.style.borderColor=''"
                      ondrop="event.preventDefault();this.style.borderColor='';mostrarArchivos('remision-files',event.dataTransfer.files)">

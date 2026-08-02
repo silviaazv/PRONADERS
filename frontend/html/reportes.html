@@ -79,7 +79,9 @@
 
             <div class="form-group">
                 <label class="form-label">Adjuntar evidencias (foto / PDF)</label>
-                <div class="dropzone" onclick="document.getElementById('rep-file-input').click()"
+                <div class="dropzone" tabindex="0" role="button"
+                     onclick="document.getElementById('rep-file-input').click()"
+                     onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('rep-file-input').click()}"
                      ondragover="event.preventDefault();this.style.borderColor='var(--gold)'"
                      ondragleave="this.style.borderColor=''"
                      ondrop="event.preventDefault();this.style.borderColor='';mostrarArchivosRep(event.dataTransfer.files)">
