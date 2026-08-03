@@ -26,6 +26,13 @@ const CAMPOS_MODAL_PROYECTO = [
     'np-inicio', 'np-fin', 'np-presupuesto', 'np-supervisor', 'np-desc'
 ];
 
+// Un proyecto cerrado (cancelado o finalizado) ya no se puede modificar
+const ESTADOS_CERRADOS = ['CANCELADO', 'FINALIZADO'];
+
+function esProyectoCerrado(estado) {
+    return ESTADOS_CERRADOS.includes(estado);
+}
+
 
 // INICIALIZACIÓN
 
@@ -447,9 +454,6 @@ function tarjetaProyecto(p) {
                     <span class="badge badge-success" style="font-size:11px">
                         <span class="material-symbols-rounded" style="font-size:12px">check_circle</span> Finalizado
                     </span>
-                    <button class="btn btn-danger btn-sm" onclick="cancelarProyecto(${p.id_proyecto})" title="Cancelar proyecto">
-                        <span class="material-symbols-rounded" style="font-size:14px">block</span> Cancelar
-                    </button>
                 </div>
             `;
         } else if (p.estado_proyecto === 'CANCELADO') {
@@ -622,13 +626,12 @@ async function abrirDetalle(id) {
             ${esAdmin ? `
             <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:24px;padding-top:16px;border-top:1px solid var(--cream-dark)">
                 <button class="btn btn-outline btn-sm" onclick="abrirEditarProyecto(${p.id_proyecto})">
-                <span class="material-symbols-rounded" style="font-size:14px">${p.estado_proyecto === 'CANCELADO' ? 'visibility' : 'edit'}</span> ${p.estado_proyecto === 'CANCELADO' ? 'Ver datos' : 'Editar'}
+                <span class="material-symbols-rounded" style="font-size:14px">${esProyectoCerrado(p.estado_proyecto) ? 'visibility' : 'edit'}</span> ${esProyectoCerrado(p.estado_proyecto) ? 'Ver datos' : 'Editar'}
                 </button>
-                ${(p.estado_proyecto !== 'FINALIZADO' && p.estado_proyecto !== 'CANCELADO') ? `
+                ${!esProyectoCerrado(p.estado_proyecto) ? `
                 <button class="btn btn-success btn-sm" onclick="abrirModalFinalizar(${p.id_proyecto})">
                 <span class="material-symbols-rounded" style="font-size:14px">check_circle</span> Finalizar
-                </button>` : ''}
-                ${p.estado_proyecto !== 'CANCELADO' ? `
+                </button>
                 <button class="btn btn-danger btn-sm" onclick="cancelarProyecto(${p.id_proyecto})">
                 <span class="material-symbols-rounded" style="font-size:14px">block</span> Cancelar
                 </button>` : ''}
@@ -644,10 +647,10 @@ async function abrirDetalle(id) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// MODO SOLO LECTURA DEL MODAL (proyectos cancelados)
+// MODO SOLO LECTURA DEL MODAL (proyectos cancelados / finalizados)
 // ─────────────────────────────────────────────────────────────
 
-function setModoSoloLectura(activo) {
+function setModoSoloLectura(activo, estado) {
     CAMPOS_MODAL_PROYECTO.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.disabled = activo;
@@ -656,8 +659,19 @@ function setModoSoloLectura(activo) {
     const btnGuardar = document.getElementById('btn-guardar-proyecto');
     if (btnGuardar) btnGuardar.style.display = activo ? 'none' : '';
 
-    const aviso = document.getElementById('np-aviso-cancelado');
-    if (aviso) aviso.style.display = activo ? 'flex' : 'none';
+    const aviso = document.getElementById('np-aviso-cerrado');
+    if (!aviso) return;
+
+    aviso.style.display = activo ? 'flex' : 'none';
+    if (!activo) return;
+
+    const finalizado = estado === 'FINALIZADO';
+    aviso.style.background = finalizado ? 'var(--success-bg)' : 'var(--danger-bg)';
+    aviso.style.color = finalizado ? 'var(--success)' : 'var(--danger)';
+    document.getElementById('np-aviso-icono').textContent = finalizado ? 'check_circle' : 'block';
+    document.getElementById('np-aviso-texto').textContent = finalizado
+        ? 'Este proyecto está FINALIZADO. Sus datos son de solo lectura y ya no puede modificarse.'
+        : 'Este proyecto está CANCELADO. Sus datos son de solo lectura y no puede reactivarse.';
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -750,13 +764,13 @@ async function abrirEditarProyecto(id) {
             return;
         }
 
-        const esCancelado = p.estado_proyecto === 'CANCELADO';
+        const cerrado = esProyectoCerrado(p.estado_proyecto);
 
         _proyectoEnEdicion = id;
         FormUtils.limpiarErrores(document.getElementById('modal-nuevo'));
         setModoSoloLectura(false);
-        document.querySelector('#modal-nuevo .modal-title').innerHTML = esCancelado
-            ? `Proyecto <em style="font-style:italic">Cancelado</em> <span style="font-size:12px;color:var(--muted)">· ID: ${id} · solo lectura</span>`
+        document.querySelector('#modal-nuevo .modal-title').innerHTML = cerrado
+            ? `Proyecto <em style="font-style:italic">${p.estado_proyecto === 'FINALIZADO' ? 'Finalizado' : 'Cancelado'}</em> <span style="font-size:12px;color:var(--muted)">· ID: ${id} · solo lectura</span>`
             : `Editar <em style="font-style:italic">Proyecto</em> <span style="font-size:12px;color:var(--muted)">· ID: ${id}</span>`;
 
         //Cargar supervisores
@@ -793,8 +807,8 @@ async function abrirEditarProyecto(id) {
         if (p.id_supervisor) {
             document.getElementById('np-supervisor').value = p.id_supervisor; }
 
-        // Un proyecto cancelado no se puede modificar: solo se muestran sus datos
-        setModoSoloLectura(esCancelado);
+        // Un proyecto cerrado no se puede modificar: solo se muestran sus datos
+        setModoSoloLectura(cerrado, p.estado_proyecto);
 
         document.getElementById('modal-detalle').classList.remove('open');
         document.getElementById('modal-nuevo').classList.add('open');
@@ -810,11 +824,11 @@ async function abrirEditarProyecto(id) {
 // ─────────────────────────────────────────────────────────────
 
 async function guardarProyecto() {
-    // Un proyecto cancelado no se puede volver a guardar ni reactivar
+    // Un proyecto cancelado o finalizado no se puede volver a guardar ni reactivar
     if (_proyectoEnEdicion) {
         const actual = proyectosCache.find(p => p.id_proyecto === _proyectoEnEdicion);
-        if (actual && actual.estado_proyecto === 'CANCELADO') {
-            showToast('El proyecto está cancelado y no se puede modificar', 'warning');
+        if (actual && esProyectoCerrado(actual.estado_proyecto)) {
+            showToast(`El proyecto está ${actual.estado_proyecto.toLowerCase()} y no se puede modificar`, 'warning');
             return;
         }
     }
@@ -972,6 +986,11 @@ async function cancelarProyecto(id) {
 
     if (proyecto.estado_proyecto === 'CANCELADO') {
         showToast('El proyecto ya está cancelado', 'info');
+        return;
+    }
+
+    if (proyecto.estado_proyecto === 'FINALIZADO') {
+        showToast('El proyecto ya está finalizado y no se puede cancelar', 'warning');
         return;
     }
 
