@@ -20,15 +20,26 @@ const NOMBRE_USUARIO = sessionStorage.getItem('pron_nombre') || 'Usuario';
 const ROLE = sessionStorage.getItem('pron_role') || 'Supervisor de Campo';
 const esAdmin = (ROLE === 'admin_oficina' || ROLE === 'Administrador de Oficina');
 
-// Campos del modal de proyecto (nuevo/editar)
+/* Campos editables del modal #modal-nuevo (se reutiliza para crear y para
+   editar). Se listan aquí para poder habilitarlos o bloquearlos en bloque
+   desde setModoSoloLectura(). */
 const CAMPOS_MODAL_PROYECTO = [
     'np-nombre', 'np-tipo', 'sel-depto', 'sel-municipio',
     'np-inicio', 'np-fin', 'np-presupuesto', 'np-supervisor', 'np-desc'
 ];
 
-// Un proyecto cerrado (cancelado o finalizado) ya no se puede modificar
+/* Estados terminales del ciclo de vida de un proyecto. Al llegar a uno de
+   ellos el expediente queda cerrado: sus datos solo se consultan, no se
+   editan, y no existe forma de devolverlo a ACTIVO desde la interfaz.
+   El backend aplica la misma regla (routes/proyectos.js), porque este
+   bloqueo del front es solo la primera capa. */
 const ESTADOS_CERRADOS = ['CANCELADO', 'FINALIZADO'];
 
+/**
+ * Indica si un proyecto ya está cerrado y, por tanto, es de solo lectura.
+ * @param {string} estado Valor de estado_proyecto (ACTIVO, RETRASADO, ...).
+ * @returns {boolean} true si el proyecto está CANCELADO o FINALIZADO.
+ */
 function esProyectoCerrado(estado) {
     return ESTADOS_CERRADOS.includes(estado);
 }
@@ -434,7 +445,8 @@ function tarjetaProyecto(p) {
     const departamento = p.nombre_departamento || p.departamento || '';
     const ubicacionCompleta = departamento ? `${ubicacion}, ${departamento}` : ubicacion;
 
-    //Botones de acción (Admin)
+    /* Botones de acción (Admin). Solo los proyectos abiertos ofrecen
+       Finalizar y Cancelar; los cerrados muestran únicamente su estado. */
     let accionesAdmin = '';
     if (esAdmin) {
         if (p.estado_proyecto === 'ACTIVO' || p.estado_proyecto === 'RETRASADO') {
@@ -623,6 +635,9 @@ async function abrirDetalle(id) {
                 </div>
             </div>
 
+            <!-- Acciones del administrador. En un proyecto cerrado el botón
+                 pasa a ser "Ver datos" y desaparecen Finalizar y Cancelar,
+                 porque su estado ya es definitivo. -->
             ${esAdmin ? `
             <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:24px;padding-top:16px;border-top:1px solid var(--cream-dark)">
                 <button class="btn btn-outline btn-sm" onclick="abrirEditarProyecto(${p.id_proyecto})">
@@ -650,15 +665,31 @@ async function abrirDetalle(id) {
 // MODO SOLO LECTURA DEL MODAL (proyectos cancelados / finalizados)
 // ─────────────────────────────────────────────────────────────
 
+/**
+ * Alterna el modo de solo lectura del modal de proyecto.
+ *
+ * Como el mismo modal sirve para crear, editar y consultar, hay que dejarlo
+ * siempre en un estado conocido: al activarlo bloquea los campos, esconde el
+ * botón de guardar y muestra el aviso; al desactivarlo revierte las tres
+ * cosas. Por eso toda apertura del modal llama a esta función.
+ *
+ * @param {boolean} activo true = solo lectura, false = formulario editable.
+ * @param {string} [estado] Estado del proyecto; define el texto y el color
+ *                          del aviso (verde para FINALIZADO, rojo para
+ *                          CANCELADO). Se ignora cuando activo es false.
+ */
 function setModoSoloLectura(activo, estado) {
+    // 1) Campos del formulario
     CAMPOS_MODAL_PROYECTO.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.disabled = activo;
     });
 
+    // 2) Botón de guardar: sin él no hay forma de enviar el formulario
     const btnGuardar = document.getElementById('btn-guardar-proyecto');
     if (btnGuardar) btnGuardar.style.display = activo ? 'none' : '';
 
+    // 3) Aviso superior que explica al usuario por qué no puede editar
     const aviso = document.getElementById('np-aviso-cerrado');
     if (!aviso) return;
 
@@ -684,6 +715,8 @@ async function abrirModalNuevoProyecto() {
         console.log('Cargando datos para nuevo proyecto...');
 
     _proyectoEnEdicion = null;
+    // El modal es compartido: si antes se consultó un proyecto cerrado,
+    // hay que devolverlo a modo editable antes de reutilizarlo.
     setModoSoloLectura(false);
     document.querySelector('#modal-nuevo .modal-title').innerHTML = 'Nuevo <em style="font-style:italic">Proyecto</em>';
     FormUtils.limpiarErrores(document.getElementById('modal-nuevo'));
@@ -753,9 +786,19 @@ function cerrarModalNuevo() {
 }
 
 // ─────────────────────────────────────────────────────────────
-// EDITAR PROYECTO
+// EDITAR PROYECTO (o consultarlo, si ya está cerrado)
 // ─────────────────────────────────────────────────────────────
 
+/**
+ * Abre el modal con los datos de un proyecto.
+ *
+ * Si el proyecto está CANCELADO o FINALIZADO el modal se abre en modo
+ * consulta: se llenan los campos igual que siempre, pero quedan bloqueados
+ * y sin botón de guardar. El estado se toma de la API y no del caché, para
+ * no trabajar con un estado desactualizado.
+ *
+ * @param {number} id Identificador del proyecto.
+ */
 async function abrirEditarProyecto(id) {
     try {
         const p = await API.proyectos.obtener(id);
@@ -768,6 +811,8 @@ async function abrirEditarProyecto(id) {
 
         _proyectoEnEdicion = id;
         FormUtils.limpiarErrores(document.getElementById('modal-nuevo'));
+        // Se parte siempre del modal editable; el bloqueo se aplica al final,
+        // porque cargarMunicipios() vuelve a habilitar el select de municipio.
         setModoSoloLectura(false);
         document.querySelector('#modal-nuevo .modal-title').innerHTML = cerrado
             ? `Proyecto <em style="font-style:italic">${p.estado_proyecto === 'FINALIZADO' ? 'Finalizado' : 'Cancelado'}</em> <span style="font-size:12px;color:var(--muted)">· ID: ${id} · solo lectura</span>`
@@ -807,7 +852,8 @@ async function abrirEditarProyecto(id) {
         if (p.id_supervisor) {
             document.getElementById('np-supervisor').value = p.id_supervisor; }
 
-        // Un proyecto cerrado no se puede modificar: solo se muestran sus datos
+        // Con los campos ya llenos se decide si el modal queda editable o
+        // en solo lectura, según el estado del proyecto.
         setModoSoloLectura(cerrado, p.estado_proyecto);
 
         document.getElementById('modal-detalle').classList.remove('open');
@@ -823,8 +869,14 @@ async function abrirEditarProyecto(id) {
 // GUARDAR PROYECTO
 // ─────────────────────────────────────────────────────────────
 
+/**
+ * Valida el formulario y crea o actualiza el proyecto según corresponda.
+ * Se usa _proyectoEnEdicion para distinguir un alta de una modificación.
+ */
 async function guardarProyecto() {
-    // Un proyecto cancelado o finalizado no se puede volver a guardar ni reactivar
+    /* Un proyecto cerrado no se guarda aunque se llegue hasta aquí: el modal
+       ya viene bloqueado, pero esta comprobación cubre el caso de que la
+       función se invoque directamente (por ejemplo desde la consola). */
     if (_proyectoEnEdicion) {
         const actual = proyectosCache.find(p => p.id_proyecto === _proyectoEnEdicion);
         if (actual && esProyectoCerrado(actual.estado_proyecto)) {
@@ -879,7 +931,10 @@ async function guardarProyecto() {
         id_supervisor: supervisor ? parseInt(supervisor) : null,
     };
 
-    // Al editar se conserva el estado actual del proyecto; solo los nuevos nacen ACTIVO
+    /* estado_proyecto solo se envía al crear. En una edición se omite a
+       propósito para que el backend conserve el estado que ya tiene el
+       proyecto: mandarlo fijo en 'ACTIVO' revivía los proyectos cancelados
+       o finalizados cada vez que se guardaba un cambio. */
     if (!_proyectoEnEdicion) {
         datos.estado_proyecto = 'ACTIVO';
     }
@@ -977,6 +1032,13 @@ async function confirmarFinalizar() {
 // CANCELAR PROYECTO
 // ─────────────────────────────────────────────────────────────
 
+/**
+ * Cancela un proyecto previa confirmación del administrador.
+ * Solo aplica a proyectos abiertos: un proyecto ya cerrado (cancelado o
+ * finalizado) conserva su estado y la operación se rechaza.
+ *
+ * @param {number} id Identificador del proyecto.
+ */
 async function cancelarProyecto(id) {
     const proyecto = proyectosCache.find(p => p.id_proyecto === id);
     if (!proyecto) {

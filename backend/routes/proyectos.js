@@ -117,6 +117,7 @@ router.patch('/:id/finalizar', async (req, res) => {
             return res.status(400).json({ error: 'El proyecto ya está finalizado' });
         }
 
+        // Un proyecto cancelado no puede darse por concluido
         if (proyecto.estado_proyecto === 'CANCELADO') {
             return res.status(400).json({ error: 'El proyecto está cancelado y no se puede finalizar' });
         }
@@ -191,6 +192,7 @@ router.patch('/:id/cancelar', async (req, res) => {
             return res.status(400).json({ error: 'El proyecto ya está cancelado' });
         }
 
+        // Un proyecto ya concluido no puede cancelarse a posteriori
         if (proyecto.estado_proyecto === 'FINALIZADO') {
             return res.status(400).json({ error: 'El proyecto ya está finalizado y no se puede cancelar' });
         }
@@ -355,7 +357,11 @@ router.put('/:id', async (req, res) => {
             return res.status(404).json({ error: 'Proyecto no encontrado' });
         }
 
-        // ── UN PROYECTO CERRADO ES DEFINITIVO: NI SE EDITA NI SE REACTIVA ──
+        /* UN PROYECTO CERRADO ES DEFINITIVO
+           CANCELADO y FINALIZADO son estados terminales: el expediente queda
+           como registro histórico, así que se rechaza cualquier modificación,
+           incluido un intento de devolverlo a ACTIVO. La validación vive aquí
+           y no solo en el front porque el endpoint es público. */
         if (['CANCELADO', 'FINALIZADO'].includes(anterior.estado_proyecto)) {
             return res.status(400).json({
                 error: `El proyecto está ${anterior.estado_proyecto.toLowerCase()} y no se puede modificar ni reactivar`
