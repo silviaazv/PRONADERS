@@ -366,15 +366,19 @@ function cardReporte(r) {
                 <div class="progress-fill ${progressColor}" style="width:${avanceFisico}%"></div>
             </div>
 
-            <!-- Descripción -->
+            <!-- Descripción, incidencias y observaciones del reporte -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
                 <div>
                     <div style="font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:4px">Descripción del avance</div>
-                    <p style="font-size:13px;line-height:1.65;color:var(--text)">${r.descripcion_reporte || 'Sin descripción'}</p>
+                    <p style="font-size:13px;line-height:1.65;color:var(--text);white-space:pre-line">${r.descripcion_reporte || 'Sin descripción'}</p>
                 </div>
                 <div>
-                    <div style="font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:4px">Observaciones</div>
-                    <p style="font-size:13px;line-height:1.65;color:var(--text-light)">${r.observaciones || 'Sin observaciones'}</p>
+                    <div style="font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:4px">Observaciones técnicas</div>
+                    <p style="font-size:13px;line-height:1.65;color:var(--text-light);white-space:pre-line">${r.observaciones || 'Sin observaciones'}</p>
+                </div>
+                <div>
+                    <div style="font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:4px">Incidencias</div>
+                    <p style="font-size:13px;line-height:1.65;color:var(--text-light);white-space:pre-line">${r.incidencias || 'Sin incidencias'}</p>
                 </div>
             </div>
 

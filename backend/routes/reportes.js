@@ -116,11 +116,22 @@ router.post('/', async (req, res) => {
 
         const fechaActual = new Date().toISOString();
 
+        // Observaciones e incidencias son opcionales: si vienen vacías se
+        // guardan como NULL para que la tarjeta muestre su texto por defecto.
         const result = await db.execute(`
-            INSERT INTO tbl_reportes 
-            (id_proyecto, id_usuario, descripcion_reporte, fecha_reporte, estado_reporte, avance_fisico, avance_financiero)
-            VALUES (?, ?, ?, ?, 0, ?, ?)
-        `, [parseInt(id_proyecto), parseInt(id_usuario), descripcion_reporte.trim(), fechaActual, avance_fisico || 0, avance_financiero || 0]);
+            INSERT INTO tbl_reportes
+            (id_proyecto, id_usuario, descripcion_reporte, fecha_reporte, estado_reporte, avance_fisico, avance_financiero, observaciones, incidencias)
+            VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?)
+        `, [
+            parseInt(id_proyecto),
+            parseInt(id_usuario),
+            descripcion_reporte.trim(),
+            fechaActual,
+            avance_fisico || 0,
+            avance_financiero || 0,
+            observaciones && observaciones.trim() ? observaciones.trim() : null,
+            incidencias && incidencias.trim() ? incidencias.trim() : null
+        ]);
 
         const id_reporte = result.lastInsertRowid;
 

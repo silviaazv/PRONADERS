@@ -82,4 +82,42 @@ db.execute = (sql, params = []) => {
     });
 };
 
+/*====================================================
+  AJUSTES DE ESQUEMA AL ARRANCAR
+  El archivo .db lo mantiene otra integrante del equipo, así que las
+  columnas que le falten se agregan aquí al iniciar el servidor en vez
+  de editar la base a mano. Es idempotente: si la columna ya existe,
+  no hace nada.
+====================================================*/
+
+const agregarColumnaSiFalta = (tabla, columna, definicion) => {
+    db.all(`PRAGMA table_info(${tabla})`, [], (err, columnas) => {
+
+        if (err) {
+            return console.error(`No se pudo leer el esquema de ${tabla}:`, err.message);
+        }
+
+        if (columnas.some(c => c.name === columna)) {
+            return;
+        }
+
+        db.run(`ALTER TABLE ${tabla} ADD COLUMN ${columna} ${definicion}`, (errAlter) => {
+
+            if (errAlter) {
+                return console.error(`No se pudo agregar ${tabla}.${columna}:`, errAlter.message);
+            }
+
+            console.log(`Columna ${tabla}.${columna} agregada.`);
+
+        });
+
+    });
+};
+
+// El formulario de "Nuevo Reporte" del Supervisor de Campo captura
+// incidencias y observaciones, pero la tabla original no tenía dónde
+// guardarlas y se perdían al enviar el reporte.
+agregarColumnaSiFalta('tbl_reportes', 'observaciones', 'TEXT');
+agregarColumnaSiFalta('tbl_reportes', 'incidencias', 'TEXT');
+
 module.exports = db;
