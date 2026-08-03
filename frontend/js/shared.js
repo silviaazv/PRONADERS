@@ -1,19 +1,28 @@
-/* ============================================================
-   shared.js — CONTROLADOR COMPARTIDO DEL SISTEMA PRONADERS
-      Responsabilidades:
-   1. Inyectar el sidebar y el topbar en todas las páginas.
-   2. Construir la navegación según el ROL del usuario en sesión.
-   3. Funcionalidad del botón de NOTIFICACIONES del topbar.
-   4. Utilidades de VALIDACIÓN de formularios (FormUtils).
-   5. Función global de cierre de sesión (logout).
-   6. Visor de evidencias (imágenes y documentos).
-   ============================================================ */
+/*
+   shared.js
+
+   Todo lo que se repite en cada pantalla del sistema vive aquí, para no
+   tenerlo copiado en diez archivos. En concreto:
+
+   1. Arma el menú lateral y la barra superior y los mete en la página.
+   2. Decide qué opciones del menú se muestran según el rol de quien entró.
+   3. Maneja la campana de notificaciones.
+   4. Ofrece FormUtils, las validaciones de formularios que usan todos los
+      módulos.
+   5. Define logout(), el cierre de sesión.
+   6. Define el visor para ver fotos y documentos adjuntos.
+
+   Se carga después de api.js y antes del script propio de cada página.
+*/
 
 (function() {
 
-    /* ──────────────────────────────────────────────
-       1. SESIÓN Y ROL DEL USUARIO
-       ────────────────────────────────────────────── */
+    /* Quién está usando el sistema.
+
+       Los datos se guardaron en sessionStorage al iniciar sesión. Si por lo
+       que sea no están (por ejemplo alguien abrió la página directo desde la
+       barra de direcciones), se adivina el rol a partir del nombre del
+       archivo para que el menú no salga vacío. */
     const pagina = window.location.pathname.split('/').pop();
 
     function rolPorDefecto() {
@@ -35,9 +44,17 @@
 
     const roleLabel = ROLE_LABELS[role];
 
-    /* ──────────────────────────────────────────────
-       2. NAVEGACIÓN POR ROL
-       ────────────────────────────────────────────── */
+    /* Las opciones del menú, una lista por rol.
+
+       Las entradas que solo traen 'section' no son enlaces, son los títulos
+       que agrupan las opciones de abajo. Se nota la diferencia entre roles:
+       el supervisor de campo ve "Mis Proyectos" (solo los suyos) mientras
+       que el administrador ve "Gestión de Proyectos" (todos), y el equipo de
+       logística solo tiene su tablero.
+
+       Ojo: esto decide qué se ve en el menú, no a qué se puede entrar. Quien
+       escriba la dirección a mano igual llega, así que los permisos de verdad
+       tienen que estar en el servidor. */
     const NAV = {
         'Supervisor de Campo': [
             { section: 'Principal' },
@@ -68,9 +85,12 @@
         ]
     };
 
-    /* ──────────────────────────────────────────────
-       3. CONSTRUCCIÓN DEL SIDEBAR
-       ────────────────────────────────────────────── */
+    /* Convierte la lista de opciones de arriba en el HTML del menú.
+
+       Va abriendo un bloque cada vez que encuentra un título de sección y
+       cerrando el anterior, por eso lleva la bandera inSection. La opción
+       que corresponde a la página actual se marca como activa comparando el
+       href con el nombre del archivo abierto. */
     function buildNav(items) {
         let html = '';
         let inSection = false;
@@ -114,9 +134,13 @@
         </aside>
     `;
 
-    /* ──────────────────────────────────────────────
-       4. TOPBAR
-       ────────────────────────────────────────────── */
+    /* La barra superior. El título se saca del <title> de la página quitándole
+       el prefijo "PRONADERS — ", así cada pantalla no tiene que repetir su
+       nombre en dos lugares.
+
+       Los dos bloques se insertan con afterbegin y en orden invertido (primero
+       la barra, después el menú) porque cada inserción empuja a la anterior;
+       de esta forma el menú termina quedando primero en el HTML. */
     const pageTitle = document.title.replace('PRONADERS — ', '');
 
     const topbar = `
@@ -131,12 +155,15 @@
     document.body.insertAdjacentHTML('afterbegin', topbar);
     document.body.insertAdjacentHTML('afterbegin', sidebar);
 
-    /* ──────────────────────────────────────────────
-       5. ESTILOS COMPARTIDOS
-       ────────────────────────────────────────────── */
+    /* Los estilos del menú y la barra superior se inyectan desde acá, en vez
+       de estar en cada hoja .css, porque el HTML de esos dos bloques también
+       se genera acá: así el estilo y el marcado no se pueden desincronizar.
+
+       Los var() llevan valor de respaldo por si la hoja de la página no
+       definió esa variable. */
     const css = document.createElement('style');
     css.textContent = `
-        /* ── Sidebar ── */
+        /* Menú lateral */
         .sidebar {
             position: fixed;
             left: 0;
@@ -160,9 +187,10 @@
             border-bottom: 1px solid rgba(255,255,255,0.08);
             margin-bottom: 16px;
         }
-        /* El escudo es un PNG vertical (140x170) con fondo transparente:
-           se mantiene la caja de 40x40 del logo anterior para no mover nada
-           del sidebar, y object-fit lo encaja dentro sin deformarlo. */
+        /* El escudo es un PNG vertical de 140x170 con fondo transparente. Se
+           deja la caja cuadrada de 40x40 que tenía el logo anterior para no
+           mover el resto del menú, y object-fit:contain acomoda la imagen
+           dentro sin estirarla. */
         img.brand-logo {
             width: 40px;
             height: 40px;
@@ -278,7 +306,8 @@
             font-size: 20px;
         }
 
-        /* ── Topbar ── */
+        /* Barra superior. El left de 240px es el ancho del menú lateral: si
+           ese ancho cambia arriba, hay que cambiarlo aquí también. */
         .topbar {
             position: fixed;
             left: 240px;
@@ -352,7 +381,7 @@
             cursor: pointer;
         }
 
-        /* ── Panel de Notificaciones ── */
+        /* Panel de notificaciones que baja de la campana */
         .notif-panel {
             position: fixed;
             top: 66px;
@@ -448,7 +477,8 @@
             color: var(--gold, #C9A84C);
         }
 
-        /* ── Errores de validación ── */
+        /* Campos con error. FormUtils les agrega la clase invalid y debajo
+           inserta un .field-error con el mensaje. */
         .form-control.invalid {
             border-color: #C0392B !important;
             background: #FDF3F2;
@@ -465,7 +495,8 @@
             font-size: 13px;
         }
 
-        /* ── Responsive ── */
+        /* En pantallas chicas el menú se sale de vista y aparece al abrirlo,
+           en lugar de comerse la mitad del ancho. */
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
@@ -489,7 +520,7 @@
             }
         }
 
-        /* ── Animaciones ── */
+        /* Animaciones */
         @keyframes notifIn {
             from { opacity: 0; transform: translateY(-6px); }
             to { opacity: 1; transform: translateY(0); }
@@ -498,7 +529,8 @@
             animation: notifIn 0.18s ease;
         }
 
-        /* ── Scrollbar Sidebar ── */
+        /* Barra de desplazamiento propia del menú: más delgada y clara, para
+           que no rompa el fondo azul cuando hay muchas opciones. */
         .sidebar::-webkit-scrollbar {
             width: 4px;
         }
@@ -512,9 +544,11 @@
     `;
     document.head.appendChild(css);
 
-    /* ──────────────────────────────────────────────
-       6. NOTIFICACIONES DESDE LA API
-       ────────────────────────────────────────────── */
+    /* Notificaciones.
+
+       Se descargan una sola vez al abrir la página y se guardan en
+       notificacionesCache, así abrir y cerrar el panel no vuelve a pegarle al
+       servidor. Para forzar una recarga hay que pasar force = true. */
     
     let notificacionesCache = [];
     let notificacionesCargadas = false;
@@ -658,9 +692,10 @@
     window._notifs = notificacionesCache;
     window._notifsCargadas = notificacionesCargadas;
 
-    /* ──────────────────────────────────────────────
-       7. FUNCIONES DE NOTIFICACIONES 
-       ────────────────────────────────────────────── */
+    /* Armado del panel de notificaciones y lo que pasa al hacer clic en cada
+       una. El panel se vuelve a dibujar completo cada vez que se abre, en vez
+       de ir modificando lo que ya estaba: son pocas notificaciones y así no
+       hay riesgo de que la pantalla quede mostrando algo viejo. */
 
     function _renderNotifPanel() {
         const lista = window._notifs || [];
@@ -820,12 +855,15 @@
         }
     }
 
-    // Cargar notificaciones al iniciar
+    // Se piden apenas la página termina de cargar, para que el puntito rojo
+    // de la campana ya aparezca sin que el usuario tenga que hacer nada.
     document.addEventListener('DOMContentLoaded', async () => {
         await cargarNotificaciones();
     });
 
-    // Exponer funciones al window
+    // Todo esto vive dentro de una función anónima, así que no se ve desde
+    // fuera. Lo que necesitan los onclick del HTML y los scripts de cada
+    // página hay que colgarlo a mano en window.
     window.toggleNotificaciones = toggleNotificaciones;
     window.abrirNotificacion = abrirNotificacion;
     window.marcarNotifsLeidas = marcarNotifsLeidas;
@@ -834,18 +872,20 @@
     window._actualizarDotNotifs = _actualizarDotNotifs;
     window._cargarNotificaciones = cargarNotificaciones;
 
-    /* ──────────────────────────────────────────────
-       8. CIERRE 
-       ────────────────────────────────────────────── */
-})();  
+    /* Fin de la función anónima. Está envuelto así para que las variables de
+       adentro (role, NAV, notificacionesCache…) no se mezclen con las de los
+       scripts de cada página. */
+})();
 
-/* ============================================================
-   FUNCIONES GLOBALES
-   ============================================================ */
+/*
+   De aquí en adelante van las funciones globales: las que se llaman desde los
+   onclick del HTML o desde el script de cualquier página.
+*/
 
-/**
- * Cierre de Sesión
- */
+/* Cierra la sesión. Le avisa al servidor para que quede el registro en la
+   bitácora, pero no espera la respuesta ni se detiene si falla: lo importante
+   es borrar los datos de esta máquina y sacar al usuario de las pantallas
+   internas, y eso tiene que pasar aunque el servidor no conteste. */
 function logout() {
     if (typeof API !== 'undefined' && API.auth) {
         try {
@@ -856,9 +896,16 @@ function logout() {
     window.location.href = 'index.html';
 }
 
-/* ============================================================
-   FormUtils — VALIDACIÓN DE FORMULARIOS
-   ============================================================ */
+/*
+   FormUtils: las validaciones de formularios que comparten todos los módulos.
+
+   La idea es marcar el campo que está mal y poner el mensaje justo debajo, en
+   vez de sacar una alerta: así el usuario ve de una sola pasada todo lo que le
+   falta corregir en un formulario largo.
+
+   Esto no reemplaza la validación del servidor, solo evita el viaje de ida y
+   vuelta cuando el error es evidente.
+*/
 const FormUtils = {
     marcarInvalido(el, msg) {
         if (!el) return;
@@ -916,11 +963,14 @@ const FormUtils = {
         return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(txt);
     },
 
-    /* Deja un campo en modo "solo dígitos": filtra en cada tecleo, pegado
-       o autocompletado, así que la letra nunca se queda escrita — no hay
-       que esperar a enviar el formulario para avisar del error.
-       maxLen cuenta dígitos (no caracteres) y se conserva la posición del
-       cursor para poder corregir en medio del número. */
+    /* Deja un campo aceptando solamente números. Filtra en cada tecleo, y
+       también cuando se pega texto o lo llena el autocompletado, así que la
+       letra nunca alcanza a quedar escrita y no hay que esperar a enviar el
+       formulario para avisar del error.
+
+       maxLen cuenta dígitos, no caracteres. La cuenta de 'descartados' es para
+       devolver el cursor a donde estaba: sin eso, corregir un dígito en medio
+       del número manda el cursor al final y se vuelve insoportable de usar. */
     soloDigitos(el, maxLen) {
         if (!el) return;
         el.setAttribute('inputmode', 'numeric');
@@ -941,9 +991,14 @@ const FormUtils = {
 
 window.FormUtils = FormUtils;
 
-/* ============================================================
-   VISOR DE EVIDENCIAS
-   ============================================================ */
+/*
+   Visor de evidencias: abre a pantalla completa las fotos y documentos
+   adjuntos a solicitudes y reportes.
+
+   El visor no está en el HTML de ninguna página: se crea la primera vez que
+   se necesita y después se reutiliza siempre el mismo, para no repetir el
+   marcado en las siete pantallas que lo usan.
+*/
 function abrirVisor(archivo) {
     let v = document.getElementById('visor-evidencias');
     if (!v) {
@@ -1039,7 +1094,9 @@ function abrirVisor(archivo) {
                     max-width: 860px;
                 }
                 #visor-evidencias .v-cod .material-symbols-rounded { font-size: 13px; }
-                /* Cuando hay archivo real, el marco se agranda y lo muestra completo. */
+                /* Cuando sí hay un archivo que mostrar, el marco se agranda
+                   para aprovechar la pantalla; sin archivo se queda chico,
+                   con solo el ícono y el nombre. */
                 #visor-evidencias .v-frame.v-con-archivo {
                     max-width: 980px;
                     height: 100%;
@@ -1106,17 +1163,20 @@ function abrirVisor(archivo) {
     const url = archivo.url || '';
 
     if (url && archivo.tipo === 'img') {
-        // Fotografía: se muestra directo.
+        // Las fotos se muestran tal cual, que es el caso más común: casi toda
+        // la evidencia de campo son fotografías.
         marco.className = 'v-frame v-con-archivo';
         marco.innerHTML = `<img class="v-img" src="${url}" alt="${nombre}">`;
 
     } else if (url && archivo.tipo === 'pdf') {
-        // PDF: lo abre el visor propio del navegador dentro del marco.
+        // Los PDF se meten en un iframe y los dibuja el visor que ya trae el
+        // navegador, así no hay que cargar ninguna librería extra.
         marco.className = 'v-frame v-con-archivo';
         marco.innerHTML = `<iframe class="v-doc" src="${url}" title="${nombre}"></iframe>`;
 
     } else if (url) {
-        // Word, Excel y demás: el navegador no los previsualiza, se ofrece descarga.
+        // Word, Excel y compañía no los puede mostrar el navegador, así que en
+        // lugar de una vista previa se ofrece el botón de descarga.
         marco.className = 'v-frame';
         marco.innerHTML = `
             <span class="material-symbols-rounded v-ico">${iconos[archivo.tipo] || 'description'}</span>
@@ -1128,7 +1188,10 @@ function abrirVisor(archivo) {
         `;
 
     } else {
-        // Sin ruta guardada: se conserva la vista previa de siempre.
+        // Sin ruta guardada no hay nada que abrir. Pasa con los registros
+        // viejos, de antes de que se guardaran los adjuntos: se muestra la
+        // ficha con el ícono y el nombre para que al menos se sepa qué se
+        // había adjuntado.
         marco.className = 'v-frame';
         marco.innerHTML = `
             <span class="material-symbols-rounded v-ico">${iconos[archivo.tipo] || 'description'}</span>
@@ -1150,18 +1213,22 @@ function cerrarVisor() {
     if (v) v.classList.remove('open');
 }
 
-/* ============================================================
-   NAVEGACIÓN CON TAB DENTRO DE LOS MODALES
-   ------------------------------------------------------------
-   Los modales son overlays sobre la página, así que sin esto el
-   Tab se sale del formulario y sigue recorriendo el sidebar y la
-   tabla de atrás, que no se ven. Aquí se hace que:
-     - al abrirse, el foco entre al primer campo del modal;
-     - el Tab (y Shift+Tab) den la vuelta dentro del modal;
-     - al cerrarse, el foco vuelva al botón que lo abrió.
-   Funciona por observación de la clase .open, así que aplica a
-   todos los modales de todas las vistas sin tocarlos uno por uno.
-   ============================================================ */
+/*
+   Encierra el tabulador dentro de los modales.
+
+   Los modales se dibujan encima de la página, pero para el navegador la
+   página de atrás sigue estando ahí. Sin esto, dar Tab dentro de un modal
+   termina moviendo el foco al menú lateral y a la tabla del fondo, que ni
+   siquiera se ven, y el usuario que trabaja con teclado queda perdido.
+
+   Lo que hace:
+     - al abrirse el modal, pone el foco en su primer campo;
+     - Tab y Shift+Tab dan la vuelta dentro del modal en vez de salirse;
+     - al cerrarse, devuelve el foco al botón que lo abrió.
+
+   Funciona vigilando la clase .open, así que agarra todos los modales de
+   todas las pantallas sin tener que tocarlos uno por uno.
+*/
 (function () {
     const CONTENEDORES = '.modal-overlay, .confirm-dialog, #visor-evidencias';
     const ABIERTOS = '.modal-overlay.open, .confirm-dialog.open, #visor-evidencias.open';
@@ -1218,7 +1285,9 @@ function cerrarVisor() {
         const primero = campos[0];
         const ultimo = campos[campos.length - 1];
 
-        // Si el foco se escapó del modal, se lo devuelve.
+        // Si el foco quedó fuera del modal (pasa cuando se hace clic en el
+        // fondo oscuro), se lo trae de vuelta al primer o último campo según
+        // hacia dónde se estaba tabulando.
         if (!modal.contains(document.activeElement)) {
             ev.preventDefault();
             (ev.shiftKey ? ultimo : primero).focus();
@@ -1234,9 +1303,13 @@ function cerrarVisor() {
     });
 })();
 
-/* ============================================================
-   MANEJO GLOBAL DE ERRORES
-   ============================================================ */
+/*
+   Red de seguridad para los errores que nadie atrapó.
+
+   Sin esto, un error suelto deja la pantalla congelada sin decir nada y el
+   usuario se queda esperando. Aquí al menos se le avisa que algo salió mal y
+   el detalle técnico queda en la consola para poder revisarlo después.
+*/
 window.addEventListener('error', function(ev) {
     try {
         console.error('[PRONADERS] Error no controlado:', ev.message, '·',
@@ -1244,16 +1317,22 @@ window.addEventListener('error', function(ev) {
         if (typeof showToast === 'function') {
             showToast('Ocurrió un error inesperado. Si persiste, contacta al administrador.', 'warning');
         }
-    } catch (e) { /* silencioso */ }
+    // Si hasta el propio aviso de error falla, se calla: ponerse a lanzar
+    // errores desde el manejador de errores no ayuda a nadie.
+    } catch (e) { }
 });
 
+// Lo mismo pero para las promesas: una llamada a la API sin catch cae acá.
+// Solo se anota en la consola, sin molestar al usuario, porque muchas veces
+// es una carga secundaria que igual no rompe la pantalla.
 window.addEventListener('unhandledrejection', function(ev) {
     try {
         console.error('[PRONADERS] Promesa rechazada sin manejar:', ev.reason);
-    } catch (e) { /* silencioso */ }
+    } catch (e) { }
 });
 
-// Exponer funciones globales
+// Se cuelgan en window para que los onclick del HTML y los scripts de cada
+// página puedan usarlas.
 window.logout = logout;
 window.abrirVisor = abrirVisor;
 window.cerrarVisor = cerrarVisor;

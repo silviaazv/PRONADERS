@@ -1,17 +1,19 @@
-/* ============================================================
-   dashboard-admin.js — CONTROLADOR: DASHBOARD DEL ADMINISTRADOR DE OFICINA
-   El sidebar, topbar, notificaciones y utilidades de
-   validación se cargan desde shared.js (incluido antes).
-   ============================================================ */
+/*
+   dashboard-admin.js
 
-/* ============================================================
-   dashboard-admin.js — DASHBOARD ADMINISTRATIVO
-   Muestra métricas de proyectos, usuarios y actividades del sistema
-   ============================================================ */
+   Tablero del Administrador de Oficina: la vista general de todo el sistema,
+   con los números de proyectos, usuarios y solicitudes, y la actividad
+   reciente.
 
-// ─────────────────────────────────────────────────────────────
-// VARIABLES GLOBALES
-// ─────────────────────────────────────────────────────────────
+   El menú lateral, la barra superior, las notificaciones y las validaciones
+   los pone shared.js, que se carga antes; aquí solo está el contenido propio
+   de esta pantalla.
+*/
+
+// Todo lo que se descarga y todo lo que se calcula vive en este objeto, para
+// no andar pasando los mismos datos de función en función. Los contadores
+// arrancan en cero porque la pantalla se dibuja antes de que lleguen las
+// respuestas del servidor.
 
 let dashboardData = {
     proyectos: [],
@@ -35,9 +37,7 @@ let dashboardData = {
 
 const NOMBRE_USUARIO = sessionStorage.getItem('pron_nombre') || 'Administrador';
 
-// ─────────────────────────────────────────────────────────────
-// INICIALIZACIÓN
-// ─────────────────────────────────────────────────────────────
+// Arranque de la pantalla: descargar, calcular y dibujar, en ese orden.
 
 document.addEventListener('DOMContentLoaded', async () => {
     await cargarDashboard();
@@ -47,7 +47,9 @@ async function cargarDashboard() {
     try {
         mostrarLoading(true);
 
-        // Cargar datos en paralelo
+        // Las cuatro consultas se lanzan juntas con Promise.all porque ninguna
+        // depende de la otra. Hacerlas una por una tardaría cuatro veces más y
+        // el usuario se quedaría viendo el spinner todo ese rato.
         const [proyectos, usuarios, solicitudes, reportes] = await Promise.all([
             API.proyectos.listar(),
             API.usuarios.listar(),
@@ -60,10 +62,9 @@ async function cargarDashboard() {
         dashboardData.solicitudes = solicitudes || [];
         dashboardData.reportes = reportes || [];
 
-        // Calcular estadísticas
+        // Primero se sacan los totales y recién después se dibuja, porque las
+        // tarjetas de arriba muestran justamente esos números.
         calcularEstadisticas();
-
-        // Renderizar dashboard
         renderizarDashboard();
 
         mostrarLoading(false);
@@ -75,16 +76,21 @@ async function cargarDashboard() {
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-// CÁLCULO DE ESTADÍSTICAS
-// ─────────────────────────────────────────────────────────────
+/* Saca los totales de las tarjetas contando lo que ya se descargó.
+
+   Se cuenta aquí en el navegador y no se le pide al servidor porque los
+   registros ya están en memoria: pedir los mismos datos otra vez, solo que
+   sumados, sería un viaje de más. */
 
 function calcularEstadisticas() {
     const proyectos = dashboardData.proyectos;
     const usuarios = dashboardData.usuarios;
     const solicitudes = dashboardData.solicitudes;
 
-    // Proyectos
+    // Proyectos, separados por estado. Los textos ('ACTIVO', 'RETRASADO'…)
+    // tienen que coincidir tal cual con lo que guarda la columna
+    // estado_proyecto; si cambian en la base, estos contadores quedan en cero
+    // sin dar ningún error.
     dashboardData.estadisticas.totalProyectos = proyectos.length;
     dashboardData.estadisticas.proyectosActivos = proyectos.filter(p =>
         p.estado_proyecto === 'ACTIVO'
@@ -96,13 +102,15 @@ function calcularEstadisticas() {
         p.estado_proyecto === 'FINALIZADO'
     ).length;
 
-    // Usuarios
+    // Usuarios. El estado se guarda como número: 1 es activo y 0 es dado de
+    // baja.
     dashboardData.estadisticas.totalUsuarios = usuarios.length;
     dashboardData.estadisticas.usuariosActivos = usuarios.filter(u =>
         u.estado_usuario === 1
     ).length;
 
-    // Solicitudes
+    // Solicitudes. Las pendientes son las que le interesan al administrador,
+    // porque son las que están esperando que alguien las revise.
     dashboardData.estadisticas.solicitudesPendientes = solicitudes.filter(s =>
         s.estado_solicitud === 'PENDIENTE'
     ).length;
@@ -113,7 +121,13 @@ function calcularEstadisticas() {
         s.estado_solicitud === 'RECHAZADA'
     ).length;
 
-    // Avance global (promedio de avance de proyectos activos)
+    // Avance general: el promedio simple del avance de los proyectos activos.
+    // El avance de cada uno se estima por lo que lleva gastado del
+    // presupuesto, y se recorta a 100 porque un proyecto puede terminar
+    // gastando más de lo que tenía aprobado. No pesa a los proyectos por
+    // tamaño: uno chiquito cuenta igual que uno grande.
+    // Si no hay proyectos activos queda en cero, no en NaN, que es lo que
+    // saldría al dividir entre cero.
     const proyectosActivos = proyectos.filter(p => p.estado_proyecto === 'ACTIVO');
     if (proyectosActivos.length > 0) {
         const sumaAvance = proyectosActivos.reduce((sum, p) => {
@@ -127,15 +141,19 @@ function calcularEstadisticas() {
         dashboardData.estadisticas.avanceGlobal = 0;
     }
 
-    // Proyectos en riesgo (retrasados + con avance bajo)
+    // Proyectos en riesgo. Por ahora son solamente los marcados como
+    // RETRASADO; la idea era sumarle también los que van muy atrás en avance,
+    // pero eso todavía no está hecho.
     dashboardData.estadisticas.proyectosRiesgo = proyectos.filter(p =>
         p.estado_proyecto === 'RETRASADO'
     ).length;
 }
 
-// ─────────────────────────────────────────────────────────────
-// RENDERIZADO DEL DASHBOARD
-// ─────────────────────────────────────────────────────────────
+/* Arma toda la pantalla de una sola vez y la mete en el contenedor.
+
+   Se reemplaza el contenido completo en lugar de ir actualizando pedacito por
+   pedacito: es más simple de seguir y, con la cantidad de datos que maneja
+   este tablero, ni se nota. */
 
 function renderizarDashboard() {
     const container = document.getElementById('dashboard-content');
@@ -237,9 +255,8 @@ function renderizarDashboard() {
     `;
 }
 
-// ─────────────────────────────────────────────────────────────
-// FUNCIONES DE RENDERIZADO AUXILIARES
-// ─────────────────────────────────────────────────────────────
+// Piezas sueltas de la pantalla. Cada una devuelve un pedazo de HTML como
+// texto, y la función de arriba las va juntando.
 
 function renderMetricCard(label, value, icon, bgColor, color, subtitle) {
     return `
@@ -369,9 +386,8 @@ function renderSolicitudesPendientes() {
     }).join('');
 }
 
-// ─────────────────────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────────────────────
+// Utilidades chicas: el spinner de carga, el formato de fechas y montos, y
+// el mensaje de error cuando algo falla.
 
 function mostrarLoading(show) {
     const container = document.getElementById('dashboard-content');
@@ -413,9 +429,8 @@ function showToast(msg, tipo = 'success') {
     _toastTimer = setTimeout(() => t.classList.remove('show'), 4500);
 }
 
-// ─────────────────────────────────────────────────────────────
-// EXPORTAR FUNCIONES PARA EL HTML
-// ─────────────────────────────────────────────────────────────
+// Se cuelgan en window para que los onclick escritos en el HTML las
+// encuentren.
 
 window.cargarDashboard = cargarDashboard;
 window.showToast = showToast;

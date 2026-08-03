@@ -1,29 +1,42 @@
-/* ============================================================
-   usuarios.js — MÓDULO: GESTIÓN DE USUARIOS (Admin de Oficina)
-   ------------------------------------------------------------
-   Ahora consume la API real (/api/usuarios, /api/roles,
-   /api/proyectos-usuarios) en vez de datos de muestra.
+/*
+   usuarios.js
 
-   CAMBIOS respecto a la maqueta original (por límites reales
-   del esquema de base de datos, tbl_usuarios):
-   - Se quitó "Número de cuenta" y "Zona/Cargo": esas columnas
-     no existen en la BD. Si las necesitas, hay que agregarlas
-     al DDL (columna `cuenta` y `zona_cargo`, por ejemplo).
-   - Se quitó "Foto de identificación": no hay endpoint de carga
-     de archivos conectado a este formulario todavía.
-   - "Último acceso" se reemplazó por "Registrado" (fecha_registro),
-     porque la BD no guarda el último inicio de sesión por usuario
-     (sí queda el histórico completo en la Bitácora).
-   ============================================================ */
+   Gestión de usuarios: crear cuentas, editarlas, cambiarles el rol y darlas
+   de baja. Solo entra aquí el Administrador de Oficina.
 
+   Trabaja con /api/usuarios, /api/roles y /api/proyectos-usuarios.
+
+   Vale la pena saber qué campos de la maqueta original no están, para que
+   nadie los ande buscando: "Número de cuenta" y "Zona/Cargo" se quitaron
+   porque esas columnas no existen en tbl_usuarios; para tenerlos habría que
+   agregarlos primero en la base. La "Foto de identificación" tampoco está
+   conectada, falta el endpoint de subida. Y donde antes decía "Último
+   acceso" ahora dice "Registrado", porque la base no guarda el último
+   ingreso de cada quien; eso sí queda completo en la Bitácora.
+*/
+
+// Los usuarios y los roles se descargan al abrir la pantalla y se guardan
+// acá: buscar y filtrar se resuelve sobre estos arreglos, sin volver a
+// consultar el servidor en cada tecleo.
 let _usuariosCache = [];
 let _rolesCache = [];
 let _rolesMap = {};        // id_rol -> nombre_rol
-let _proyectosUsuarioCache = null; // se carga bajo demanda (verProyectos)
+// Los proyectos de un usuario se piden solo si alguien abre esa vista, porque
+// casi nunca se usa y no vale la pena traerlos siempre.
+let _proyectosUsuarioCache = null;
+
+// El modal es el mismo para crear y para editar; estas dos variables son las
+// que le dicen en cuál de los dos modos está abierto.
 let _modoEdicion = false;
 let _usuarioEditandoId = null;
 
-/* ── Toast (reemplaza los alert() nativos) ── */
+/* Aviso emergente de la esquina. Se usa en lugar de alert() porque el alert
+   frena todo hasta que le den aceptar, y para confirmar que se guardó un
+   usuario eso estorba más de lo que ayuda. Si por alguna razón el elemento no
+   está en la página, se cae de vuelta al alert() para no perder el mensaje.
+
+   El temporizador se guarda aparte para poder cancelarlo: si salen dos avisos
+   seguidos, el segundo reinicia la cuenta y no se va a medio leer. */
 let _toastTimer;
 function showToast(msg, tipo='success'){
   const t=document.getElementById('toast');
@@ -47,9 +60,9 @@ function formatearFecha(iso){
   return d.toLocaleDateString('es-HN', {day:'2-digit', month:'short', year:'numeric'});
 }
 
-/* ──────────────────────────────────────────────
-   CARGA INICIAL: usuarios + roles
-   ────────────────────────────────────────────── */
+/* Carga inicial. Trae usuarios y roles al mismo tiempo; los roles hacen falta
+   tanto para mostrar el nombre en cada fila como para llenar la lista
+   desplegable del formulario. */
 async function cargarUsuarios(){
   const tbody = document.getElementById('tabla-usuarios');
   tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:26px;color:var(--muted)">Cargando usuarios…</td></tr>`;
@@ -135,9 +148,14 @@ function actualizarStats(usuarios){
   document.getElementById('usuarios-subtitle').textContent = `${total} usuarios registrados en el sistema`;
 }
 
-/* ──────────────────────────────────────────────
-   DESACTIVAR / REACTIVAR USUARIO
-   ────────────────────────────────────────────── */
+/* Dar de baja o reactivar una cuenta.
+
+   Las cuentas nunca se borran, solo se desactivan: si se borrara el usuario,
+   todos sus registros en la bitácora y todos los proyectos que supervisó
+   quedarían apuntando a alguien que ya no existe.
+
+   El id se guarda en esta variable mientras el diálogo de confirmación está
+   abierto, porque el botón "Sí, desactivar" del HTML no recibe parámetros. */
 let _idAAlternar = null;
 function confirmarDesactivar(id){
   const u = _usuariosCache.find(x=>x.id_usuario===id);
@@ -167,9 +185,12 @@ async function confirmar(){
   }
 }
 
-/* ──────────────────────────────────────────────
-   MODAL NUEVO / EDITAR USUARIO
-   ────────────────────────────────────────────── */
+/* El formulario de usuario, que sirve para las dos cosas.
+
+   Al crear, la contraseña es obligatoria y se le entrega en mano a la persona,
+   porque el sistema todavía no manda correos. Al editar, el campo puede
+   quedarse vacío y eso significa "déjala como está", así el administrador no
+   tiene que inventarse una nueva contraseña solo para corregir un teléfono. */
 function abrirModalNuevoUsuario(){
   _modoEdicion = false;
   _usuarioEditandoId = null;
@@ -246,9 +267,12 @@ async function guardarUsuario(){
   }
 }
 
-/* ──────────────────────────────────────────────
-   VER PROYECTOS VINCULADOS A UN USUARIO
-   ────────────────────────────────────────────── */
+/* Los proyectos que supervisa un usuario. Sirve sobre todo antes de darlo de
+   baja: conviene ver qué proyectos quedan sin supervisor.
+
+   Se traen todos los proyectos y se filtran acá porque la API no tiene una
+   consulta por supervisor. Con la cantidad de proyectos que hay anda bien,
+   pero si eso crece habría que hacer el filtro del lado del servidor. */
 async function obtenerProyectosDeUsuario(id) {
     try {
         const todosLosProyectos = await API.proyectos.listar();
@@ -310,9 +334,14 @@ async function verProyectos(id){
   }
 }
 
-/* ──────────────────────────────────────────────
-   GENERAR PDF DE PROYECTOS DE UN USUARIO
-   ────────────────────────────────────────────── */
+/* Constancia en PDF de los proyectos a cargo de un usuario.
+
+   No se genera un archivo: se abre una ventana con el documento ya maquetado
+   y se manda a imprimir, de ahí el usuario elige "Guardar como PDF". Así no
+   hace falta ninguna librería.
+
+   Si ya se tenían los proyectos a la mano se pasan en proyectosPrecargados,
+   para no repetir la consulta que se acaba de hacer. */
 async function generarPDFUsuario(id, proyectosPrecargados){
   const u = _usuariosCache.find(x=>x.id_usuario===id);
   if(!u) return;
@@ -364,10 +393,12 @@ async function generarPDFUsuario(id, proyectosPrecargados){
   showToast(`Generando PDF de proyectos de ${u.nombre_usuario}...`,'info');
 }
 
-/* ──────────────────────────────────────────────
-   FILTROS DE LA TABLA (ahora filtran sobre el arreglo,
-   no sobre filas del DOM, y vuelven a renderizar)
-   ────────────────────────────────────────────── */
+/* Filtros de la tabla: búsqueda por texto, rol y estado, los tres combinados.
+
+   El filtro se hace sobre el arreglo de usuarios y después se redibuja la
+   tabla, en vez de ir escondiendo filas del HTML. Sale más ordenado y además
+   permite mostrar el mensaje de "no hay resultados" y el contador correcto,
+   que escondiendo filas quedaban mal. */
 function aplicarFiltros() {
   const busqueda = document.getElementById('search-usuario')?.value.toLowerCase() || '';
   const rolFiltro = document.getElementById('filtro-rol')?.value || '';
@@ -400,14 +431,19 @@ function limpiarFiltros() {
   aplicarFiltros();
 }
 
-/* ──────────────────────────────────────────────
-   INICIALIZACIÓN
-   ────────────────────────────────────────────── */
+/* Arranque de la pantalla. */
 document.addEventListener('DOMContentLoaded', async () => {
-  // El teléfono solo admite dígitos (8, formato de Honduras): se bloquea
-  // al escribir, no al guardar. Aplica al modal de nuevo Y de editar.
+  // El teléfono queda restringido a 8 dígitos, que es el formato de Honduras.
+  // Se bloquea mientras se escribe y no al guardar, así el usuario se da
+  // cuenta al instante en vez de que le rebote el formulario completo.
+  // Se hace una sola vez acá porque el campo es el mismo para crear y para
+  // editar: el modal no se vuelve a construir, solo se rellena.
   FormUtils.soloDigitos(document.getElementById('u-telefono'), 8);
   await cargarUsuarios();
+  // Cuando se llega desde el botón de "Nuevo Usuario" de otra pantalla, esa
+  // pantalla deja esta marca para que el formulario se abra solo al llegar.
+  // La pequeña espera es para que el modal no aparezca antes de que la tabla
+  // termine de dibujarse.
   if(sessionStorage.getItem('pron_abrir_modal_usuario') === '1'){
     sessionStorage.removeItem('pron_abrir_modal_usuario');
     setTimeout(() => abrirModalNuevoUsuario(), 150);

@@ -20,7 +20,11 @@
 html{font-size:15px}
 body{font-family:var(--font-sans);background:var(--cream);color:var(--text);line-height:1.6;min-height:100vh;}
 
-/* SIDEBAR */
+/* Menú lateral fijo, azul y a lo alto de toda la pantalla. Lo que se ve
+   dentro lo inyecta shared.js, así que aquí solo está la apariencia: la
+   marca arriba, las opciones al medio y los datos del usuario conectado
+   abajo. Ese bloque de abajo usa margin-top:auto para quedar pegado al
+   fondo aunque el menú tenga pocas opciones. */
 .sidebar{position:fixed;top:0;left:0;width:var(--sidebar-w);height:100vh;background:var(--navy);display:flex;flex-direction:column;z-index:100;overflow-y:auto;}
 .sidebar-brand{display:flex;align-items:center;gap:10px;padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,0.07);}
 .brand-logo{width:36px;height:36px;background:var(--gold);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);font-size:14px;color:var(--navy);font-weight:400;flex-shrink:0;}
@@ -40,7 +44,9 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);line
 .logout-btn{margin-left:auto;background:none;border:none;color:rgba(255,255,255,0.35);cursor:pointer;padding:4px;border-radius:6px;transition:var(--transition);}
 .logout-btn:hover{color:var(--gold-light);}
 
-/* TOPBAR */
+/* Barra superior fija. Empieza donde termina el menú lateral
+   (left:var(--sidebar-w)) para no montarse encima de él, y lleva un
+   z-index más bajo que el del menú por la misma razón. */
 .topbar{position:fixed;top:0;left:var(--sidebar-w);right:0;height:var(--topbar-h);background:var(--white);border-bottom:1px solid var(--cream-dark);display:flex;align-items:center;padding:0 28px;gap:16px;z-index:90;}
 .page-title{font-family:var(--font-serif);font-size:19px;font-weight:300;color:var(--navy);}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
@@ -49,10 +55,15 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);line
 .notif-dot{position:absolute;top:7px;right:7px;width:7px;height:7px;background:var(--gold);border-radius:50%;border:1.5px solid var(--white);}
 .topbar-avatar{width:36px;height:36px;border-radius:50%;background:var(--navy);color:var(--gold-light);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;cursor:pointer;border:2px solid var(--cream-dark);}
 
-/* MAIN */
+/* Zona de contenido. Los márgenes dejan libre justo el espacio que
+   ocupan el menú lateral y la barra superior: como los dos están en
+   position:fixed, no empujan al resto de la página y hay que apartarse
+   de ellos a mano. */
 .main{margin-left:var(--sidebar-w);margin-top:var(--topbar-h);padding:28px;min-height:calc(100vh - var(--topbar-h));}
 
-/* LAYOUT HELPERS */
+/* Clases de apoyo para acomodar el contenido: rejillas, alineaciones,
+   márgenes y tamaños de texto. Se usan directo en el HTML para no llenar
+   de estilos en línea las plantillas que arma solicitudes.js. */
 .flex-between{display:flex;align-items:center;justify-content:space-between;}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
@@ -62,22 +73,28 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);line
 .text-xs{font-size:11.5px;}.text-sm{font-size:13px;}
 .text-muted{color:var(--muted);}
 
-/* CARDS */
+/* Tarjeta blanca genérica. Es el contenedor que envuelve casi todos los
+   bloques de contenido, así que si se cambia algo aquí se nota en todas
+   las pantallas. */
 .card{background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--cream-dark);padding:22px 24px;box-shadow:var(--shadow);}
 .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
 .card-title{font-size:14px;font-weight:600;color:var(--text);}
 .card-subtitle{font-size:12px;color:var(--muted);margin-top:2px;}
 
-/* SECTION HEADER */
+/* Título y bajada de cada sección de la página. */
 .section-head h2{font-family:var(--font-serif);font-size:26px;font-weight:300;color:var(--navy);}
 .section-head p{font-size:13px;color:var(--muted);margin-top:4px;}
 
-/* TABS */
+/* Pestañas para cambiar de vista sin salir de la página. La activa se
+   distingue con fondo blanco y sombra, como si estuviera levantada sobre
+   las demás. */
 .tabs{display:flex;gap:4px;background:var(--cream);border-radius:var(--radius);padding:4px;margin-bottom:20px;align-items:center;flex-wrap:wrap;}
 .tab{padding:7px 14px;border-radius:7px;font-size:13px;font-weight:500;color:var(--muted);background:none;border:none;cursor:pointer;transition:var(--transition);font-family:var(--font-sans);}
 .tab.active{background:var(--white);color:var(--navy);box-shadow:var(--shadow);}
 
-/* BADGES */
+/* Etiquetas de estado. Cada variante junta un fondo suave con el texto
+   en ese mismo tono pero más oscuro, para que se lean bien sin robarle
+   protagonismo al resto de la fila. */
 .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500;}
 .badge-success{background:var(--success-bg);color:#0a6e4c;}
 .badge-warning{background:var(--warning-bg);color:#7a4b0a;}
@@ -88,7 +105,9 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);line
 .badge-delivered{background:#e0f2f1;color:#00695c;}
 .badge-confirmed{background:var(--navy);color:var(--gold-light);}
 
-/* BUTTONS */
+/* Botones. btn-gold es la acción principal de cada pantalla y btn-outline
+   la secundaria; los de color (danger, success) se reservan para acciones
+   que tienen consecuencia real, como aprobar o rechazar. */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:var(--radius);font-family:var(--font-sans);font-size:13.5px;font-weight:500;cursor:pointer;transition:var(--transition);border:none;}
 .btn-gold{background:var(--gold);color:var(--navy);}
 .btn-gold:hover{background:var(--gold-dim);color:var(--white);}
@@ -102,14 +121,19 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);line
 .btn-info{background:var(--info);color:var(--white);}
 .btn-info:hover{background:#134d8a;}
 
-/* FORM */
+/* Campos de formulario de los modales. Aquí las etiquetas van en
+   mayúsculas y en negrita, distinto al resto del sistema, porque los
+   modales de solicitudes tienen muchos campos seguidos y así se separan
+   mejor unos de otros. */
 .form-group{margin-bottom:18px;}
 .form-label{display:block;font-size:11.5px;font-weight:600;color:var(--text-light);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px;}
 .form-control{width:100%;padding:9px 13px;border:1.5px solid var(--cream-dark);border-radius:var(--radius);font-family:var(--font-sans);font-size:13.5px;color:var(--text);background:var(--white);transition:var(--transition);outline:none;}
 .form-control:focus{border-color:var(--navy-light);box-shadow:0 0 0 3px rgba(30,50,112,0.07);}
 textarea.form-control{resize:vertical;min-height:72px;}
 
-/* TABLE */
+/* Tablas. El resaltado al pasar el mouse se le aplica a las celdas y no a
+   la fila completa, porque con border-collapse el fondo de la fila queda
+   tapado por el de las celdas. */
 .table-wrap{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;}
 thead th{text-align:left;padding:10px 14px;font-size:10.5px;text-transform:uppercase;letter-spacing:0.9px;font-weight:600;color:var(--muted);background:var(--cream);border-bottom:1px solid var(--cream-dark);}
@@ -117,17 +141,22 @@ tbody td{padding:12px 14px;border-bottom:1px solid var(--cream-dark);color:var(-
 tbody tr:last-child td{border-bottom:none;}
 tbody tr:hover td{background:rgba(247,244,238,0.6);}
 
-/* SOL CARD */
+/* Tarjeta de una solicitud dentro del listado. */
 .sol-card{border:1px solid var(--cream-dark);border-radius:var(--radius-lg);padding:18px 20px;background:var(--white);transition:var(--transition);}
 .sol-card:hover{box-shadow:var(--shadow);}
 
-/* TYPE PILLS */
+/* Distintivo del tipo de recurso pedido. Cada tipo tiene su propio color
+   para poder ubicarlos rápido en una lista larga: azul para material,
+   naranja para equipo y verde para financiero. */
 .type-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;}
 .type-material{background:#e6f4ff;color:#1565c0;}
 .type-equipo{background:#fff3e0;color:#e65100;}
 .type-financiero{background:#e8f5e9;color:#2e7d32;}
 
-/* TIMELINE DE ESTADOS */
+/* Línea de tiempo con el recorrido de la solicitud: creada, aprobada,
+   despachada y recibida. La línea vertical que une los puntos es el
+   ::before de cada paso, y se le quita al último para que no quede
+   colgando un tramo de línea al final. */
 .timeline{display:flex;flex-direction:column;gap:0;margin-top:14px;padding-top:14px;border-top:1px solid var(--cream-dark);}
 .tl-item{display:flex;gap:12px;position:relative;padding-bottom:14px;}
 .tl-item:last-child{padding-bottom:0;}
@@ -139,13 +168,17 @@ tbody tr:hover td{background:rgba(247,244,238,0.6);}
 .tl-meta{font-size:11.5px;color:var(--muted);margin-top:1px;}
 .tl-doc{display:inline-flex;align-items:center;gap:5px;font-size:11px;background:var(--cream);border:1px solid var(--cream-dark);border-radius:6px;padding:3px 8px;margin-top:5px;color:var(--text-light);}
 
-/* LISTA COLABORATIVA */
+/* Necesidades propuestas por los técnicos, en espera de que el supervisor
+   las revise. Las marcadas como duplicado se pintan en tono de alerta
+   porque probablemente ya alguien más pidió lo mismo. */
 .need-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--cream-dark);border-radius:var(--radius);background:var(--white);transition:var(--transition);}
 .need-item:hover{border-color:var(--gold);background:rgba(201,168,76,0.03);}
 .need-item.duplicado{border-color:var(--warning);background:var(--warning-bg);}
 .need-avatar{width:26px;height:26px;border-radius:50%;background:var(--navy-light);display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:600;color:var(--gold-light);flex-shrink:0;}
 
-/* MODAL */
+/* Ventanas emergentes. Nacen con display:none y se muestran agregándoles
+   la clase open desde el JavaScript; el fondo oscurecido con desenfoque
+   es el propio overlay. */
 .modal-overlay{position:fixed;inset:0;background:rgba(13,27,62,0.45);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;}
 .modal-overlay.open{display:flex;}
 .modal{background:var(--white);border-radius:var(--radius-lg);padding:32px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(13,27,62,0.2);animation:fadeUp 0.25s ease;}
@@ -155,23 +188,29 @@ tbody tr:hover td{background:rgba(247,244,238,0.6);}
 .close-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:22px;border-radius:6px;transition:var(--transition);}
 .close-btn:hover{color:var(--text);background:var(--cream);}
 
-/* TOAST */
+/* Aviso emergente de la esquina inferior derecha. Vive fuera de la
+   pantalla (translateY) y entra deslizándose cuando se le agrega la clase
+   show; el pointer-events:none evita que tape los clics mientras está
+   escondido. */
 .toast{position:fixed;bottom:28px;right:28px;background:var(--navy);color:var(--white);padding:13px 20px;border-radius:var(--radius);font-size:13.5px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow-md);z-index:999;transform:translateY(80px);opacity:0;transition:all 0.3s cubic-bezier(.4,0,.2,1);pointer-events:none;}
 .toast.show{transform:translateY(0);opacity:1;}
 .toast.success{border-left:4px solid var(--success);}
 .toast.warning{border-left:4px solid var(--warning);}
 .toast.info{border-left:4px solid var(--gold);}
 
-/* FILTER PILLS */
+/* Filtros rápidos por estado de la solicitud. El que está activo se
+   invierte a fondo azul para que se note cuál está aplicado. */
 .filter-pill{padding:4px 12px;border-radius:20px;font-size:11.5px;font-weight:500;border:1px solid var(--cream-dark);background:var(--white);color:var(--muted);cursor:pointer;transition:var(--transition);font-family:var(--font-sans);display:inline-flex;align-items:center;gap:4px;}
 .filter-pill:hover{border-color:var(--navy-light);color:var(--navy);}
 .filter-pill.active{background:var(--navy);color:var(--white);border-color:var(--navy);}
 
-/* DROPZONE */
+/* Área para arrastrar archivos. El borde punteado es la pista visual de
+   que ahí se puede soltar algo; el manejo del arrastre está en el HTML. */
 .dropzone{border:2px dashed var(--cream-dark);border-radius:var(--radius);padding:20px;text-align:center;cursor:pointer;transition:var(--transition);background:var(--cream);}
 .dropzone:hover{border-color:var(--gold);}
 
-/* FADE ANIM */
+/* Aparición suave del contenido al cargar. La animación se llama fadeUp2
+   para no chocar con la fadeUp que ya usan los modales más arriba. */
 @keyframes fadeUp2{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .fade-up{animation:fadeUp2 0.4s ease forwards;}
 .fade-up-1{animation-delay:0.05s;opacity:0;}

@@ -11,7 +11,9 @@
 <body>
 
 <main class="main">
-  <!-- PAGE HEADER -->
+  <!-- Encabezado de la página. El botón de exportar arma el PDF en el
+       navegador con lo que ya está cargado en la tabla, no pide nada al
+       servidor. -->
   <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px" class="fade-up">
     <div>
       <h1 style="font-family:var(--font-serif);font-size:26px;font-weight:300;color:var(--navy)">
@@ -28,7 +30,9 @@
     </div>
   </div>
 
-  <!-- STATS STRIP (los valores se calculan en bitacora.js a partir de la API) -->
+  <!-- Tarjetas de resumen. Los ceros que están escritos aquí son solo el
+       estado inicial: bitacora.js los reemplaza al terminar de contar los
+       registros que devuelve la API. -->
   <div class="stats-strip fade-up fade-up-1">
     <div class="stat-mini">
       <div class="stat-icon" style="background:var(--info-bg)"><span class="material-symbols-rounded" style="color:var(--info)">receipt_long</span></div>
@@ -60,7 +64,9 @@
     </div>
   </div>
 
-  <!-- FILTER BAR -->
+  <!-- Barra de filtros. Todos los controles llaman a la misma función
+       filtrarBitacora(), que combina los cuatro criterios a la vez: el
+       texto libre, el usuario, el tipo, el objeto y la fecha. -->
   <div class="filter-bar fade-up fade-up-2">
     <div class="search-wrap">
       <span class="material-symbols-rounded">search</span>
@@ -71,7 +77,9 @@
       <option value="">Todos</option>
     </select>
     <label>Tipo:</label>
-    <!-- Clasificación de la acción registrada (valores reales de tbl_bitacora) -->
+    <!-- Los value de estas opciones tienen que coincidir tal cual con lo que
+         guarda la columna tipo_accion de tbl_bitacora; si se cambia uno aquí
+         el filtro deja de encontrar registros. -->
     <select class="filter-select" id="f-tipo" onchange="filtrarBitacora()">
       <option value="">Todos</option>
       <option value="INSERT">Creación</option>
@@ -85,7 +93,9 @@
       <option value="LOGOUT">Cierre de sesión</option>
     </select>
     <label>Objeto:</label>
-    <!-- Objeto asociado a la acción (nulo en inicios de sesión) -->
+    <!-- Sobre qué se hizo la acción. Los inicios y cierres de sesión no
+         tienen objeto asociado, por eso en esos casos la columna llega
+         vacía desde el servidor y en la tabla se ve un guión. -->
     <select class="filter-select" id="f-objeto" onchange="filtrarBitacora()">
       <option value="">Todos</option>
       <option value="PROYECTO">Proyecto</option>
@@ -98,7 +108,8 @@
     <input type="date" class="filter-select" id="f-fecha" onchange="filtrarBitacora()">
   </div>
 
-  <!-- LOG TABLE -->
+  <!-- Tabla del registro de actividad. El tbody queda vacío a propósito:
+       bitacora.js lo llena fila por fila con la página que toque mostrar. -->
   <div class="card fade-up fade-up-3">
     <div class="card-header">
       <div>
@@ -128,7 +139,9 @@
       </table>
     </div>
 
-    <!-- PAGINATION -->
+    <!-- Controles de paginación. El botón de "última página" manda 999
+         porque irPagina() recorta el número al total real de páginas, así
+         no hay que saber cuántas hay desde el HTML. -->
 <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px;padding-top:16px;border-top:1px solid var(--cream-dark)">
     <span style="font-size:12px;color:var(--muted);" id="info-pagina">Página 1 de 1</span>
     <div style="display:flex;gap:6px">

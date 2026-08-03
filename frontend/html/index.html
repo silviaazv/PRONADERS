@@ -12,7 +12,8 @@
 </head>
 <body>
 
-<!-- LEFT PANEL -->
+<!-- Panel izquierdo: solo presentación. Muestra la marca de PRONADERS
+     y los puntos fuertes del sistema. No tiene ninguna lógica. -->
 <div class="left-panel">
   <div class="geo-bg">
     <div class="geo-circle"></div>
@@ -57,13 +58,15 @@
   </div>
 </div>
 
-<!-- RIGHT PANEL -->
+<!-- Panel derecho: el formulario de acceso. Los identificadores de los
+     inputs (correo, password) los lee index.js al momento de validar. -->
 <div class="right-panel">
   <div class="login-box">
     <h2>Bienvenido</h2>
     <p>Ingrese sus credenciales para acceder al sistema.</p>
 
-    <!--Cambio: Ingreso a la plataforma con CORREO-->
+    <!-- El acceso se hace con el correo institucional, no con un nombre de
+         usuario. Por eso el input es type="email" y no type="text". -->
     <div class="form-group">
       <label class="form-label">Correo electrónico</label>
       <div class="input-wrap">

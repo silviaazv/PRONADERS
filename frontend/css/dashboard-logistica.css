@@ -66,21 +66,25 @@ body{font-family:var(--font-sans);background:var(--cream);color:var(--text);line
 .fade-up-2{animation-delay:0.1s;opacity:0;}
 .fade-up-3{animation-delay:0.15s;opacity:0;}
 
-/* Despacho card */
+/* Tarjeta de un despacho pendiente. La franja de color del borde
+   izquierdo indica la prioridad, para que logística sepa de un vistazo
+   qué entregar primero. */
 .despacho-card{background:var(--white);border:1px solid var(--cream-dark);border-radius:var(--radius-lg);padding:18px 20px;box-shadow:var(--shadow);transition:var(--transition);}
 .despacho-card:hover{box-shadow:var(--shadow-md);border-color:var(--gold);}
 .priority-high{border-left:3px solid var(--danger);}
 .priority-med{border-left:3px solid var(--warning);}
 .priority-low{border-left:3px solid var(--success);}
 
-/* Selector de zona (visible solo para el Admin de Oficina, para ver
-   la logística de todos los equipos por zona) */
+/* Estilos del selector de zona. Ese selector solo lo ve el Admin de
+   Oficina: los equipos de logística ven únicamente lo suyo, pero él
+   necesita poder cambiar de zona para revisar el trabajo de todos. */
 .form-control{width:100%;padding:9px 13px;border:1.5px solid var(--cream-dark);border-radius:var(--radius);font-family:var(--font-sans);font-size:13.5px;color:var(--text);background:var(--white);transition:var(--transition);outline:none;}
 .form-control:focus{border-color:var(--navy-light);box-shadow:0 0 0 3px rgba(30,50,112,0.07);}
 .badge-navy{background:rgba(13,27,62,0.08);color:var(--navy);}
 
-/* Modal de detalle de despacho/solicitud (se muestra SIN cambiar de
-   módulo: se abre sobre el propio dashboard de logística) */
+/* Ventana de detalle del despacho. Se abre encima del mismo dashboard a
+   propósito, para no mandar al usuario al módulo de solicitudes y hacerlo
+   perder el lugar donde iba. */
 .modal-overlay{position:fixed;inset:0;background:rgba(13,27,62,0.45);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;}
 .modal-overlay.open{display:flex;}
 .modal{background:var(--white);border-radius:var(--radius-lg);padding:28px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(13,27,62,0.2);animation:modalFadeUp 0.22s ease;}

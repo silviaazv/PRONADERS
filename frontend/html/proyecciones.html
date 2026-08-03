@@ -10,14 +10,19 @@
 </head>
 <body>
 
-    <!-- ===== SIDEBAR + TOPBAR (shared) ===== -->
+    <!-- Estos dos contenedores llegan vacíos. shared.js les inyecta el menú
+         lateral y la barra superior, que son iguales en todas las pantallas
+         y se arman según el rol del usuario que inició sesión. -->
     <div id="sidebar-container"></div>
     <div id="topbar-container"></div>
 
-    <!-- ===== MAIN CONTENT ===== -->
+    <!-- Las tarjetas de proyección se calculan en el navegador a partir del
+         avance histórico de cada proyecto, por eso este espacio arranca
+         vacío. -->
     <main class="main">
         <div id="proyecciones-content">
-            <!-- Loading spinner -->
+            <!-- Se muestra mientras se hacen los cálculos; proyecciones.js
+                 reemplaza todo este bloque cuando termina. -->
             <div class="loading-container">
                 <div class="loading-spinner"></div>
                 <p>Calculando proyecciones...</p>
@@ -25,7 +30,8 @@
         </div>
     </main>
 
-    <!-- ===== TOAST ===== -->
+    <!-- Aviso emergente para confirmaciones y errores. Vive escondido hasta
+         que alguien llama a toast() desde shared.js. -->
     <div class="toast" id="toast">
         <span class="material-symbols-rounded" id="toast-icon" style="font-size:18px">check_circle</span>
         <span id="toast-msg"></span>

@@ -1,10 +1,19 @@
-/* ============================================================
-   dashboard-campo.js — DASHBOARD PARA SUPERVISOR DE CAMPO
-   ============================================================ */
+/*
+   dashboard-campo.js
 
-// ─────────────────────────────────────────────────────────────
-// VARIABLES GLOBALES
-// ─────────────────────────────────────────────────────────────
+   Tablero del Supervisor de Campo. A diferencia del tablero administrativo,
+   este muestra únicamente lo del usuario que entró: sus proyectos, sus
+   solicitudes y sus reportes. Por eso todas las consultas van filtradas por
+   su id.
+
+   El menú lateral, la barra superior, las notificaciones y las validaciones
+   los pone shared.js, que se carga antes.
+*/
+
+// Todo lo que se descarga y todo lo que se calcula vive en este objeto, para
+// no andar pasando los mismos datos de función en función. Los contadores
+// arrancan en cero porque la pantalla se dibuja antes de que lleguen las
+// respuestas del servidor.
 let dashboardData = {
     usuario: null,
     proyectos: [],
@@ -36,9 +45,7 @@ console.log('[Dashboard Campo] NOMBRE_USUARIO:', NOMBRE_USUARIO);
 console.log('[Dashboard Campo] ROLE:', ROLE);
 console.log('[Dashboard Campo] API disponible?', typeof API !== 'undefined');
 
-// ─────────────────────────────────────────────────────────────
-// INICIALIZACIÓN
-// ─────────────────────────────────────────────────────────────
+// Arranque de la pantalla: descargar, calcular y dibujar, en ese orden.
 
 document.addEventListener('DOMContentLoaded', async () => {
     await cargarDashboard();
@@ -48,7 +55,9 @@ async function cargarDashboard() {
     try {
         mostrarLoading(true);
 
-        // Obtener datos en paralelo
+        // Las cuatro consultas se lanzan juntas con Promise.all porque ninguna
+        // depende de la otra. Las tres primeras van filtradas por ID_USUARIO:
+        // el supervisor solo debe ver lo que le toca a él.
         const [proyectos, solicitudes, reportes, resumenSolicitudes] = await Promise.all([
             API.proyectos.listar({ id_usuario: ID_USUARIO }),
             API.solicitudes.listar({ id_usuario: ID_USUARIO }),
@@ -61,10 +70,9 @@ async function cargarDashboard() {
         dashboardData.reportes = reportes || [];
         dashboardData.resumenSolicitudes = resumenSolicitudes || [];
 
-        // Calcular estadísticas
+        // Primero se sacan los totales y recién después se dibuja, porque las
+        // tarjetas de arriba muestran justamente esos números.
         calcularEstadisticas();
-
-        // Renderizar todo
         renderizarDashboard();
 
         mostrarLoading(false);
@@ -76,16 +84,17 @@ async function cargarDashboard() {
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-// CÁLCULO DE ESTADÍSTICAS
-// ─────────────────────────────────────────────────────────────
+/* Saca los totales de las tarjetas contando lo que ya se descargó, sin
+   volver a consultarle nada al servidor. */
 
 function calcularEstadisticas() {
     const proyectos = dashboardData.proyectos;
     const solicitudes = dashboardData.solicitudes;
     const reportes = dashboardData.reportes;
 
-    // Proyectos
+    // Proyectos asignados a este supervisor, separados por estado. Los textos
+    // tienen que coincidir tal cual con la columna estado_proyecto; si cambian
+    // en la base, estos contadores quedan en cero sin avisar.
     dashboardData.estadisticas.totalProyectos = proyectos.length;
     dashboardData.estadisticas.proyectosActivos = proyectos.filter(p => 
         p.estado_proyecto === 'ACTIVO'
@@ -94,7 +103,9 @@ function calcularEstadisticas() {
         p.estado_proyecto === 'RETRASADO'
     ).length;
 
-    // Solicitudes
+    // Solicitudes que hizo este supervisor. ENTREGADA y CONFIRMADA se cuentan
+    // juntas: para él las dos significan que el material ya llegó, la
+    // diferencia es solo si ya firmó la recepción.
     dashboardData.estadisticas.solicitudesPendientes = solicitudes.filter(s => 
         s.estado_solicitud === 'PENDIENTE'
     ).length;
@@ -108,7 +119,8 @@ function calcularEstadisticas() {
         s.estado_solicitud === 'ENTREGADA' || s.estado_solicitud === 'CONFIRMADA'
     ).length;
 
-    // Reportes (estado_reporte: 0 = pendiente, 1 = revisado/aprobado)
+    // Reportes de avance. Aquí el estado no es texto sino número: 0 es que
+    // todavía está esperando revisión y 1 es que oficina ya lo aprobó.
     dashboardData.estadisticas.reportesPendientes = reportes.filter(r => 
         r.estado_reporte === 0
     ).length;
@@ -117,9 +129,10 @@ function calcularEstadisticas() {
     ).length;
 }
 
-// ─────────────────────────────────────────────────────────────
-// RENDERIZADO PRINCIPAL
-// ─────────────────────────────────────────────────────────────
+/* Arma toda la pantalla de una sola vez y la mete en el contenedor.
+
+   Se reemplaza el contenido completo en lugar de ir actualizando pedacito por
+   pedacito: es más simple de seguir y con esta cantidad de datos ni se nota. */
 
 function renderizarDashboard() {
     const container = document.getElementById('dashboard-content');
@@ -193,9 +206,8 @@ function renderizarDashboard() {
     `;
 }
 
-// ─────────────────────────────────────────────────────────────
-// FUNCIONES DE RENDERIZADO AUXILIARES
-// ─────────────────────────────────────────────────────────────
+// Piezas sueltas de la pantalla. Cada una devuelve un pedazo de HTML como
+// texto, y la función de arriba las va juntando.
 
 function renderMetricCard(label, value, icon, bgColor, color) {
     return `
@@ -357,7 +369,9 @@ function renderSolicitudesRecientes() {
         const badge = estadoBadge[s.estado_solicitud] || 'badge-warning';
         const label = estadoLabel[s.estado_solicitud] || s.estado_solicitud || 'Pendiente';
         
-        // Obtener descripción del primer ítem
+        // En la lista resumida solo cabe un renglón, así que se muestra el
+        // primer recurso de la solicitud y se corta a 30 caracteres. Para ver
+        // todo hay que entrar al módulo de solicitudes.
         const descItem = s.items && s.items.length > 0 
             ? s.items[0].descripcion_recurso || s.items[0].desc || 'Sin descripción'
             : 'Sin recursos';
@@ -422,9 +436,8 @@ async function confirmarRecepcion(idSolicitud){
     }
 
 }
-// ─────────────────────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────────────────────
+// Utilidades chicas: el spinner de carga, el formato de fechas y montos, y
+// el mensaje de error cuando algo falla.
 
 function mostrarLoading(show) {
     const container = document.getElementById('dashboard-content');
@@ -465,9 +478,8 @@ function showToast(msg, tipo = 'success') {
     _toastTimer = setTimeout(() => t.classList.remove('show'), 4500);
 }
 
-// ─────────────────────────────────────────────────────────────
-// EXPORTAR FUNCIONES PARA USO EN EL HTML
-// ─────────────────────────────────────────────────────────────
+// Se cuelgan en window para que los onclick escritos en el HTML las
+// encuentren.
 
 window.cargarDashboard = cargarDashboard;
 window.renderSolicitudesRecientes = renderSolicitudesRecientes;

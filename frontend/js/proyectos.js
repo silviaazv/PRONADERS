@@ -1,10 +1,28 @@
-/* 
-   proyectos.js — MÓDULO: GESTIÓN DE PROYECTOS (Admin de Oficina) / Mis Proyectos (Campo)
-   El sidebar, topbar, notificaciones y utilidades de
-   validación se cargan desde shared.js.
-   */
+/*
+   proyectos.js
 
-// VARIABLES GLOBALES
+   Proyectos: crearlos, editarlos, consultarlos, finalizarlos y cancelarlos.
+
+   La misma pantalla sirve para dos roles con permisos muy distintos. El
+   Administrador de Oficina ve todos los proyectos y es el único que puede
+   crear, editar, finalizar y cancelar. El Supervisor de Campo solo ve los
+   proyectos que tiene asignados y únicamente los consulta.
+
+   Un detalle importante de todo este archivo: cuando un proyecto llega a
+   FINALIZADO o CANCELADO su expediente queda cerrado y ya no se puede tocar
+   ni reactivar. Eso se controla en varios lugares (los botones de la tarjeta,
+   el modo solo lectura del modal y la validación al guardar), así que hay que
+   tenerlo presente antes de cambiar algo.
+
+   El menú lateral, la barra superior, las notificaciones y las validaciones
+   los pone shared.js.
+*/
+
+// Los datos descargados. proyectosCache es sobre lo que se filtra y se
+// ordena, sin volver a consultar el servidor.
+// _proyectoEnEdicion es la bandera que distingue crear de editar: si tiene un
+// id, el formulario está modificando ese proyecto.
+// _proyectoFinalizarId cumple lo mismo para el modal de finalizar.
 
 
 let proyectosCache = [];
@@ -15,57 +33,70 @@ let _proyectoEnEdicion = null;
 let colabsSeleccionados = new Set();
 let _proyectoFinalizarId = null;
 
+// Quién está usando la pantalla. Se aceptan dos formas de escribir el rol de
+// administrador porque quedaron guardadas distinto según por dónde se haya
+// iniciado sesión; convendría unificarlas, pero mientras tanto hay que
+// contemplar las dos o el administrador se queda sin sus botones.
 const ID_USUARIO = parseInt(sessionStorage.getItem('pron_id_usuario')) || null;
 const NOMBRE_USUARIO = sessionStorage.getItem('pron_nombre') || 'Usuario';
 const ROLE = sessionStorage.getItem('pron_role') || 'Supervisor de Campo';
 const esAdmin = (ROLE === 'admin_oficina' || ROLE === 'Administrador de Oficina');
 
-/* Campos editables del modal #modal-nuevo (se reutiliza para crear y para
-   editar). Se listan aquí para poder habilitarlos o bloquearlos en bloque
-   desde setModoSoloLectura(). */
+/* Los campos del formulario de proyecto, listados en un solo lugar para poder
+   bloquearlos o desbloquearlos todos juntos desde setModoSoloLectura().
+
+   Si se agrega un campo nuevo al modal, hay que sumarlo también a esta lista;
+   si no, ese campo va a quedar editable en los proyectos cerrados. */
 const CAMPOS_MODAL_PROYECTO = [
     'np-nombre', 'np-tipo', 'sel-depto', 'sel-municipio',
     'np-inicio', 'np-fin', 'np-presupuesto', 'np-supervisor', 'np-desc'
 ];
 
-/* Estados terminales del ciclo de vida de un proyecto. Al llegar a uno de
-   ellos el expediente queda cerrado: sus datos solo se consultan, no se
-   editan, y no existe forma de devolverlo a ACTIVO desde la interfaz.
-   El backend aplica la misma regla (routes/proyectos.js), porque este
-   bloqueo del front es solo la primera capa. */
+/* Los dos estados de los que un proyecto ya no sale. Al llegar a cualquiera
+   de ellos el expediente queda cerrado: se puede consultar, pero no editar, y
+   no hay manera de devolverlo a ACTIVO desde la pantalla.
+
+   El servidor aplica la misma regla en routes/proyectos.js. Lo de acá es solo
+   la primera capa, para que el usuario no llegue a intentarlo; la que de
+   verdad protege los datos es la del servidor. */
 const ESTADOS_CERRADOS = ['CANCELADO', 'FINALIZADO'];
 
-/**
- * Indica si un proyecto ya está cerrado y, por tanto, es de solo lectura.
- * @param {string} estado Valor de estado_proyecto (ACTIVO, RETRASADO, ...).
- * @returns {boolean} true si el proyecto está CANCELADO o FINALIZADO.
- */
+/* Dice si un proyecto ya está cerrado y por lo tanto es de solo lectura.
+
+   Recibe el valor de estado_proyecto (ACTIVO, RETRASADO, FINALIZADO,
+   CANCELADO) y devuelve true para los dos últimos. */
 function esProyectoCerrado(estado) {
     return ESTADOS_CERRADOS.includes(estado);
 }
 
 
-// INICIALIZACIÓN
+// Arranque de la pantalla.
 
 
 document.addEventListener('DOMContentLoaded', async () => {
     await cargarDatosIniciales();
     renderPaginaProyectos();
 
-    // Abrir detalle si viene desde dashboard
+    // Cuando se llega desde el tablero o desde una notificación, ahí quedó
+    // anotado qué proyecto abrir. La marca se borra de una vez para que no
+    // vuelva a saltar en la próxima visita, y la pequeña espera es para que la
+    // lista termine de dibujarse antes de que aparezca el modal encima.
     const autoOpen = sessionStorage.getItem('pron_open_proyecto');
     if (autoOpen) {
         sessionStorage.removeItem('pron_open_proyecto');
         setTimeout(() => abrirDetalle(parseInt(autoOpen)), 200);
     }
 
-    // Abrir modal nuevo proyecto si viene desde dashboard
+    // Lo mismo pero para el botón de "Nuevo Proyecto" del tablero: allá se
+    // deja la marca y acá se abre el formulario al llegar.
     if (sessionStorage.getItem('pron_abrir_modal_proyecto') === '1') {
         sessionStorage.removeItem('pron_abrir_modal_proyecto');
         setTimeout(() => abrirModalNuevoProyecto(), 200);
     }
 
-    // Aplicar filtros guardados
+    // Los filtros quedan guardados en la sesión, así que si el usuario entra a
+    // un proyecto y regresa, la lista se ve tal como la dejó en vez de
+    // reiniciarse.
     const filtros = leerFiltrosGuardados();
     if (filtros.estado) {
         const sel = document.getElementById('f-estado');
@@ -86,7 +117,9 @@ async function cargarDatosIniciales() {
         usuariosCache = usuarios || [];
         departamentosCache = departamentos || [];
 
-        //Cargar municipios del primer departamento si existe
+        // Se precargan los municipios de un solo departamento y no de todos:
+        // son cientos y no tiene sentido traerlos si el usuario a lo mejor ni
+        // abre el formulario. El resto se pide cuando elige un departamento.
         if (departamentosCache.length > 0) {
             const municipios = await API.municipios.listar({ id_departamento: departamentosCache[0].id_departamento });
             municipiosCache = municipios || [];
@@ -101,6 +134,9 @@ async function cargarDatosIniciales() {
 }
 
 
+/* Llena la lista de supervisores del formulario. Si no hay ninguno registrado
+   deja una opción deshabilitada avisándolo, en lugar de una lista vacía donde
+   el usuario no entendería qué pasó. */
 async function cargarSupervisores() {
     try {
         const select = document.getElementById('np-supervisor');
@@ -109,7 +145,8 @@ async function cargarSupervisores() {
             return [];
         }
 
-        // Obtener usuarios
+        // Se piden todos los usuarios porque la API no tiene una consulta por
+        // rol; el filtrado se hace acá abajo.
         let usuarios = [];
         try {
             usuarios = await API.usuarios.listar();
@@ -118,13 +155,16 @@ async function cargarSupervisores() {
             return [];
         }
 
-        // Filtrar supervisores (id_rol = 2)
+        // El rol 2 es Supervisor de Campo. El número está escrito directo
+        // porque los roles son un catálogo fijo, pero si algún día se
+        // reordenan hay que acordarse de este lugar.
         const supervisores = usuarios.filter(u => u.id_rol === 2);
 
         select.innerHTML = '<option value="">— Selecciona un supervisor —</option>';
         
         if (supervisores.length === 0) {
-            // Si no hay supervisores, mostrar opción para crear uno
+            // Sin supervisores registrados se deja una opción deshabilitada
+            // que lo explica, para que no parezca que la lista falló.
             const opt = document.createElement('option');
             opt.value = '';
             opt.textContent = 'No hay supervisores registrados';
@@ -147,7 +187,7 @@ async function cargarSupervisores() {
     }
 }
 
-//Cargar departamentos
+// Llena la lista de departamentos del formulario.
 async function cargarDepartamentos() {
     try {
         const selDepto = document.getElementById('sel-depto');
@@ -182,7 +222,13 @@ async function cargarDepartamentos() {
     }
 }
 
-// Cargar municipios según departamento seleccionado
+// Llena la lista de municipios con los del departamento elegido. Se llama
+// desde el onchange del select de departamento: los municipios de Honduras
+// son demasiados para traerlos todos de una vez, así que se piden recién
+// cuando ya se sabe cuáles hacen falta.
+//
+// Ojo: esta función deja habilitado el select de municipio, así que si se la
+// llama con el modal en solo lectura hay que volver a bloquearlo después.
 async function cargarMunicipios() {
     const id_departamento = document.getElementById('sel-depto')?.value;
     const selMun = document.getElementById('sel-municipio');
@@ -212,15 +258,19 @@ async function cargarMunicipios() {
 }
 
 
-// PROYECTOS VISIBLES SEGÚN ROL
+// Qué proyectos le tocan a cada quien: el administrador los ve todos y el
+// supervisor de campo solo aquellos donde figura como responsable.
 
 function proyectosVisibles() {
     if (esAdmin) return proyectosCache;
-    // Campo/empleado: solo proyectos donde participa
+    // Campo: únicamente los proyectos que tiene a cargo.
     return proyectosCache.filter(p => p.id_supervisor === ID_USUARIO );
 }
 
-// RENDER PRINCIPAL
+/* Arma el armazón de la pantalla: el encabezado, la barra de filtros y el
+   contenedor de las tarjetas. Las tarjetas en sí las dibuja renderProyectos(),
+   que se vuelve a llamar cada vez que cambia un filtro sin tener que rehacer
+   todo esto. */
 
 
 function renderPaginaProyectos() {
@@ -274,7 +324,9 @@ function renderPaginaProyectos() {
         </div>
     `;
 
-    // Filtros
+    // Las listas de tipo y de departamento se arman con los valores que
+    // realmente aparecen en los proyectos visibles, no con los catálogos
+    // completos: ofrecer un filtro que no va a devolver nada solo confunde.
     const tipos = [...new Set(visibles.map(p => p.tipo_proyecto).filter(Boolean))];
     const deptos = [...new Set(visibles.map(p => p.nombre_departamento).filter(Boolean))];
 
@@ -301,7 +353,11 @@ function renderPaginaProyectos() {
             </select>
             <select class="form-control" id="f-depto" style="width:auto;padding:7px 32px 7px 12px;font-size:13px" onchange="aplicarFiltros()">
                 <option value="">Todos los departamentos</option>
-                ${deptos.map(d => `<option value="${d}">${d}</option>`).join('')} //REVISAR ESTO YA QUE NO ESTA FILTRANDO POR DEPARTAMENTO
+                <!-- Pendiente de revisar: el filtro por departamento no está
+                     funcionando. Las opciones se arman con nombre_departamento
+                     pero aplicarFiltros() no está comparando contra el mismo
+                     campo. -->
+                ${deptos.map(d => `<option value="${d}">${d}</option>`).join('')}
             </select>
         </div>
     `;
@@ -329,7 +385,8 @@ function renderPaginaProyectos() {
         </div>
     `;
 
-    // Restaurar filtros
+    // Se vuelven a poner los filtros que el usuario tenía antes de salir de la
+    // pantalla, para que la lista se vea igual a como la dejó.
     const filtros = leerFiltrosGuardados();
     document.getElementById('f-buscar').value = filtros.q || '';
     document.getElementById('f-tipo').value = filtros.tipo || '';
@@ -365,9 +422,12 @@ function renderGaleria() {
     if (btn) btn.style.display = hayFiltrosActivos(filtros) ? '' : 'none';
 }
 
-// ─────────────────────────────────────────────────────────────
-// FILTROS
-// ─────────────────────────────────────────────────────────────
+/* Los filtros de la lista. Se guardan en sessionStorage para que sobrevivan a
+   ir y volver de otra pantalla, y se pierden al cerrar el navegador.
+
+   La lectura va dentro de un try porque si lo guardado quedó corrupto,
+   JSON.parse revienta y dejaría la pantalla en blanco; ante la duda se
+   arranca sin filtros. */
 
 function leerFiltrosGuardados() {
     try { return JSON.parse(sessionStorage.getItem('pron_filtros_proyectos')) || {}; } catch (e) { return {}; }
@@ -412,9 +472,8 @@ function filtrarProyectos(lista, f) {
     });
 }
 
-// ─────────────────────────────────────────────────────────────
-// TARJETA DE PROYECTO
-// ─────────────────────────────────────────────────────────────
+/* Arma la tarjeta de un proyecto: nombre, ubicación, avance, presupuesto y,
+   si quien mira es el administrador, los botones de acción. */
 
 function tarjetaProyecto(p) {
 
@@ -445,8 +504,10 @@ function tarjetaProyecto(p) {
     const departamento = p.nombre_departamento || p.departamento || '';
     const ubicacionCompleta = departamento ? `${ubicacion}, ${departamento}` : ubicacion;
 
-    /* Botones de acción (Admin). Solo los proyectos abiertos ofrecen
-       Finalizar y Cancelar; los cerrados muestran únicamente su estado. */
+    /* Botones de acción, solo para el administrador. Finalizar y Cancelar
+       aparecen únicamente en los proyectos abiertos: los que ya están
+       cerrados no tienen a dónde ir, así que en su lugar se muestra solamente
+       su estado. */
     let accionesAdmin = '';
     if (esAdmin) {
         if (p.estado_proyecto === 'ACTIVO' || p.estado_proyecto === 'RETRASADO') {
@@ -524,9 +585,11 @@ function tarjetaProyecto(p) {
     `;
 }
 
-// ─────────────────────────────────────────────────────────────
-// MODAL DETALLE
-// ─────────────────────────────────────────────────────────────
+/* Ficha completa del proyecto, en modo lectura.
+
+   Los datos se piden de nuevo a la API en vez de sacarlos del caché, porque
+   este modal muestra información que la tarjeta no trae y además así se ve el
+   estado actualizado si alguien más lo modificó mientras tanto. */
 
 async function abrirDetalle(id) {
     try {
@@ -569,7 +632,8 @@ async function abrirDetalle(id) {
         badge.className = `badge ${estadoBadge}`;
         badge.textContent = estadoLabel;
 
-        //SUPERVISOR DE CAMPO
+        // Bloque del supervisor asignado. Si el proyecto no tiene ninguno, el
+        // bloque simplemente no se muestra.
         const supervisorHtml = p.supervisor_nombre ? `
             <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--cream);border-radius:var(--radius)">
                 <div style="width:32px;height:32px;border-radius:50%;background:var(--gold);color:var(--white);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0">
@@ -661,35 +725,34 @@ async function abrirDetalle(id) {
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-// MODO SOLO LECTURA DEL MODAL (proyectos cancelados / finalizados)
-// ─────────────────────────────────────────────────────────────
+/* Pone el modal en modo consulta o lo devuelve a editable.
 
-/**
- * Alterna el modo de solo lectura del modal de proyecto.
- *
- * Como el mismo modal sirve para crear, editar y consultar, hay que dejarlo
- * siempre en un estado conocido: al activarlo bloquea los campos, esconde el
- * botón de guardar y muestra el aviso; al desactivarlo revierte las tres
- * cosas. Por eso toda apertura del modal llama a esta función.
- *
- * @param {boolean} activo true = solo lectura, false = formulario editable.
- * @param {string} [estado] Estado del proyecto; define el texto y el color
- *                          del aviso (verde para FINALIZADO, rojo para
- *                          CANCELADO). Se ignora cuando activo es false.
- */
+   El mismo modal sirve para crear, para editar y para consultar un proyecto
+   cerrado, y como está una sola vez en el HTML conserva el estado en que quedó
+   la última vez. Por eso toda apertura del modal tiene que llamar a esta
+   función, incluso para dejarlo editable: si no, un proyecto cerrado que se
+   consultó antes deja el formulario bloqueado para el siguiente que se abra.
+
+   Con activo en true bloquea los campos, esconde el botón de guardar y muestra
+   el aviso de arriba; con false revierte las tres cosas.
+
+   El segundo parámetro es el estado del proyecto y solo se usa cuando activo
+   es true: define el texto y el color del aviso, verde si está FINALIZADO y
+   rojo si está CANCELADO. */
 function setModoSoloLectura(activo, estado) {
-    // 1) Campos del formulario
+    // 1) Los campos, todos de una vez a partir de la lista de arriba.
     CAMPOS_MODAL_PROYECTO.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.disabled = activo;
     });
 
-    // 2) Botón de guardar: sin él no hay forma de enviar el formulario
+    // 2) El botón de guardar. Bloquear los campos no basta: sin esconder el
+    //    botón, el formulario todavía se podría enviar.
     const btnGuardar = document.getElementById('btn-guardar-proyecto');
     if (btnGuardar) btnGuardar.style.display = activo ? 'none' : '';
 
-    // 3) Aviso superior que explica al usuario por qué no puede editar
+    // 3) El aviso de arriba, que le explica al usuario por qué está todo
+    //    bloqueado. Sin esto parecería que la pantalla se dañó.
     const aviso = document.getElementById('np-aviso-cerrado');
     if (!aviso) return;
 
@@ -705,9 +768,7 @@ function setModoSoloLectura(activo, estado) {
         : 'Este proyecto está CANCELADO. Sus datos son de solo lectura y no puede reactivarse.';
 }
 
-// ─────────────────────────────────────────────────────────────
-// MODAL NUEVO PROYECTO
-// ─────────────────────────────────────────────────────────────
+/* Abre el formulario para crear un proyecto nuevo. */
 async function abrirModalNuevoProyecto() {
 
     try {
@@ -715,13 +776,16 @@ async function abrirModalNuevoProyecto() {
         console.log('Cargando datos para nuevo proyecto...');
 
     _proyectoEnEdicion = null;
-    // El modal es compartido: si antes se consultó un proyecto cerrado,
-    // hay que devolverlo a modo editable antes de reutilizarlo.
+    // El modal es el mismo de siempre y conserva cómo quedó la última vez, así
+    // que si antes se consultó un proyecto cerrado hay que devolverlo a modo
+    // editable o el formulario nuevo aparecería bloqueado.
     setModoSoloLectura(false);
     document.querySelector('#modal-nuevo .modal-title').innerHTML = 'Nuevo <em style="font-style:italic">Proyecto</em>';
     FormUtils.limpiarErrores(document.getElementById('modal-nuevo'));
 
-        // ── VERIFICAR QUE LOS ELEMENTOS EXISTEN ──
+        // Se comprueba que estén todos los campos antes de intentar llenarlos:
+        // si falta alguno conviene avisarlo claro en la consola, en lugar de
+        // fallar más adelante con un error de null.
         const elementos = [
             'sel-depto', 'sel-municipio', 'np-nombre', 'np-tipo',
             'np-inicio', 'np-fin', 'np-presupuesto', 'np-desc',
@@ -734,7 +798,9 @@ async function abrirModalNuevoProyecto() {
             }
         }
 
-            // ── CARGAR SUPERVISORES ──
+            // La lista de supervisores se pide cada vez que se abre el modal,
+            // no una sola vez al inicio, por si dieron de alta a alguien nuevo
+            // mientras esta pestaña estaba abierta.
         try {
             await cargarSupervisores();
             console.log('[Frontend] Supervisores cargados');
@@ -750,7 +816,9 @@ async function abrirModalNuevoProyecto() {
     document.getElementById('sel-municipio').innerHTML = '<option value="">— Primero selecciona departamento —</option>';
     document.getElementById('sel-municipio').disabled = true;
 
-    // Resetear campos
+    // Se borra lo que haya quedado del proyecto anterior y la fecha de inicio
+    // se limita de hoy en adelante, porque un proyecto nuevo no puede empezar
+    // en el pasado.
     ['np-nombre', 'np-inicio', 'np-fin', 'np-presupuesto', 'np-desc'].forEach(id => {
         document.getElementById(id).value = '';
     });
@@ -761,7 +829,9 @@ async function abrirModalNuevoProyecto() {
     document.getElementById('modal-nuevo').classList.add('open');
     setTimeout(() => document.getElementById('np-nombre').focus(), 80);
 
-    // ── ABRIR MODAL ──
+    // Ya con todo cargado se muestra el modal y el cursor va al primer campo.
+    // La espera corta es para que el foco se aplique cuando la animación de
+    // apertura ya arrancó; si se hace antes, el navegador la ignora.
         const modal = document.getElementById('modal-nuevo');
         if (modal) {
             modal.classList.add('open');
@@ -785,19 +855,17 @@ function cerrarModalNuevo() {
     document.getElementById('modal-nuevo').classList.remove('open');
 }
 
-// ─────────────────────────────────────────────────────────────
-// EDITAR PROYECTO (o consultarlo, si ya está cerrado)
-// ─────────────────────────────────────────────────────────────
+/* Abre el modal con los datos de un proyecto ya existente.
 
-/**
- * Abre el modal con los datos de un proyecto.
- *
- * Si el proyecto está CANCELADO o FINALIZADO el modal se abre en modo
- * consulta: se llenan los campos igual que siempre, pero quedan bloqueados
- * y sin botón de guardar. El estado se toma de la API y no del caché, para
- * no trabajar con un estado desactualizado.
- *
- * @param {number} id Identificador del proyecto.
+   Si el proyecto está CANCELADO o FINALIZADO se abre igual, pero en modo
+   consulta: los campos se llenan como siempre y después quedan bloqueados y
+   sin botón de guardar.
+
+   El estado se lee de la API y no del caché a propósito. El caché puede tener
+   varios minutos y, si alguien más finalizó el proyecto mientras tanto, se
+   estaría abriendo editable algo que ya no se debe tocar.
+
+   Recibe el id del proyecto.
  */
 async function abrirEditarProyecto(id) {
     try {
@@ -811,14 +879,17 @@ async function abrirEditarProyecto(id) {
 
         _proyectoEnEdicion = id;
         FormUtils.limpiarErrores(document.getElementById('modal-nuevo'));
-        // Se parte siempre del modal editable; el bloqueo se aplica al final,
-        // porque cargarMunicipios() vuelve a habilitar el select de municipio.
+        // Se arranca siempre con el modal editable y el bloqueo se deja para el
+        // final. El orden importa: cargarMunicipios() vuelve a habilitar el
+        // select de municipio, así que si se bloqueara antes ese campo
+        // quedaría editable en un proyecto cerrado.
         setModoSoloLectura(false);
         document.querySelector('#modal-nuevo .modal-title').innerHTML = cerrado
             ? `Proyecto <em style="font-style:italic">${p.estado_proyecto === 'FINALIZADO' ? 'Finalizado' : 'Cancelado'}</em> <span style="font-size:12px;color:var(--muted)">· ID: ${id} · solo lectura</span>`
             : `Editar <em style="font-style:italic">Proyecto</em> <span style="font-size:12px;color:var(--muted)">· ID: ${id}</span>`;
 
-        //Cargar supervisores
+        // Las listas se llenan antes de asignarles el valor guardado: un select
+        // no acepta un valor cuya opción todavía no existe.
         await cargarSupervisores();
 
         // Cargar departamentos
@@ -852,8 +923,8 @@ async function abrirEditarProyecto(id) {
         if (p.id_supervisor) {
             document.getElementById('np-supervisor').value = p.id_supervisor; }
 
-        // Con los campos ya llenos se decide si el modal queda editable o
-        // en solo lectura, según el estado del proyecto.
+        // Recién ahora, con todos los campos llenos, se decide si el modal
+        // queda editable o en solo lectura según el estado del proyecto.
         setModoSoloLectura(cerrado, p.estado_proyecto);
 
         document.getElementById('modal-detalle').classList.remove('open');
@@ -865,18 +936,13 @@ async function abrirEditarProyecto(id) {
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-// GUARDAR PROYECTO
-// ─────────────────────────────────────────────────────────────
-
-/**
- * Valida el formulario y crea o actualiza el proyecto según corresponda.
- * Se usa _proyectoEnEdicion para distinguir un alta de una modificación.
- */
+/* Valida el formulario y guarda: crea el proyecto o actualiza el existente,
+   según si _proyectoEnEdicion tiene un id o está en null. */
 async function guardarProyecto() {
-    /* Un proyecto cerrado no se guarda aunque se llegue hasta aquí: el modal
-       ya viene bloqueado, pero esta comprobación cubre el caso de que la
-       función se invoque directamente (por ejemplo desde la consola). */
+    /* Un proyecto cerrado no se guarda, aunque de alguna forma se llegue hasta
+       acá. El modal ya viene bloqueado, así que en el uso normal esto nunca se
+       cumple; queda por si alguien llama a la función desde la consola o si un
+       cambio futuro rompe el bloqueo del formulario. */
     if (_proyectoEnEdicion) {
         const actual = proyectosCache.find(p => p.id_proyecto === _proyectoEnEdicion);
         if (actual && esProyectoCerrado(actual.estado_proyecto)) {
@@ -931,10 +997,12 @@ async function guardarProyecto() {
         id_supervisor: supervisor ? parseInt(supervisor) : null,
     };
 
-    /* estado_proyecto solo se envía al crear. En una edición se omite a
-       propósito para que el backend conserve el estado que ya tiene el
-       proyecto: mandarlo fijo en 'ACTIVO' revivía los proyectos cancelados
-       o finalizados cada vez que se guardaba un cambio. */
+    /* El estado solo se manda al crear, nunca al editar.
+
+       No es un olvido: antes se enviaba siempre en 'ACTIVO' y eso revivía los
+       proyectos cancelados o finalizados con solo guardarles un cambio
+       cualquiera. Omitiéndolo, el servidor conserva el estado que el proyecto
+       ya tenía. */
     if (!_proyectoEnEdicion) {
         datos.estado_proyecto = 'ACTIVO';
     }
@@ -963,9 +1031,10 @@ async function guardarProyecto() {
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-// ABRIR MODAL DE FINALIZACIÓN
-// ─────────────────────────────────────────────────────────────
+/* Abre el modal para cerrar un proyecto. Se pide aparte el monto realmente
+   ejecutado porque casi nunca coincide con el presupuesto aprobado; el campo
+   viene precargado con lo que se llevaba gastado, para no tener que
+   escribirlo desde cero. */
 
 function abrirModalFinalizar(id) {
     const proyecto = proyectosCache.find(p => p.id_proyecto === id);
@@ -981,9 +1050,8 @@ function abrirModalFinalizar(id) {
     setTimeout(() => document.getElementById('finalizar-monto').focus(), 80);
 }
 
-// ─────────────────────────────────────────────────────────────
-// CERRAR MODAL DE FINALIZACIÓN
-// ─────────────────────────────────────────────────────────────
+// Cierra el modal y limpia los errores y el id guardado, para que la próxima
+// vez que se abra arranque en blanco.
 
 function cerrarModalFinalizar() {
     FormUtils.limpiarErrores(document.getElementById('modal-finalizar'));
@@ -991,14 +1059,15 @@ function cerrarModalFinalizar() {
     _proyectoFinalizarId = null;
 }
 
-// ─────────────────────────────────────────────────────────────
-// CONFIRMAR FINALIZACIÓN
-// ─────────────────────────────────────────────────────────────
+/* Finaliza el proyecto. Es una acción sin vuelta atrás: una vez finalizado
+   queda cerrado para siempre y no se puede reactivar. */
 
 async function confirmarFinalizar() {
     const monto = document.getElementById('finalizar-monto').value.trim();
 
-    // Validar que el monto sea válido
+    // El monto es obligatorio y no puede ser negativo. Se valida acá antes de
+    // mandar nada, para marcarle el campo al usuario en vez de que le rebote
+    // un error del servidor.
     if (!monto) {
         FormUtils.marcarInvalido(document.getElementById('finalizar-monto'), 'El monto ejecutado es obligatorio.');
         return;
@@ -1028,17 +1097,13 @@ async function confirmarFinalizar() {
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-// CANCELAR PROYECTO
-// ─────────────────────────────────────────────────────────────
+/* Cancela un proyecto, con confirmación de por medio.
 
-/**
- * Cancela un proyecto previa confirmación del administrador.
- * Solo aplica a proyectos abiertos: un proyecto ya cerrado (cancelado o
- * finalizado) conserva su estado y la operación se rechaza.
- *
- * @param {number} id Identificador del proyecto.
- */
+   Igual que finalizar, no tiene vuelta atrás: un proyecto cancelado no se
+   puede reactivar. Solo aplica a los proyectos abiertos; si ya está cerrado se
+   rechaza la operación y conserva el estado que tenía.
+
+   Recibe el id del proyecto. */
 async function cancelarProyecto(id) {
     const proyecto = proyectosCache.find(p => p.id_proyecto === id);
     if (!proyecto) {
@@ -1079,9 +1144,9 @@ async function cancelarProyecto(id) {
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-// GEO — municipios
-// ─────────────────────────────────────────────────────────────
+/* Versión anterior de cargarMunicipios(), reemplazada por la de más arriba.
+   Se dejó comentada mientras se confirma que la nueva funciona bien en todos
+   los casos; una vez confirmado se puede borrar sin problema. */
 
 /*async function cargarMunicipios() {
     const id_departamento = document.getElementById('sel-depto').value;
@@ -1110,6 +1175,16 @@ async function cancelarProyecto(id) {
     }
 }*/
 
+/* Revisa que las dos fechas del formulario tengan sentido: que la de inicio no
+   quede en el pasado y que la de fin no sea anterior a la de inicio.
+
+   La comprobación del pasado se salta al editar, porque un proyecto que ya
+   está andando obviamente empezó antes de hoy y no habría forma de guardarle
+   ningún cambio.
+
+   Se le pega 'T00:00:00' a las fechas para que el navegador las lea como hora
+   local; sin eso las interpreta como UTC y, con el huso de Honduras, el día se
+   corre uno hacia atrás. */
 function validarRangoFechas() {
     const ini = document.getElementById('np-inicio');
     const fin = document.getElementById('np-fin');
@@ -1130,10 +1205,9 @@ function validarRangoFechas() {
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-// TOAST
-// ─────────────────────────────────────────────────────────────
-
+// Aviso emergente de la esquina. El temporizador se guarda aparte para poder
+// cancelarlo: si salen dos mensajes seguidos, el segundo reinicia la cuenta y
+// no se va a medio leer.
 let _tt;
 
 function showToast(msg, tipo = 'success') {
@@ -1148,9 +1222,8 @@ function showToast(msg, tipo = 'success') {
     _tt = setTimeout(() => t.classList.remove('show'), 4000);
 }
 
-// ─────────────────────────────────────────────────────────────
-// EXPORTAR FUNCIONES PARA EL HTML
-// ─────────────────────────────────────────────────────────────
+// Se cuelgan en window para que los onclick escritos en el HTML las
+// encuentren.
 
 window.abrirModalNuevoProyecto = abrirModalNuevoProyecto;
 window.cerrarModalNuevo = cerrarModalNuevo;

@@ -11,7 +11,10 @@
 html{font-size:15px}
 body{font-family:var(--font-sans);background:var(--navy);color:var(--text);min-height:100vh;display:grid;grid-template-columns:1fr 1fr;}
 
-/* LEFT PANEL */
+/* Mitad izquierda: la parte de presentación. Todo lo de aquí es
+   decorativo (el degradado del ::before, los círculos del fondo) y va con
+   pointer-events:none o detrás en z-index para que no le quite los clics
+   al contenido. */
 .left-panel{
   background:var(--navy);
   display:flex;flex-direction:column;
@@ -48,7 +51,9 @@ body{font-family:var(--font-sans);background:var(--navy);color:var(--text);min-h
 .left-footer{position:relative;z-index:2;margin-top:auto;}
 .left-footer p{font-size:11px;color:rgba(255,255,255,0.2);}
 
-/* RIGHT PANEL */
+/* Mitad derecha: el formulario de acceso, centrado sobre fondo crema
+   para que contraste con el azul de la izquierda. El ancho del formulario
+   se limita a 400px para que no se estire en pantallas grandes. */
 .right-panel{
   background:var(--cream);
   display:flex;align-items:center;justify-content:center;

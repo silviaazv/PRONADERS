@@ -1,19 +1,37 @@
-/* ============================================================
-   dashboard-logistica.js — DASHBOARD DEL EQUIPO DE LOGÍSTICA
-   ------------------------------------------------------------
-   Ahora consume datos reales de /api/solicitudes, /api/equipos,
-   /api/proyectos y /api/usuarios en vez de arreglos de muestra.
-   ============================================================ */
+/*
+   dashboard-logistica.js
 
+   Tablero del Equipo de Logística: qué está pendiente de entregar, qué va en
+   camino y qué ya se entregó.
+
+   Se apoya en cuatro consultas: /api/solicitudes trae el trabajo, y
+   /api/equipos, /api/proyectos y /api/usuarios sirven para traducir los ids
+   a nombres, porque las solicitudes vienen con el id y no con el nombre.
+*/
+
+// Los datos se guardan una sola vez al cargar y de ahí se reutilizan, para no
+// pedirle lo mismo al servidor cada vez que se redibuja la pantalla.
+//
+// Los que terminan en Map son diccionarios armados a partir de las listas: se
+// prefieren sobre buscar con find() cada vez, porque al dibujar el historial
+// hay que traducir el id de proyecto y de usuario en cada fila.
 let _equiposCache = [];
 let _solicitudesCache = [];
 let _proyectosMap = {};
 let _usuariosMap = {};
 let _equiposMap = {};
-let _filasPorSolicitud = {}; // id_solicitud -> [ [tipo, descripcion, cantidad], ... ]
-let _equipoSeleccionado = ''; // '' = todos los equipos
-let _solicitudDespacharId = null; // id de la solicitud que se está despachando
+// Los recursos pedidos en cada solicitud: id_solicitud -> [ [tipo, descripción, cantidad], … ]
+let _filasPorSolicitud = {};
+// Filtro de zona. Vacío significa "todos los equipos", que es lo que ve el
+// Admin de Oficina cuando entra sin elegir nada.
+let _equipoSeleccionado = '';
+// Solicitud que se está despachando ahorita; la guarda el modal mientras está
+// abierto para saber a cuál confirmarle la entrega.
+let _solicitudDespacharId = null;
 
+// Pasa una fecha del servidor al formato que se lee en Honduras (ej. 02 ago
+// 2026). Si viene vacía muestra un guión, y si no se entiende la devuelve tal
+// cual en vez de mostrar "Invalid Date".
 function formatearFecha(iso){
   if(!iso) return '—';
   const d = new Date(iso);
@@ -21,7 +39,8 @@ function formatearFecha(iso){
   return d.toLocaleDateString('es-HN', {day:'2-digit', month:'short', year:'numeric'});
 }
 
-/* Tabla de ítems (Tipo / Recurso / Cantidad) */
+/* Arma la tabla con los recursos de una solicitud. Devuelve texto vacío si no
+   hay ninguno, así quien la llama puede pegar el resultado sin preguntar. */
 function tablaItems(items){
   if(!items || !items.length) return '';
   return `<div style="border:1px solid var(--cream-dark);border-radius:8px;overflow:hidden;margin-top:8px">
@@ -41,7 +60,8 @@ function nombreSolicitante(s){ return (_usuariosMap[s.id_usuario]||{}).nombre_us
 function nombreEquipo(s){ return s.id_equipo_log ? ((_equiposMap[s.id_equipo_log]||{}).nombre_equipo_log || `Equipo #${s.id_equipo_log}`) : 'Sin equipo asignado'; }
 function itemsDe(s){ return (_filasPorSolicitud[s.id_solicitud]||[]).map(f=>[f.tipo_recurso, f.descripcion_recurso, f.cantidad_recurso]); }
 
-/* ── Tarjeta de "Despacho Pendiente" ── */
+/* Tarjeta de un despacho pendiente, o sea una solicitud ya aprobada que
+   todavía no sale de bodega. Es la lista de trabajo del equipo. */
 function cardPendiente(s){
   const codigo = `SOL-${s.id_solicitud}`;
   return `
@@ -67,7 +87,9 @@ function cardPendiente(s){
   </div>`;
 }
 
-//MODAL DESPACHO
+/* Abre el formulario para registrar la entrega. La fecha viene puesta con la
+   de hoy porque el despacho casi siempre se registra el mismo día; igual se
+   puede cambiar si se está poniendo al día con entregas anteriores. */
 function abrirModalDespacho(id) {
     _solicitudDespacharId = id;
     const s = buscarSolicitud(id);
@@ -115,7 +137,9 @@ async function confirmarDespachoLogistica() {
             showToast('Despacho registrado exitosamente', 'success');
             cerrarModalDespacho();
 
-            // Recargar datos
+            // Se vuelve a descargar todo en vez de mover la solicitud de una
+            // lista a otra a mano: así la pantalla queda igual a lo que quedó
+            // guardado en la base, sin riesgo de que se desincronicen.
             await cargarDatos();
 
             render();
@@ -126,7 +150,9 @@ async function confirmarDespachoLogistica() {
     }
 }
 
-// ── Función para mostrar archivos en el modal ──
+// Lista los archivos que el usuario acaba de elegir, para que vea qué va a
+// mandar antes de confirmar. Solo es la vista previa: la subida ocurre al
+// confirmar el despacho.
 function mostrarArchivosLogistica(containerId, files) {
     const c = document.getElementById(containerId);
     if (!c || !files || !files.length) return;
@@ -146,7 +172,9 @@ function mostrarArchivosLogistica(containerId, files) {
     });
 }
 
-// ── Toast ──
+// Aviso emergente de la esquina. El temporizador se guarda aparte para poder
+// cancelarlo: si salen dos mensajes seguidos, el segundo reinicia la cuenta y
+// no se va a medio leer por culpa del primero.
 let _toastTimer;
 
 function showToast(msg, tipo = 'success') {
@@ -161,7 +189,9 @@ function showToast(msg, tipo = 'success') {
     _toastTimer = setTimeout(() => t.classList.remove('show'), 4500);
 }
 
-/* ── Fila de "Historial de Despachos": clickeable, abre modal ── */
+/* Fila del historial de despachos. Se le puede dar clic para abrir el detalle
+   sin salir de esta pantalla. El ícono y el color cambian según si la entrega
+   ya fue confirmada por campo o si todavía está esperando esa firma. */
 function filaHistorial(s){
   const codigo = `SOL-${s.id_solicitud}`;
   const confirmada = s.estado_solicitud === 'CONFIRMADA';
@@ -214,7 +244,12 @@ function cambiarEquipo(valor){
   render();
 }
 
-/* ── Render principal del dashboard ── */
+/* Dibuja la pantalla completa a partir de lo que hay en memoria.
+
+   Las solicitudes se reparten en tres grupos según su estado: APROBADA es lo
+   que falta despachar, EN DESPACHO lo que va en camino, y ENTREGADA o
+   CONFIRMADA lo que ya se entregó. El filtro de equipo se aplica a los tres
+   por igual. */
 function render(){
   const filtro = s => !_equipoSeleccionado || String(s.id_equipo_log) === _equipoSeleccionado;
   const pendientes = _solicitudesCache.filter(s => s.estado_solicitud === 'APROBADA').filter(filtro);
@@ -300,7 +335,8 @@ function render(){
     </div>`;
 }
 
-/* ── Carga inicial de datos reales ── */
+/* Descarga todo lo que necesita la pantalla y la dibuja. También se llama
+   después de registrar un despacho, para refrescar. */
 async function cargarDatos(){
   document.getElementById('main-logistica').innerHTML = `<div style="text-align:center;padding:60px;color:var(--muted)">Cargando panel de logística…</div>`;
   try {
@@ -316,13 +352,20 @@ async function cargarDatos(){
     _proyectosMap = Object.fromEntries(proyectos.map(p => [p.id_proyecto, p]));
     _usuariosMap = Object.fromEntries(usuarios.map(u => [u.id_usuario, u]));
 
-    // Solo nos interesan solicitudes que ya salieron de "pendiente"
-    // (aprobadas, en despacho, entregadas o confirmadas)
+    // A logística solo le tocan las solicitudes que ya pasaron por gerencia.
+    // Las que siguen pendientes o fueron rechazadas no le sirven de nada, así
+    // que se descartan de una vez y no se vuelven a tocar.
     _solicitudesCache = solicitudes.filter(s =>
       ['APROBADA','EN DESPACHO','ENTREGADA','CONFIRMADA'].includes(s.estado_solicitud)
     );
 
-    // Cargar los ítems (fila_solicitud) de cada una de esas solicitudes
+    // Los recursos de cada solicitud vienen en otra consulta, así que hay que
+    // pedirlos uno por uno. Van todos juntos con Promise.all para que sea un
+    // solo tiempo de espera y no la suma de todos.
+    //
+    // Es una consulta por solicitud: con el volumen actual anda bien, pero si
+    // el historial crece mucho conviene que el servidor las devuelva ya
+    // incluidas.
     const listasDeFilas = await Promise.all(_solicitudesCache.map(s => API.solicitudes.filas(s.id_solicitud)));
     _filasPorSolicitud = Object.fromEntries(_solicitudesCache.map((s, i) => [s.id_solicitud, listasDeFilas[i]]));
 

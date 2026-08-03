@@ -1,36 +1,42 @@
-/* ============================================================
-   reportes.js — MÓDULO: REPORTES DE AVANCE (vista de tarjetas)
-   ------------------------------------------------------------
-   - Vista de TARJETAS LARGAS (estilo Proyectos Finalizados) con
-     toda la información del reporte, fechas de emisión/revisión
-     y footer de imágenes/documentos adjuntos.
-   - FILTROS por estado (pendientes/revisados/todos) y por
-     proyecto, ordenados por fecha DESCENDENTE, con botón de
-     acceso directo al proyecto asociado.
-   - Visor de adjuntos con pie informativo (código + descripción).
-   Reglas por rol:
-   - EMPLEADO: sin acceso → se redirige a su dashboard.
-   - SUPERVISOR DE CAMPO: crea y consulta; NO aprueba.
-   - ADMIN DE OFICINA: revisa y aprueba; sin botón "Nuevo Reporte".
-   El sidebar, topbar y utilidades se cargan desde shared.js.
-   ============================================================ */
+/*
+   reportes.js
 
-   //reportes.js — MÓDULO: REPORTES DE AVANCE
+   Reportes de avance de obra. Cada reporte se muestra como una tarjeta larga
+   con toda la información: los porcentajes de avance, las fechas de emisión y
+   de revisión, las incidencias, y al pie las fotos y documentos adjuntos.
 
-// ─────────────────────────────────────────────────────────────
-// VARIABLES GLOBALES
-// ─────────────────────────────────────────────────────────────
+   Se puede filtrar por estado y por proyecto, y por defecto se ordenan del
+   más nuevo al más viejo, que es como se necesitan leer.
+
+   Quién puede hacer qué:
+   - Supervisor de Campo: crea reportes y consulta los suyos, pero no los
+     aprueba (nadie se aprueba su propio trabajo).
+   - Administrador de Oficina: revisa, aprueba y rechaza los de todos, pero no
+     crea, así que no le sale el botón de "Nuevo Reporte".
+   - Empleado: no tiene nada que hacer aquí y se le redirige a su tablero.
+
+   El menú lateral, la barra superior y las utilidades vienen de shared.js.
+*/
+
+// Lo que se descarga al abrir la pantalla. Filtrar y ordenar se hace sobre
+// estos arreglos, sin volver a consultar el servidor.
 
 let reportesCache = [];
 let proyectosCache = [];
 let usuariosCache = [];
 let _reporteRechazarId = null;
 
-// Adjuntos elegidos en el modal de "Nuevo Reporte". Se guardan aquí porque el
-// reporte se crea primero y los archivos se suben después, ya con su id_reporte.
+// Archivos que el usuario eligió en el modal de "Nuevo Reporte". Se guardan
+// acá y no se suben todavía, porque el servidor necesita saber a qué reporte
+// pertenecen: primero se crea el reporte, se recibe su id_reporte, y recién
+// entonces se mandan los archivos.
+// _repArchivoSeq es solo un contador para poder identificar cada archivo de la
+// lista y poder quitarlo si el usuario se arrepiente.
 let _repArchivos = [];
 let _repArchivoSeq = 0;
 
+// Quién está usando la pantalla. El rol se consulta muchas veces para decidir
+// qué botones mostrar, así que se resuelve una sola vez acá en banderas.
 const ID_USUARIO = parseInt(sessionStorage.getItem('pron_id_usuario')) || null;
 const NOMBRE_USUARIO = sessionStorage.getItem('pron_nombre') || 'Usuario';
 const ROLE = sessionStorage.getItem('pron_role') || 'Supervisor de Campo';
@@ -38,12 +44,15 @@ const ES_ADMIN = (ROLE === 'Administrador de Oficina');
 const ES_CAMPO = (ROLE === 'Supervisor de Campo');
 const ES_EMPLEADO = (ROLE === 'empleado');
 
-// ─────────────────────────────────────────────────────────────
-// INICIALIZACIÓN
-// ─────────────────────────────────────────────────────────────
+// Arranque de la pantalla.
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Empleado: redirigir
+    // El empleado no tiene nada que ver aquí. Se usa replace() y no href para
+    // que la pantalla de reportes no le quede en el historial y no vuelva
+    // a caer acá con el botón de atrás.
+    // Aviso: esto solo esconde la pantalla; quien escriba la dirección desde
+    // otro navegador igual llegaría, así que el permiso de verdad tiene que
+    // estar en el servidor.
     if (ES_EMPLEADO) {
         window.location.replace('dashboard-campo.html');
         return;
@@ -52,7 +61,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     await cargarDatosIniciales();
     renderPaginaReportes();
 
-    // Deep-link: abrir reporte específico
+    // Cuando se llega desde una notificación, ahí quedó anotado a qué reporte
+    // hay que ir. Se busca su tarjeta y se desplaza la página hasta ella; la
+    // marca se borra de una vez para que no vuelva a saltar en la próxima
+    // visita.
     const abrir = sessionStorage.getItem('pron_open_reporte');
     if (abrir) {
         sessionStorage.removeItem('pron_open_reporte');
@@ -84,26 +96,29 @@ async function cargarDatosIniciales() {
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-// REPORTES VISIBLES SEGÚN ROL
-// ─────────────────────────────────────────────────────────────
+// Qué reportes le tocan a cada quien: el administrador los ve todos porque su
+// trabajo es revisarlos; el supervisor de campo solamente los que él escribió.
 
 function reportesVisibles() {
     if (ES_ADMIN) return reportesCache;
-    // Campo: solo sus reportes
+    // Campo: únicamente los que hizo él.
     return reportesCache.filter(r => r.id_usuario === ID_USUARIO);
 }
 
-// ─────────────────────────────────────────────────────────────
-// RENDER PRINCIPAL
-// ─────────────────────────────────────────────────────────────
+/* Arma el armazón de la pantalla: el encabezado, la barra de filtros y el
+   contenedor de la lista. La lista en sí la llena renderReportes(), que se
+   vuelve a llamar cada vez que cambia un filtro sin tener que redibujar todo
+   esto de nuevo. */
 
 function renderPaginaReportes() {
     const container = document.getElementById('reportes-content');
     const visibles = reportesVisibles();
     const puedeCrear = ES_CAMPO;
 
-    // Obtener proyectos únicos para filtro
+    // La lista del filtro se arma con los proyectos que realmente aparecen en
+    // los reportes visibles, no con todos los del sistema: filtrar por un
+    // proyecto sin reportes solo dejaría la pantalla vacía. El Set es para
+    // que cada nombre salga una sola vez.
     const proyectosUnicos = [...new Set(visibles.map(r => r.nombre_proyecto).filter(Boolean))];
 
     const titulo = ES_ADMIN ? 'Reportes de <em style="font-style:italic">Avance</em>' : 'Mis <em style="font-style:italic">Reportes</em>';
@@ -154,9 +169,8 @@ function renderPaginaReportes() {
     renderReportes();
 }
 
-// ─────────────────────────────────────────────────────────────
-// RENDER DE REPORTES
-// ─────────────────────────────────────────────────────────────
+/* Dibuja la lista de tarjetas aplicando los filtros que estén puestos. Es lo
+   único que se redibuja al cambiar un filtro. */
 
 function renderReportes() {
     const estado = document.getElementById('f-rep-estado')?.value ?? '0';
@@ -169,7 +183,9 @@ function renderReportes() {
         return matchEstado && matchProy;
     });
 
-    // Ordenar por fecha
+    // Por defecto van del más reciente al más viejo, que es lo que se quiere
+    // al entrar a revisar; el orden inverso queda disponible por si se busca
+    // el histórico de un proyecto desde el principio.
     data.sort((a, b) => {
         const fechaA = new Date(a.fecha_reporte);
         const fechaB = new Date(b.fecha_reporte);
@@ -192,15 +208,17 @@ function renderReportes() {
         cc.textContent = `${data.length} reporte${data.length !== 1 ? 's' : ''} · ${pendientes} pendiente${pendientes !== 1 ? 's' : ''} de revisión`;
     }
 
-    // Mostrar/ocultar botón limpiar filtros
+    // El botón de limpiar solo aparece si hay algo que limpiar, o sea si algún
+    // filtro está distinto de su valor por defecto.
     const hay = (estado !== '0') || proy || (orden !== 'desc');
     const btn = document.getElementById('btn-limpiar-rep');
     if (btn) btn.style.display = hay ? '' : 'none';
 }
 
-// ─────────────────────────────────────────────────────────────
-// ADJUNTOS: TIPO E ÍCONO SEGÚN LA EXTENSIÓN
-// ─────────────────────────────────────────────────────────────
+// La tabla de archivos no guarda el tipo, solo el nombre, así que hay que
+// deducirlo de la extensión para saber qué ícono poner y si se puede mostrar
+// una vista previa. No es infalible (alguien puede renombrar un archivo), pero
+// para elegir un ícono alcanza.
 
 function extensionArchivo(a) {
     return (a && a.nombre_archivo ? a.nombre_archivo : '').split('.').pop().toLowerCase();
@@ -215,7 +233,8 @@ function iconoArchivo(a) {
     return extensionArchivo(a) === 'pdf' ? 'picture_as_pdf' : 'description';
 }
 
-// Abre el visor con el adjunto real (se busca en la caché ya cargada).
+// Abre el visor a pantalla completa con el adjunto. El archivo se busca en lo
+// que ya está en memoria, así que no hay que volver a pedírselo al servidor.
 function abrirVisorAdjunto(idReporte, idArchivo) {
     const reporte = reportesCache.find(r => r.id_reporte === idReporte);
     const archivo = (reporte && reporte.adjuntos || []).find(a => a.id_archivo === idArchivo);
@@ -238,9 +257,9 @@ function abrirVisorAdjunto(idReporte, idArchivo) {
     });
 }
 
-// ─────────────────────────────────────────────────────────────
-// CARD DE REPORTE
-// ─────────────────────────────────────────────────────────────
+/* Arma la tarjeta de un reporte. Es la función más larga del archivo porque
+   la tarjeta cambia bastante: los botones dependen del rol y del estado, y el
+   pie con los adjuntos solo aparece si hay alguno. */
 
 function cardReporte(r) {
     const esPendiente = r.estado_reporte === 0;
@@ -264,11 +283,14 @@ function cardReporte(r) {
         day: '2-digit', month: 'short', year: 'numeric'
     }) : null;
 
-    // Avatar del autor
+    // Iniciales del autor para el circulito de la tarjeta.
     const autorNombre = r.autor_nombre || 'Usuario';
     const iniciales = autorNombre.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
-    // Acciones según rol
+    // Los botones dependen de quién mira y de cómo está el reporte. Solo el
+    // administrador puede aprobar o rechazar, y solo mientras el reporte siga
+    // pendiente; a los demás casos les toca un texto informativo, para que la
+    // tarjeta no quede coja sin nada del lado derecho.
     let acciones = '';
 
     if (ES_ADMIN && esPendiente) {
@@ -286,13 +308,15 @@ function cardReporte(r) {
         acciones = `<span class="text-xs text-muted" style="align-self:center">Reporte rechazado</span>`;
     }
 
-    // Calcular avance desde presupuesto si está disponible
+    // Los dos avances vienen del reporte. El color de la barra sigue al avance
+    // físico: verde de 75% para arriba, dorado entre 40 y 75, rojo abajo de 40.
     const avanceFisico = r.avance_fisico || 0;
     const avanceFinanciero = r.avance_financiero || 0;
 
     const progressColor = avanceFisico >= 75 ? 'success' : avanceFisico >= 40 ? 'gold' : 'danger';
 
-    // Adjuntos: la tabla no guarda el tipo, se deduce de la extensión del nombre.
+    // Los adjuntos se separan en dos grupos porque se muestran distinto: las
+    // fotos con su miniatura y los documentos con un ícono y su nombre.
     const adjuntos = r.adjuntos || [];
     const fotos = adjuntos.filter(esImagenArchivo);
     const docs = adjuntos.filter(a => !esImagenArchivo(a));
@@ -391,9 +415,7 @@ function cardReporte(r) {
     `;
 }
 
-// ─────────────────────────────────────────────────────────────
-// FILTROS
-// ─────────────────────────────────────────────────────────────
+// Deja los tres filtros como estaban al entrar y vuelve a dibujar la lista.
 
 function limpiarFiltrosReportes() {
     document.getElementById('f-rep-estado').value = '0';
@@ -402,9 +424,9 @@ function limpiarFiltrosReportes() {
     renderReportes();
 }
 
-// ─────────────────────────────────────────────────────────────
-// APROBAR REPORTE (Admin)
-// ─────────────────────────────────────────────────────────────
+/* Aprobar un reporte. Solo lo hace el Administrador de Oficina. Después de
+   aprobarlo se recargan los datos para que la tarjeta muestre el estado y la
+   fecha de revisión que quedaron guardados. */
 
 async function aprobarReporte(id) {
     try {
@@ -423,9 +445,8 @@ async function aprobarReporte(id) {
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-// RECHAZAR REPORTE 
-// ─────────────────────────────────────────────────────────────
+/* Rechazar un reporte. El reporte no se borra: queda marcado como rechazado,
+   para que el supervisor vea qué pasó y quede el antecedente. */
 
 async function rechazarReporte(id) {
     const reporte = reportesCache.find(r => r.id_reporte === id);
@@ -457,14 +478,15 @@ async function rechazarReporte(id) {
         showToast(error.message || 'Error al rechazar el reporte', 'warning');
     }
 }
-// ─────────────────────────────────────────────────────────────
-// MODAL NUEVO REPORTE
-// ─────────────────────────────────────────────────────────────
+/* El formulario de nuevo reporte. Se limpia entero cada vez que se abre,
+   porque el modal está una sola vez en el HTML y conserva lo que se escribió
+   la vez anterior. */
 
 async function abrirModalReporte() {
     FormUtils.limpiarErrores(document.getElementById('modal-reporte'));
 
-    // Cargar proyectos del usuario
+    // La lista se llena solo con los proyectos de este supervisor: no tendría
+    // sentido dejarlo reportar avance de una obra que no es suya.
     const sel = document.getElementById('rep-proyecto');
     if (sel) {
         sel.innerHTML = '<option value="">— Selecciona un proyecto —</option>';
@@ -490,7 +512,8 @@ async function abrirModalReporte() {
         }
     }
 
-    // Resetear campos
+    // Se borra todo lo que haya quedado del reporte anterior: los textos, los
+    // archivos elegidos y el input de archivos.
     document.getElementById('rep-desc').value = '';
     document.getElementById('rep-incidencias').value = '';
     document.getElementById('rep-observaciones').value = '';
@@ -501,7 +524,8 @@ async function abrirModalReporte() {
     document.getElementById('val-fisico').textContent = '50%';
     document.getElementById('val-fin').textContent = '40%';
 
-    //Usar querySelectorAll para obtener todos los range inputs
+    // Las dos barras deslizantes no tienen id, así que se buscan por su clase
+    // y se devuelven a su posición inicial.
     document.querySelectorAll('#modal-reporte .range-input').forEach(el => {
         el.value = 50;
     });
@@ -515,9 +539,9 @@ function cerrarModalReporte() {
     document.getElementById('modal-reporte').classList.remove('open');
 }
 
-// ─────────────────────────────────────────────────────────────
-// ENVIAR REPORTE
-// ─────────────────────────────────────────────────────────────
+/* Valida el formulario y guarda el reporte. Va en dos pasos: primero se crea
+   el reporte y después se le suben los adjuntos, porque hasta que el reporte
+   no existe no hay id al cual amarrarlos. */
 
 async function enviarReporte() {
     const id_proyecto = parseInt(document.getElementById('rep-proyecto').value);
@@ -562,8 +586,10 @@ async function enviarReporte() {
         const result = await API.reportes.crear(datos);
 
         if (result.success) {
-            // Los adjuntos van después: recién ahora existe el id_reporte al
-            // que hay que amarrarlos.
+            // Segundo paso: ahora sí, con el id_reporte en la mano, se suben
+            // los archivos. Si alguno falla, el reporte igual quedó guardado;
+            // por eso se cuenta cuántos se subieron y se avisa si no fueron
+            // todos, en vez de dar por perdido el reporte completo.
             const id_reporte = result.reporte && result.reporte.id_reporte;
             let adjuntados = 0;
             if (id_reporte && _repArchivos.length) {
@@ -585,10 +611,11 @@ async function enviarReporte() {
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-// HELPERS: ARCHIVOS
-// ─────────────────────────────────────────────────────────────
+// Manejo de los adjuntos del formulario: mostrarlos, quitarlos y subirlos.
 
+// Agrega a la lista los archivos que el usuario acaba de elegir y muestra una
+// etiqueta por cada uno con su nombre y tamaño. Todavía no se sube nada; esto
+// es solo para que vea qué va a mandar y pueda quitar lo que no quería.
 function mostrarArchivosRep(files) {
     const c = document.getElementById('rep-files');
     if (!c || !files || !files.length) return;
@@ -611,18 +638,23 @@ function mostrarArchivosRep(files) {
         c.appendChild(d);
     });
 
-    // Se limpia el input para poder volver a elegir el mismo archivo si se quitó.
+    // El input se vacía a propósito: si no, el navegador considera que el
+    // archivo "no cambió" y no vuelve a avisar cuando se elige el mismo otra
+    // vez, que es justo lo que pasa si alguien lo quita y se arrepiente.
     const input = document.getElementById('rep-file-input');
     if (input) input.value = '';
 }
 
+// Quita un archivo de la lista y borra su etiqueta de la pantalla.
 function quitarArchivoRep(id) {
     _repArchivos = _repArchivos.filter(a => a.id !== id);
     const chip = document.querySelector(`#rep-files [data-archivo-id="${id}"]`);
     if (chip) chip.remove();
 }
 
-// Lee el archivo del disco y lo devuelve como data URL ("data:...;base64,...").
+// Lee el archivo del disco y lo devuelve como texto base64 ("data:…;base64,…"),
+// que es la forma en que la API espera recibirlo. FileReader trabaja con
+// eventos, así que se envuelve en una promesa para poder usarlo con await.
 function leerArchivoBase64(file) {
     return new Promise((resolve, reject) => {
         const lector = new FileReader();
@@ -632,8 +664,12 @@ function leerArchivoBase64(file) {
     });
 }
 
-// Sube al servidor los adjuntos del modal y los deja asociados al reporte.
-// Devuelve cuántos se guardaron bien.
+// Sube los adjuntos y los deja amarrados al reporte. Devuelve cuántos se
+// guardaron bien.
+//
+// Van de uno en uno y cada uno con su propio try, para que un archivo dañado o
+// demasiado pesado no tumbe la subida de los demás: se avisa cuál falló y se
+// sigue con el siguiente.
 async function subirAdjuntosReporte(id_reporte) {
     let guardados = 0;
 
@@ -656,10 +692,11 @@ async function subirAdjuntosReporte(id_reporte) {
     return guardados;
 }
 
-// ─────────────────────────────────────────────────────────────
-// TOAST
-// ─────────────────────────────────────────────────────────────
-
+// Aviso emergente de la esquina. Si por alguna razón el elemento no está en la
+// página se cae de vuelta al alert(), para no perder el mensaje.
+//
+// El temporizador se guarda aparte para poder cancelarlo: si salen dos avisos
+// seguidos, el segundo reinicia la cuenta y no se va a medio leer.
 let _toastTimer;
 
 function showToast(msg, tipo = 'success') {
@@ -674,9 +711,8 @@ function showToast(msg, tipo = 'success') {
     _toastTimer = setTimeout(() => t.classList.remove('show'), 4500);
 }
 
-// ─────────────────────────────────────────────────────────────
-// EXPORTAR FUNCIONES PARA EL HTML
-// ─────────────────────────────────────────────────────────────
+// Se cuelgan en window para que los onclick escritos en el HTML las
+// encuentren.
 
 window.abrirModalReporte = abrirModalReporte;
 window.cerrarModalReporte = cerrarModalReporte;

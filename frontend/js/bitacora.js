@@ -1,19 +1,25 @@
-/* ============================================================
-   bitacora.js — MÓDULO: BITÁCORA DEL SISTEMA
-   ------------------------------------------------------------
-   Ahora carga los registros reales desde /api/bitacora en vez
-   de un arreglo de datos de muestra. Como esa tabla solo guarda
-   IDs (id_usuario, id_objeto), se hace un cruce en el navegador
-   con /api/usuarios y /api/roles para mostrar nombres.
+/*
+   bitacora.js
 
-   NOTA IMPORTANTE (limitación real de la base de datos):
-   tbl_bitacora NO tiene columna de IP/ubicación. La columna
-   "IP / Ubicación" de la tabla original era un dato inventado
-   para la maqueta; aquí se muestra "—" porque el dato no existe
-   en la BD. Si lo necesitas, hay que agregar esa columna al DDL.
-   ============================================================ */
+   Bitácora del sistema: el registro de todo lo que hacen los usuarios. Solo
+   la ven los administradores.
 
-// tipo_accion tal como lo guarda la BD (ver CHECK chk_bitacora_tipo_accion)
+   Los registros salen de /api/bitacora, pero esa tabla guarda únicamente ids
+   (id_usuario, id_objeto), así que también se descargan los usuarios y los
+   roles para poder mostrar nombres en vez de números. El cruce se hace aquí
+   en el navegador.
+
+   Una advertencia por si alguien la busca: la tabla tbl_bitacora no tiene
+   columna de IP ni de ubicación. En la maqueta original esa columna existía
+   con datos inventados; ahora simplemente no está, porque el dato no se
+   guarda. Para tenerlo habría que agregar la columna en la base primero.
+*/
+
+// Cómo se muestra cada tipo de acción: su etiqueta en español, su ícono y su
+// color. Las llaves tienen que escribirse igual que los valores que acepta la
+// columna tipo_accion (ver la restricción chk_bitacora_tipo_accion en la
+// base); si llega una acción que no está en esta lista, la fila se dibuja con
+// la configuración de LOGIN como respaldo.
 const TIPO_CONFIG = {
   INSERT:      { label: 'Creación',    color: 'var(--success)', bg: 'var(--success-bg)', icon: 'add_circle' },
   UPDATE:      { label: 'Edición',     color: 'var(--info)',    bg: 'var(--info-bg)',     icon: 'edit' },
@@ -26,7 +32,8 @@ const TIPO_CONFIG = {
   LOGOUT:      { label: 'Sesión',      color: 'var(--muted)',   bg: 'var(--cream)',       icon: 'logout' },
 };
 
-// tipo_objeto tal como lo guarda la BD (ver CHECK chk_bitacora_tipo_objeto)
+// Lo mismo pero para el objeto sobre el que se hizo la acción. Igual que
+// arriba, las llaves deben coincidir con lo que acepta la columna tipo_objeto.
 const OBJ_CONFIG = {
   PROYECTO:  { color: 'var(--navy)',    bg: 'rgba(13,27,62,0.08)', icon: 'folder_open', label: 'Proyecto' },
   SOLICITUD: { color: 'var(--warning)', bg: 'var(--warning-bg)',   icon: 'inventory_2', label: 'Solicitud' },
@@ -35,17 +42,28 @@ const OBJ_CONFIG = {
   ARCHIVO:   { color: '#2E7D52',        bg: '#E7F3EC',             icon: 'attach_file', label: 'Archivo' },
 };
 
-let _bitacoraCache = [];   // registros crudos de la API
+// La bitácora entera se descarga una sola vez y se guarda acá; de ahí en
+// adelante buscar, filtrar y cambiar de página se resuelve en el navegador,
+// sin volver a pedirle nada al servidor.
+let _bitacoraCache = [];   // todos los registros, tal como llegaron
 let _usuariosMap = {};     // id_usuario -> { nombre_usuario, id_rol }
 let _rolesMap = {};        // id_rol -> nombre_rol
+
+// Estado de la paginación. _datosFiltrados es lo que quedó después de aplicar
+// los filtros, y es sobre eso que se cuentan las páginas, no sobre el total.
 let _paginaActual = 1;
 let _registrosPorPagina = 20;
-let _datosFiltrados = [];    // registros filtrados según búsqueda y filtros
+let _datosFiltrados = [];
 
+// Saca las dos primeras iniciales del nombre para el circulito de la fila. El
+// '?' es para los registros de usuarios que ya no existen.
 function iniciales(nombre) {
   return (nombre || '?').split(' ').filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('');
 }
 
+// Pasa la fecha del servidor al formato de acá, con hora incluida: en la
+// bitácora importa el momento exacto, no solo el día. Si la fecha no se
+// entiende se devuelve tal cual, mejor que mostrar "Invalid Date".
 function formatearFecha(iso) {
   if (!iso) return '—';
   const d = new Date(iso);
@@ -53,11 +71,16 @@ function formatearFecha(iso) {
   return d.toLocaleString('es-HN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
+/* Recibe el conjunto de registros que se va a mostrar y prepara la tabla. */
 function renderLog(data) {
   const tbody = document.getElementById('log-tbody');
 
-  _datosFiltrados = data; // Guardar los datos filtrados para exportación
-  _paginaActual = 1; // Reiniciar a la primera página al renderizar nuevos datos
+  // Se guarda lo que se está mostrando porque la exportación a PDF y los
+  // botones de paginación trabajan sobre esto, no sobre el total.
+  _datosFiltrados = data;
+  // Volver a la primera página: si el usuario estaba en la 7 y el nuevo filtro
+  // deja 3 páginas, se quedaría viendo una pantalla vacía.
+  _paginaActual = 1;
 
   if (!data.length) {
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:26px;color:var(--muted)">No hay registros que coincidan con el filtro.</td></tr>`;
@@ -113,7 +136,9 @@ function renderPagina() {
   const total = _datosFiltrados.length;
   const totalPaginas = Math.ceil(total / _registrosPorPagina) || 1;
   
-  // Asegurar que la página actual sea válida
+  // Se recorta la página pedida al rango que existe. Gracias a esto el botón
+  // de "última página" del HTML puede mandar 999 sin tener que saber cuántas
+  // páginas hay realmente.
   if (_paginaActual < 1) _paginaActual = 1;
   if (_paginaActual > totalPaginas) _paginaActual = totalPaginas;
   
@@ -200,7 +225,10 @@ function actualizarPaginacion(total, totalPaginas) {
   }
 }
 
-// ── FUNCIONES DE NAVEGACIÓN ──
+// Botones de paginación. Los tres calculan el total de páginas en el momento
+// en vez de guardarlo, porque el filtro pudo haber cambiado desde el último
+// clic. El '|| 1' evita que con la lista vacía queden cero páginas y los
+// botones se traben.
 
 function irPagina(pagina) {
   const totalPaginas = Math.ceil(_datosFiltrados.length / _registrosPorPagina) || 1;
@@ -224,6 +252,7 @@ function paginaSiguiente() {
   }
 }
 
+// Llena las cuatro tarjetas de arriba contando los registros ya descargados.
 function actualizarEstadisticas(data) {
   const total   = data.length;
   const sesiones= data.filter(r => r.tipo_accion === 'LOGIN' || r.tipo_accion === 'LOGOUT').length;
@@ -232,9 +261,16 @@ function actualizarEstadisticas(data) {
   if (el[0]) el[0].textContent = total.toLocaleString('es-HN');
   if (el[1]) el[1].textContent = sesiones.toLocaleString('es-HN');
   if (el[2]) el[2].textContent = cambios.toLocaleString('es-HN');
-  if (el[3]) el[3].textContent = '0'; // no hay tipo "error" en la BD real
+  // La tarjeta de "Alertas / errores" queda fija en cero: la bitácora no
+  // guarda errores, solo acciones de usuarios. Se deja visible para no romper
+  // el diseño de cuatro tarjetas, pero hoy por hoy no hay de dónde sacar ese
+  // número.
+  if (el[3]) el[3].textContent = '0';
 }
 
+// Llena la lista desplegable de usuarios con los que realmente aparecen en la
+// bitácora, no con todos los del sistema: filtrar por alguien que nunca hizo
+// nada solo devolvería una tabla vacía.
 function poblarFiltroUsuarios() {
   const select = document.getElementById('f-usuario');
   const actuales = new Set(Array.from(select.options).map(o => o.value));
@@ -274,14 +310,19 @@ function filtrarBitacora(q) {
 
   });
 
-  _datosFiltrados = result; // Guardar los datos filtrados para exportación
-  _paginaActual = 1; // Reiniciar a la primera página al filtrar
+  _datosFiltrados = result;
+  // Volver a la primera página: si el usuario estaba en la 7 y el nuevo filtro
+  // deja 3 páginas, se quedaría viendo una pantalla vacía.
+  _paginaActual = 1;
 
   renderPagina();
 
   renderLog(result);
 }
 
+/* Carga inicial: trae la bitácora junto con los usuarios y los roles, los
+   convierte en diccionarios para poder traducir ids a nombres, y dibuja la
+   tabla. */
 async function cargarBitacora() {
   const tbody = document.getElementById('log-tbody');
   tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:26px;color:var(--muted)">Cargando registros…</td></tr>`;
@@ -305,10 +346,19 @@ async function cargarBitacora() {
   }
 }
 
+/* Exporta a PDF lo que el usuario está viendo en pantalla.
+
+   No genera el archivo: abre una ventana nueva con la tabla ya maquetada para
+   papel y le manda imprimir, y de ahí el usuario elige "Guardar como PDF".
+   Así no hace falta ninguna librería.
+
+   Ojo: la lógica de filtrado está repetida de filtrarBitacora(). Si se agrega
+   un filtro nuevo, hay que acordarse de tocar los dos lugares o el PDF va a
+   salir con registros que en pantalla no se ven. */
 function exportarBitacoraPDF() {
-    // Obtener datos visibles actualmente (filtrados)
+    // Se vuelven a leer los filtros de la pantalla y se aplican sobre el total,
+    // para exportar exactamente lo mismo que está a la vista.
     const data = _bitacoraCache.filter(r => {
-        // Aplicar los mismos filtros que en filtrarBitacora()
         const query = document.querySelector('.search-input')?.value?.toLowerCase() || '';
         const usuario = document.getElementById('f-usuario').value;
         const tipo = document.getElementById('f-tipo').value;
@@ -347,7 +397,8 @@ function exportarBitacoraPDF() {
         minute: '2-digit'
     });
 
-    // Construir filas de la tabla
+    // Las filas del PDF se arman aparte de las de la pantalla: acá no van los
+    // íconos ni los colores, solo el texto, que es lo que se lee bien impreso.
     const filas = data.map(r => {
         const t = TIPO_CONFIG[r.tipo_accion] || TIPO_CONFIG.LOGIN;
         const usuario = _usuariosMap[r.id_usuario];
@@ -370,7 +421,8 @@ function exportarBitacoraPDF() {
 
     const total = data.length;
 
-    // Crear ventana para PDF
+    // Si el navegador bloquea las ventanas emergentes, window.open devuelve
+    // null y no hay forma de seguir; se avisa en vez de fallar en silencio.
     const win = window.open('', '_blank');
     if (!win) {
         showToast('Habilita las ventanas emergentes para exportar el PDF', 'warning');
@@ -515,7 +567,9 @@ function exportarBitacoraPDF() {
             </div>
 
             <script>
-                // Imprimir automáticamente al cargar
+                // El diálogo de impresión se abre solo. La media espera es
+                // para darle tiempo al navegador de terminar de acomodar la
+                // tabla: sin eso, a veces imprime la página a medio armar.
                 window.onload = function() {
                     setTimeout(function() {
                         window.print();

@@ -10,13 +10,16 @@
 </head>
 <body>
 
-    <!-- ===== SIDEBAR + TOPBAR (shared) ===== -->
+    <!-- Estos dos contenedores llegan vacíos. shared.js les inyecta el menú
+         lateral y la barra superior, que son iguales en todas las pantallas
+         y se arman según el rol del usuario que inició sesión. -->
     <div id="sidebar-container"></div>
     <div id="topbar-container"></div>
 
     <main class="main" id="main-content">
         <div id="dashboard-content">
-            <!-- Loading spinner -->
+            <!-- Se muestra mientras llegan los datos; dashboard-campo.js
+                 reemplaza todo este bloque al terminar de cargar. -->
             <div class="loading-container">
                 <div class="loading-spinner"></div>
                 <p>Cargando tu dashboard...</p>
@@ -24,7 +27,8 @@
         </div>
     </main>
 
-    <!-- ===== TOAST ===== -->
+    <!-- Aviso emergente para confirmaciones y errores. Vive escondido hasta
+         que alguien llama a toast() desde shared.js. -->
     <div class="toast" id="toast">
         <span class="material-symbols-rounded" id="toast-icon" style="font-size:18px">check_circle</span>
         <span id="toast-msg"></span>

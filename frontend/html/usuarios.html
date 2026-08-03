@@ -25,7 +25,9 @@
     </button>
   </div>
 
-  <!-- STATS (los valores se calculan en usuarios.js a partir de la API) -->
+  <!-- Tarjetas de resumen. Los ceros son solo el estado inicial: usuarios.js
+       los reemplaza contando la lista que devuelve la API, así que no hacen
+       falta consultas extra para estos números. -->
   <div class="grid-4 mb-24 fade-up fade-up-1">
     <div class="card" style="padding:16px 20px;display:flex;align-items:center;gap:14px">
       <div style="width:36px;height:36px;background:var(--info-bg);border-radius:8px;display:flex;align-items:center;justify-content:center"><span class="material-symbols-rounded" style="color:var(--info);font-size:18px">group</span></div>
@@ -45,7 +47,9 @@
     </div>
   </div>
 
-  <!-- TABLA USUARIOS -->
+  <!-- Directorio de usuarios. Las filas se generan en usuarios.js; lo que
+       está escrito aquí abajo es solo el mensaje de "Cargando usuarios…"
+       que se ve mientras responde el servidor. -->
 <div class="card fade-up fade-up-2">
   <div class="card-header">
     <div>
@@ -54,9 +58,10 @@
     </div>
   </div>
   
-  <!-- FILTROS ALINEADOS A LA DERECHA DE LA TARJETA.
-       "Limpiar filtros" aparece a la IZQUIERDA del primer filtro,
-       únicamente cuando hay algún filtro aplicado. -->
+  <!-- Filtros de la tabla: búsqueda por texto, rol y estado. Los tres se
+       combinan en aplicarFiltros(), que además decide si muestra el botón
+       de "Limpiar filtros"; ese botón nace oculto y solo aparece cuando hay
+       al menos un filtro puesto, para no ocupar espacio de gusto. -->
   <div style="display: flex; gap: 12px; align-items: center; justify-content: flex-end; flex-wrap: wrap; padding: 0 0 20px 0; border-bottom: 1px solid var(--cream-dark); margin-bottom: 20px;">
     <button class="btn btn-outline btn-sm" id="btn-limpiar-filtros" onclick="limpiarFiltros()" style="flex-shrink: 0; white-space: nowrap; display: none;">
       <span class="material-symbols-rounded" style="font-size: 13px;">clear</span> Limpiar filtros
@@ -96,7 +101,9 @@
 
 </main>
 
-<!-- MODAL NUEVO / EDITAR USUARIO -->
+<!-- El mismo formulario sirve para crear y para editar; usuarios.js le
+     cambia el título y el texto del campo de contraseña según el caso. Al
+     editar, dejar la contraseña en blanco significa "no la cambies". -->
 <div class="modal-overlay" id="modal-usuario">
   <div class="modal">
     <div class="modal-header">
@@ -138,7 +145,10 @@
   </div>
 </div>
 
-<!-- CONFIRM DESACTIVAR -->
+<!-- Confirmación antes de desactivar. Los usuarios nunca se borran, solo se
+     dan de baja, para que sus registros en la bitácora sigan teniendo a quién
+     apuntar. El texto se ajusta desde el script según si se está
+     desactivando o reactivando. -->
 <div class="confirm-dialog" id="confirm-dialog">
   <div class="confirm-box">
     <span class="material-symbols-rounded" style="font-size:40px;color:var(--danger);display:block;margin-bottom:12px">block</span>
@@ -152,7 +162,8 @@
 </div>
 
 
-<!-- Toast para mensajes de registro y errores -->
+<!-- Aviso emergente para confirmaciones y errores. Vive escondido hasta
+     que alguien llama a toast() desde shared.js. -->
 <div class="toast" id="toast">
   <span class="material-symbols-rounded" id="toast-icon" style="font-size:18px">check_circle</span>
   <span id="toast-msg"></span>

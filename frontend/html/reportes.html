@@ -10,14 +10,18 @@
 </head>
 <body>
 
-    <!-- ===== SIDEBAR + TOPBAR (shared) ===== -->
+    <!-- Estos dos contenedores llegan vacíos. shared.js les inyecta el menú
+         lateral y la barra superior, que son iguales en todas las pantallas
+         y se arman según el rol del usuario que inició sesión. -->
     <div id="sidebar-container"></div>
     <div id="topbar-container"></div>
 
-    <!-- ===== MAIN CONTENT ===== -->
+    <!-- El listado de reportes lo arma reportes.js. El supervisor de campo
+         ve los suyos y el administrador ve los que tiene por revisar. -->
     <main class="main">
         <div id="reportes-content">
-            <!-- Loading spinner -->
+            <!-- Se muestra mientras llegan los datos; reportes.js reemplaza
+                 todo este bloque al terminar de cargar. -->
             <div class="loading-container">
                 <div class="loading-spinner"></div>
                 <p>Cargando reportes...</p>
@@ -25,7 +29,10 @@
         </div>
     </main>
 
-    <!-- ===== MODAL NUEVO REPORTE ===== -->
+    <!-- Formulario con el que el supervisor de campo reporta el avance del
+         período. Se piden dos porcentajes por separado, el físico (obra
+         hecha) y el financiero (dinero gastado), porque casi nunca van al
+         mismo ritmo y esa diferencia es justo lo que revisa oficina. -->
     <div class="modal-overlay" id="modal-reporte">
         <div class="modal">
             <div class="modal-header">
@@ -107,7 +114,8 @@
         </div>
     </div>
 
-    <!-- ===== TOAST ===== -->
+    <!-- Aviso emergente para confirmaciones y errores. Vive escondido hasta
+         que alguien llama a toast() desde shared.js. -->
     <div class="toast" id="toast">
         <span class="material-symbols-rounded" id="toast-icon" style="font-size:18px">check_circle</span>
         <span id="toast-msg"></span>

@@ -1,17 +1,21 @@
-/* ============================================================
-   proyecciones.js — MÓDULO: PROYECCIONES DE FINALIZACIÓN
-   El sidebar, topbar, notificaciones y utilidades de
-   validación se cargan desde shared.js (incluido antes).
-   ============================================================ */
+/*
+   proyecciones.js
 
-/* ============================================================
-   proyecciones.js — MÓDULO: PROYECCIONES DE FINALIZACIÓN
-   Calcula en tiempo real usando datos de proyectos y reportes
-   ============================================================ */
+   Estima cuándo va a terminar cada proyecto según el ritmo que trae, y avisa
+   cuáles se están atrasando respecto a la fecha planificada.
 
-// ─────────────────────────────────────────────────────────────
-// VARIABLES GLOBALES
-// ─────────────────────────────────────────────────────────────
+   El cálculo se hace en el navegador con los proyectos y los reportes de
+   avance que ya se descargaron. Es una regla de tres simple: si en tantos
+   días se llegó a tanto por ciento, a ese mismo ritmo el 100% cae en tal
+   fecha. No pretende ser exacto, sirve para detectar a tiempo los proyectos
+   que se están quedando atrás.
+
+   El menú lateral, la barra superior, las notificaciones y las validaciones
+   los pone shared.js, que se carga antes.
+*/
+
+// Los datos descargados y el resultado del cálculo. Se guardan acá para que
+// ordenar o filtrar la lista no obligue a rehacer las cuentas.
 
 let proyectosCache = [];
 let reportesCache = [];
@@ -19,13 +23,14 @@ let usuariosCache = [];
 let usuariosMap = {};
 let proyeccionesData = [];
 
+// Datos de quien está usando la pantalla. El rol decide cuánto se ve: el
+// administrador ve todos los proyectos y el supervisor de campo solamente los
+// suyos (ver el filtro en renderizarProyecciones).
 const ID_USUARIO = parseInt(sessionStorage.getItem('pron_id_usuario')) || null;
 const NOMBRE_USUARIO = sessionStorage.getItem('pron_nombre') || 'Usuario';
 const ROLE = sessionStorage.getItem('pron_role') || 'campo';
 const ES_ADMIN = (ROLE === 'Administrador de Oficina');
-// ─────────────────────────────────────────────────────────────
-// INICIALIZACIÓN
-// ─────────────────────────────────────────────────────────────
+// Arranque de la pantalla.
 
 document.addEventListener('DOMContentLoaded', async () => {
     await cargarDatosYCalcular();
@@ -35,7 +40,9 @@ async function cargarDatosYCalcular() {
     try {
         mostrarLoading(true);
 
-        // 1º: esperar a que lleguen los datos reales
+        // Las tres consultas van juntas porque ninguna depende de la otra.
+        // Los usuarios se piden solo para poder mostrar el nombre del
+        // supervisor, ya que el proyecto trae únicamente su id.
         const [proyectos, reportes, usuarios] = await Promise.all([
             API.proyectos.listar(),
             API.reportes.listar(),
@@ -47,7 +54,8 @@ async function cargarDatosYCalcular() {
         usuariosCache = usuarios || [];
         usuariosMap = Object.fromEntries(usuariosCache.map(u => [u.id_usuario, u]));
 
-        // 2º: ya con los datos cargados, calcular y renderizar
+        // Recién ahora se puede calcular: sin los reportes no hay forma de
+        // saber a qué ritmo va cada proyecto.
         calcularProyecciones();
         renderizarProyecciones();
 
@@ -60,56 +68,76 @@ async function cargarDatosYCalcular() {
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-// CÁLCULO DE PROYECCIONES
-// ─────────────────────────────────────────────────────────────
+/* El cálculo de la proyección, proyecto por proyecto.
+
+   La idea es sencilla: se mira cuánto se avanzó desde que empezó el proyecto,
+   se saca cuánto se avanza por día y con eso se estima cuántos días faltan
+   para llegar al 100%. Después se compara esa fecha con la que estaba
+   planificada para saber si va adelantado, a tiempo o atrasado.
+
+   Es una estimación lineal, o sea que da por hecho que el ritmo se mantiene
+   igual hasta el final. En la realidad casi nunca es así (las lluvias, la
+   falta de material), pero alcanza de sobra para prender la alerta temprano. */
 
 function calcularProyecciones() {
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
 
-    // Solo proyectos activos o retrasados
+    // Solo tiene sentido proyectar lo que sigue en marcha. Los finalizados y
+    // los cancelados ya no van a avanzar más, así que se dejan afuera.
     const proyectosActivos = proyectosCache.filter(p =>
         p.estado_proyecto === 'ACTIVO' 
         || p.estado_proyecto === 'RETRASADO' 
     );
 
     proyeccionesData = proyectosActivos.map(p => {
-        // Obtener reportes del proyecto
+        // Los reportes del proyecto, ordenados del más viejo al más nuevo,
+        // para poder quedarse con el último.
         const reportesProyecto = reportesCache.filter(r => r.id_proyecto === p.id_proyecto)
             .sort((a, b) => new Date(a.fecha_reporte) - new Date(b.fecha_reporte));
 
-        // Obtener el reporte más reciente (último avance)
+        // Solo interesa el último reporte: ahí está el avance más actualizado.
         const ultimoReporte = reportesProyecto.length > 0
             ? reportesProyecto[reportesProyecto.length - 1]
             : null;
 
-        // Calcular avance actual
+        // El avance sale del último reporte de campo, que es el dato más
+        // confiable porque lo mide alguien parado en la obra.
         let avanceActual = 0;
         if (ultimoReporte) {
             avanceActual = ultimoReporte.avance_fisico || 0;
         } else {
-            // Si no hay reportes, usar presupuesto ejecutado
+            // Proyecto recién arrancado, sin ningún reporte todavía. Se usa
+            // como aproximación cuánto se lleva gastado del presupuesto. No
+            // es lo mismo (se puede haber gastado sin construir nada), pero es
+            // mejor que mostrar cero.
             if (p.presupuesto_inicial > 0) {
                 avanceActual = Math.min(Math.round((p.presupuesto_ejecutado / p.presupuesto_inicial) * 100), 100);
             }
         }
 
-        // Fecha de inicio
+        // Se le pega 'T00:00:00' a la fecha para que el navegador la lea como
+        // hora local. Sin eso la interpreta como UTC y, con el huso de
+        // Honduras, el día se corre uno hacia atrás.
         const fechaInicio = p.fecha_inicio ? new Date(p.fecha_inicio + 'T00:00:00') : hoy;
 
-        // Días transcurridos
+        // Días desde que arrancó. El mínimo de 1 evita dividir entre cero en
+        // los proyectos que empezaron hoy mismo.
         const diasTranscurridos = Math.max(1, Math.round((hoy - fechaInicio) / (1000 * 60 * 60 * 24)));
 
-        // Tasa diaria de avance
+        // Cuántos puntos porcentuales se avanzan por día. Este es el número
+        // del que sale toda la proyección.
         const tasaDiaria = avanceActual / diasTranscurridos;
 
-        // Días restantes estimados
+        // Cuánto falta para el 100% a ese mismo ritmo.
         let diasRestantes = 0;
         if (tasaDiaria > 0) {
             diasRestantes = Math.max(0, (100 - avanceActual) / tasaDiaria);
         } else {
-            diasRestantes = 999; // Sin avance significativo
+            // Sin nada de avance no se puede proyectar: a ritmo cero el
+            // proyecto no termina nunca. Se pone 999 días como valor tope para
+            // que la tarjeta muestre algo y quede claro que está detenido.
+            diasRestantes = 999;
         }
 
         // Fecha fin proyectada
@@ -119,7 +147,11 @@ function calcularProyecciones() {
         // Fecha fin planificada
         const fechaFinPlanificada = p.fecha_fin ? new Date(p.fecha_fin + 'T00:00:00') : null;
 
-        // Variación (días de diferencia entre proyectada y planificada)
+        // Comparación con lo planificado. La variación en positivo son días de
+        // retraso y en negativo días de adelanto. Se deja un margen de cinco
+        // días para cada lado antes de dar la alerta, porque con una
+        // estimación así de simple una diferencia de dos o tres días no
+        // significa nada.
         let variacionDias = null;
         let estadoProyeccion = 'on_time';
         let mensajeProyeccion = '';
@@ -138,7 +170,10 @@ function calcularProyecciones() {
                 mensajeProyeccion = `Proyecto dentro del tiempo estimado. Quedan aprox. ${Math.round(diasRestantes)} días de trabajo.`;
             }
 
-            // Si el avance ya está cerca del 100%
+            // Pasado el 95% la proyección deja de ser útil: lo que queda son
+            // detalles de cierre que no siguen el ritmo del resto de la obra.
+            // Se muestra un estado propio en vez de un retraso que asuste sin
+            // motivo.
             if (avanceActual >= 95) {
                 mensajeProyeccion = 'Proyecto muy cerca de su finalización. ¡Últimos detalles!';
                 estadoProyeccion = 'finalizando';
@@ -147,7 +182,8 @@ function calcularProyecciones() {
             mensajeProyeccion = `No hay fecha de fin planificada. Estimación: ${Math.round(diasRestantes)} días restantes.`;
         }
 
-        // Formatear fechas para mostrar
+        // Las fechas se dejan ya formateadas acá para que la parte que dibuja
+        // las tarjetas no tenga que preocuparse por eso.
         const fechaInicioStr = fechaInicio.toLocaleDateString('es-HN', {
             day: '2-digit', month: 'short', year: 'numeric'
         });
@@ -162,7 +198,8 @@ function calcularProyecciones() {
             day: '2-digit', month: 'short', year: 'numeric'
         });
 
-        // Tipo de proyecto para color
+        // Cada tipo de proyecto lleva su color de etiqueta. Si aparece uno que
+        // no está en la lista se usa el gris neutro.
         const tipoColor = {
             'INFRAESTRUCTURA': 'badge-info',
             'AGRICOLA': 'badge-success',
@@ -192,9 +229,7 @@ function calcularProyecciones() {
     });
 }
 
-// ─────────────────────────────────────────────────────────────
-// RENDERIZADO
-// ─────────────────────────────────────────────────────────────
+// Dibujado de la pantalla a partir de las proyecciones ya calculadas.
 
 function renderizarProyecciones() {
     const container = document.getElementById('proyecciones-content');
@@ -202,13 +237,15 @@ function renderizarProyecciones() {
         day: '2-digit', month: 'short', year: 'numeric'
     });
 
-    // Filtrar para el rol campo (solo sus proyectos)
+    // El administrador ve todo; los demás solo los proyectos donde figuran
+    // como supervisor.
     let data = proyeccionesData;
     if (!ES_ADMIN) {
     data = data.filter(p => p.idSupervisor === ID_USUARIO);
     }   
 
-    // Ordenar por estado (retraso primero, luego on_time, luego adelanto)
+    // Los atrasados salen primero porque son los que necesitan que alguien
+    // haga algo; los que van bien pueden esperar hasta el final de la lista.
     const ordenEstado = { 'retraso': 0, 'on_time': 1, 'adelanto': 2, 'finalizando': 3 };
     data.sort((a, b) => (ordenEstado[a.estado] || 99) - (ordenEstado[b.estado] || 99));
 
@@ -267,9 +304,7 @@ function renderizarProyecciones() {
     `;
 }
 
-// ─────────────────────────────────────────────────────────────
-// CARD DE PROYECCIÓN
-// ─────────────────────────────────────────────────────────────
+// Tarjeta de un proyecto: avance, fechas y el mensaje de la proyección.
 
 function renderCardProyeccion(p) {
     const estadoConfig = {
@@ -301,10 +336,13 @@ function renderCardProyeccion(p) {
 
     const estado = estadoConfig[p.estado] || estadoConfig['on_time'];
 
-    // Color de la barra de progreso
+    // La barra cambia de color según lo avanzado: verde de 75% para arriba,
+    // dorado entre 40 y 75, y rojo abajo de 40.
     const progressColor = p.avanceActual >= 75 ? 'success' : p.avanceActual >= 40 ? 'gold' : 'danger';
 
-    // Mensaje de variación
+    // Renglón con los días de adelanto o retraso. Se omite cuando el proyecto
+    // no tiene fecha de fin planificada, porque en ese caso no hay contra qué
+    // comparar.
     let variacionHtml = '';
     if (p.variacionDias !== null) {
         if (p.variacionDias > 5) {
@@ -388,9 +426,7 @@ function renderCardProyeccion(p) {
     `;
 }
 
-// ─────────────────────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────────────────────
+// Utilidades chicas: el spinner de carga y el mensaje de error.
 
 function mostrarLoading(show) {
     const container = document.getElementById('proyecciones-content');
@@ -432,9 +468,8 @@ function showToast(msg, tipo = 'success') {
     _toastTimer = setTimeout(() => t.classList.remove('show'), 4500);
 }
 
-// ─────────────────────────────────────────────────────────────
-// EXPORTAR FUNCIONES PARA EL HTML
-// ─────────────────────────────────────────────────────────────
+// Se cuelgan en window para que los onclick escritos en el HTML las
+// encuentren.
 
 window.cargarDatosYCalcular = cargarDatosYCalcular;
 window.showToast = showToast;

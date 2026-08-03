@@ -10,22 +10,30 @@
 </head>
 <body>
 
-    <!-- ===== SIDEBAR + TOPBAR (shared) ===== -->
+    <!-- Estos dos contenedores llegan vacíos. shared.js les inyecta el menú
+         lateral y la barra superior, que son iguales en todas las pantallas
+         y se arman según el rol del usuario que inició sesión. -->
     <div id="sidebar-container"></div>
     <div id="topbar-container"></div>
 
-    <!-- ===== MAIN CONTENT ===== -->
+    <!-- Esta página cambia bastante según quién entre: el técnico solo
+         propone necesidades, el supervisor de campo las convierte en
+         solicitudes, gerencia aprueba o rechaza y logística despacha. Por
+         eso el contenido se arma completo desde solicitudes.js y aquí no
+         hay nada escrito. -->
     <main class="main" id="main-content">
-        <!-- Renderizado dinámicamente por solicitudes.js -->
     </main>
 
-    <!-- ===== TOAST ===== -->
+    <!-- Aviso emergente para confirmaciones y errores. Vive escondido hasta
+         que alguien llama a toast() desde shared.js. -->
     <div class="toast" id="toast">
         <span class="material-symbols-rounded" id="toast-icon" style="font-size:18px">check_circle</span>
         <span id="toast-msg"></span>
     </div>
 
-    <!-- ===== MODAL: NUEVA SOLICITUD ===== -->
+    <!-- Paso 1 del flujo: el supervisor de campo arma la solicitud oficial.
+         La tabla de recursos empieza vacía y agregarFilaItem() va metiendo
+         una fila por cada material, equipo o monto que se pida. -->
     <div class="modal-overlay" id="modal-sol">
         <div class="modal" style="max-width:640px">
             <div class="modal-header">
@@ -97,7 +105,10 @@
         </div>
     </div>
 
-    <!-- ===== MODAL: PROPONER NECESIDAD ===== -->
+    <!-- Paso previo, para el técnico de campo: no puede pedir recursos
+         directamente, así que deja una propuesta y el supervisor decide si
+         la convierte en solicitud oficial. Por eso aquí se pide un solo
+         recurso y no una lista. -->
     <div class="modal-overlay" id="modal-necesidad">
         <div class="modal" style="max-width:480px">
             <div class="modal-header">
@@ -150,7 +161,10 @@
         </div>
     </div>
 
-    <!-- ===== MODAL: APROBAR ===== -->
+    <!-- Paso 2: gerencia técnica aprueba. Además del comentario, aquí se
+         elige a qué equipo de logística se le pasa el pedido, porque ese
+         equipo es el que después verá la solicitud en su bandeja. La lista
+         de equipos se llena desde la API al abrir el modal. -->
     <div class="modal-overlay" id="modal-aprobar">
         <div class="modal" style="max-width:500px">
             <div class="modal-header">
@@ -193,7 +207,9 @@
         </div>
     </div>
 
-    <!-- ===== MODAL: RECHAZAR ===== -->
+    <!-- La otra salida del paso 2. El motivo es obligatorio porque le llega
+         tal cual al supervisor que hizo la solicitud, y es lo único que
+         tiene para saber qué corregir antes de volver a pedirlo. -->
     <div class="modal-overlay" id="modal-rechazar">
         <div class="modal" style="max-width:460px">
             <div class="modal-header">
@@ -215,7 +231,10 @@
         </div>
     </div>
 
-    <!-- ===== MODAL: REGISTRAR DESPACHO ===== -->
+    <!-- Paso 3: logística entrega. A diferencia del despacho del dashboard,
+         aquí se pueden juntar varias solicitudes en un mismo envío; las que
+         se incluyan se listan en despacho-sols. La remisión firmada es
+         obligatoria: es el respaldo de que el material salió de bodega. -->
     <div class="modal-overlay" id="modal-despacho">
         <div class="modal" style="max-width:520px">
             <div class="modal-header">
@@ -267,7 +286,9 @@
         </div>
     </div>
 
-    <!-- ===== MODAL: CONFIRMAR RECEPCIÓN ===== -->
+    <!-- Paso 4 y último: campo confirma que recibió. Se pregunta si llegó
+         todo porque una entrega parcial o con daños igual cierra la
+         solicitud, pero deja constancia en la bitácora de lo que faltó. -->
     <div class="modal-overlay" id="modal-recepcion">
         <div class="modal" style="max-width:460px">
             <div class="modal-header">
@@ -300,7 +321,8 @@
         </div>
     </div>
 
-    <!-- ===== SCRIPTS ===== -->
+    <!-- El orden importa: api.js define las llamadas al servidor, shared.js
+         el menú y las utilidades comunes, y solicitudes.js usa a los dos. -->
     <script src="../js/api.js"></script>
     <script src="../js/shared.js"></script>
     <script src="../js/solicitudes.js"></script>

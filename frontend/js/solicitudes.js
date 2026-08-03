@@ -1,11 +1,26 @@
-/* ============================================================
-   solicitudes.js — MÓDULO: SOLICITUDES DE RECURSOS (FRONTEND)
-   Renderiza la interfaz usando datos de la API
-   ============================================================ */
+/*
+   solicitudes.js
 
-// ─────────────────────────────────────────────────────────────
-// VARIABLES GLOBALES
-// ─────────────────────────────────────────────────────────────
+   Solicitudes de recursos: el pedido de materiales, equipo o dinero para un
+   proyecto, desde que se hace hasta que llega a la obra.
+
+   El recorrido completo es este:
+     1. El técnico de campo propone una necesidad (paso opcional).
+     2. El supervisor de campo arma la solicitud oficial y la envía.
+     3. Gerencia técnica la aprueba (y le asigna un equipo de logística) o la
+        rechaza con un motivo.
+     4. Logística registra el despacho con su remisión firmada.
+     5. Campo confirma que recibió y la solicitud se cierra.
+
+   Esta es la pantalla que más cambia según quién entre, porque cada rol tiene
+   su propio paso en ese recorrido; por eso hay una función de dibujado
+   distinta para campo, para administración y para logística.
+*/
+
+// Lo que se descarga al abrir la pantalla. Filtrar y cambiar de pestaña se
+// resuelve sobre estos arreglos, sin volver a consultar el servidor.
+// _solActiva guarda la solicitud sobre la que se está trabajando mientras hay
+// un modal abierto, porque los botones del HTML no reciben parámetros.
 
 let solicitudesCache = [];
 let proyectosCache = [];
@@ -16,9 +31,8 @@ const ID_USUARIO = parseInt(sessionStorage.getItem('pron_id_usuario')) || null;
 const NOMBRE_USUARIO = sessionStorage.getItem('pron_nombre') || 'Usuario';
 const ROLE = sessionStorage.getItem('pron_role') || 'campo';
 
-// ─────────────────────────────────────────────────────────────
-// INICIALIZACIÓN
-// ─────────────────────────────────────────────────────────────
+// Arranque de la pantalla: descargar todo y dibujar la vista que corresponda
+// al rol.
 
 document.addEventListener('DOMContentLoaded', async () => {
     await cargarDatosIniciales();
@@ -37,7 +51,9 @@ async function cargarDatosIniciales() {
         proyectosCache = proyectos || [];
         equiposCache = equipos || [];
 
-        // Cargar equipos en el select de aprobación
+        // La lista de equipos de logística se deja lista desde ahora, aunque
+        // el modal de aprobar todavía no se haya abierto: así cuando el
+        // administrador lo abra ya está llena y no tiene que esperar.
         const selectEquipo = document.getElementById('aprob-logistica');
         if (selectEquipo && equiposCache.length > 0) {
             selectEquipo.innerHTML = '<option value="">— Seleccionar equipo —</option>';
@@ -55,20 +71,32 @@ async function cargarDatosIniciales() {
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-// SOLICITUDES VISIBLES SEGÚN ROL
-// ─────────────────────────────────────────────────────────────
+// Qué solicitudes le tocan a cada quien.
+//
+// Se comparan varias formas de escribir el rol ('admin', 'admin_oficina',
+// 'Administrador de Oficina') porque quedaron distintas maneras de guardarlo
+// según por dónde se haya iniciado sesión. Convendría unificarlas en un solo
+// valor, pero mientras eso no pase hay que aceptar las tres o el
+// administrador termina sin ver nada.
 
 function solicitudesVisibles() {
     const esAdmin = (ROLE === 'admin_oficina' || ROLE === 'Administrador de Oficina' || ROLE === 'admin');
     if (esAdmin) return solicitudesCache;
     return solicitudesCache.filter(s => {
         const proyecto = proyectosCache.find(p => p.id_proyecto === s.id_proyecto);
-        // Si el usuario es supervisor del proyecto, ve la solicitud
+        // Un supervisor ve las solicitudes de los proyectos que tiene a cargo,
+        // no solo las que él mismo pidió: la solicitud pertenece al proyecto,
+        // no a la persona.
         return proyecto && proyecto.id_supervisor === ID_USUARIO;
     });
 }
 
+// Las solicitudes que le tocan a un equipo de logística: las que le fueron
+// asignadas al aprobarlas.
+//
+// Ojo: la comparación se hace por el nombre del equipo, no por su id. Es
+// frágil, porque si a un equipo le cambian el nombre estas solicitudes dejan
+// de aparecerle. Debería compararse por id_equipo_log.
 function solicitudesLogistica() {
     const equipoNombre = sessionStorage.getItem('pron_nombre') || '';
     if (ROLE === 'logistica') {
@@ -77,9 +105,9 @@ function solicitudesLogistica() {
     return solicitudesCache;
 }
 
-// ─────────────────────────────────────────────────────────────
-// RENDER POR ROL
-// ─────────────────────────────────────────────────────────────
+// Punto de reparto: manda a dibujar la vista que le toca al rol de quien
+// entró. Cada una muestra cosas distintas porque cada rol tiene un paso
+// distinto del recorrido.
 
 function renderVista() {
     if (ROLE === 'logistica') renderVistaLogistica();
@@ -88,9 +116,8 @@ function renderVista() {
     else renderVistaCampo();
 }
 
-// ─────────────────────────────────────────────────────────────
-// VISTA CAMPO
-// ─────────────────────────────────────────────────────────────
+/* Vista del Supervisor de Campo: sus solicitudes y el botón para crear una
+   nueva. Es el único rol que puede pedir recursos. */
 
 function renderVistaCampo() {
     const proyectos = [...new Set(solicitudesVisibles().map(s => s.proyecto_nombre || 'Sin proyecto'))].sort();
@@ -138,7 +165,8 @@ function renderListaSolicitudes() {
         return matchEstado && matchProy;
     });
 
-    // Ordenar por fecha
+    // De la más reciente a la más vieja: lo que se acaba de pedir es lo que
+    // interesa ver primero.
     data.sort((a, b) => {
         const fechaA = new Date(a.fecha_solicitud);
         const fechaB = new Date(b.fecha_solicitud);
@@ -163,9 +191,9 @@ function renderListaSolicitudes() {
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-// VISTA ADMIN
-// ─────────────────────────────────────────────────────────────
+/* Vista del Administrador de Oficina: ve las solicitudes de todos los
+   proyectos y es quien las aprueba o las rechaza. No tiene botón para crear,
+   porque él no pide recursos. */
 
 function renderVistaAdmin() {
     const pendientes = solicitudesCache.filter(s => s.estado_solicitud === 'PENDIENTE').length;
@@ -219,9 +247,8 @@ function renderListaSolicitudesAdmin() {
         : `<div class="card" style="text-align:center;padding:40px;color:var(--muted)">No hay solicitudes</div>`;
 }
 
-// ─────────────────────────────────────────────────────────────
-// VISTA LOGÍSTICA
-// ─────────────────────────────────────────────────────────────
+/* Vista del Equipo de Logística: solo las solicitudes que le asignaron y que
+   ya están aprobadas. No aprueba ni rechaza, únicamente despacha. */
 
 function renderVistaLogistica() {
     document.getElementById('main-content').innerHTML = `
@@ -258,9 +285,9 @@ function filtrarLog(estado, btn) {
         : `<div class="card" style="text-align:center;padding:40px;color:var(--muted)">No hay despachos</div>`;
 }
 
-// ─────────────────────────────────────────────────────────────
-// RENDERIZAR CARD DE SOLICITUD
-// ─────────────────────────────────────────────────────────────
+/* Arma la tarjeta de una solicitud. Es la misma para las tres vistas; lo
+   único que cambia son los botones del pie, que dependen del rol y del estado
+   en que esté la solicitud. */
 
 function cardSolicitud(s, vistaRol = 'campo') {
     const estadoConf = {
@@ -275,7 +302,10 @@ function cardSolicitud(s, vistaRol = 'campo') {
     const ec = estadoConf[s.estado_solicitud] || estadoConf['PENDIENTE'];
     const fecha = new Date(s.fecha_solicitud).toLocaleDateString('es-HN', { day: '2-digit', month: 'short', year: 'numeric' });
 
-    // Items
+    // La tabla de recursos pedidos. Cada campo se lee de dos formas posibles
+    // porque el nombre cambia según de dónde venga el dato: la API usa
+    // tipo_recurso y compañía, mientras que lo que se acaba de armar en el
+    // formulario todavía usa los nombres cortos.
     const itemsHtml = (s.items || []).map(it => `
         <tr>
             <td style="padding:7px 12px;font-size:12.5px">${it.tipo_recurso || it.tipo || 'N/A'}</td>
@@ -284,7 +314,11 @@ function cardSolicitud(s, vistaRol = 'campo') {
         </tr>
     `).join('');
 
-    // ACCIONES SEGÚN ROL - CORREGIDO
+    // Los botones del pie de la tarjeta. Cada rol solo ve los de su propio
+    // paso, y únicamente cuando la solicitud está en el estado correcto: el
+    // administrador aprueba o rechaza si está PENDIENTE, logística despacha si
+    // ya fue APROBADA, y campo confirma la recepción si está ENTREGADA. En
+    // cualquier otro caso la tarjeta se muestra sin botones.
     let acciones = '';
     const esAdmin = (vistaRol === 'admin' || vistaRol === 'admin_oficina' || ROLE === 'admin_oficina' || ROLE === 'Administrador de Oficina');
 
@@ -394,9 +428,8 @@ else if (vistaRol === 'campo' && s.estado_solicitud === 'ENTREGADA') {
     </div>`;
 }
 
-// ─────────────────────────────────────────────────────────────
-// FUNCIONES DEL MODAL - NUEVA SOLICITUD
-// ─────────────────────────────────────────────────────────────
+/* El formulario de nueva solicitud, con su tabla de recursos que crece a
+   medida que se agregan filas. */
 
 async function abrirModalSol() {
     try {
@@ -478,7 +511,12 @@ async function enviarSolicitudOficial() {
     const id_proyecto = parseInt(document.getElementById('sol-proyecto').value);
     const justificacion = document.getElementById('sol-justificacion').value.trim();
 
-    //Obtener documentos adjuntos
+    // Los adjuntos se leen de las etiquetas que quedaron en pantalla al
+    // elegirlos.
+    //
+    // Pendiente: acá solo se guarda el nombre y una ruta inventada; el archivo
+    // en sí no se está subiendo a ningún lado, a diferencia de lo que hace el
+    // módulo de reportes. Queda por conectar la subida real.
     const fileChips = document.querySelectorAll('#sol-files .file-chip');
     const documentos = [];
     fileChips.forEach(chip => {
@@ -486,7 +524,9 @@ async function enviarSolicitudOficial() {
         documentos.push({
             nombre: nombre,
             tipo: nombre.split('.').pop() || 'pdf',
-            ruta: `/uploads/solicitudes/${nombre}` // Ruta temporal
+            // Ruta armada a mano; todavía no corresponde a un archivo real
+            // guardado en el servidor.
+            ruta: `/uploads/solicitudes/${nombre}`
         });
     });
 
@@ -505,7 +545,9 @@ async function enviarSolicitudOficial() {
             showToast('Solicitud creada exitosamente', 'success');
             cerrarModalSol();
 
-            // Limpiar formulario
+            // El modal está una sola vez en el HTML y conserva lo que se
+            // escribió, así que hay que vaciarlo a mano o la próxima solicitud
+            // aparece con los datos de la anterior.
             document.getElementById('sol-proyecto').value = '';
             document.getElementById('sol-justificacion').value = '';
             document.getElementById('sol-items-body').innerHTML = '';
@@ -542,9 +584,13 @@ function agregarFilaItem() {
     tr.querySelector('.sol-item-tipo')?.focus();
 }
 
-// ─────────────────────────────────────────────────────────────
-// MODALES - APROBAR / RECHAZAR / DESPACHO / RECEPCIÓN
-// ─────────────────────────────────────────────────────────────
+/* Los modales de los pasos 2, 3 y 4 del recorrido: aprobar, rechazar,
+   registrar el despacho y confirmar la recepción.
+
+   Todos siguen el mismo patrón: al abrirlos guardan la solicitud en
+   _solActiva, al confirmar le pegan a la API y después vuelven a descargar
+   todo y redibujan, en vez de mover la solicitud de lista a mano. Sale más
+   simple y la pantalla queda siempre igual a lo que quedó en la base. */
 
 function abrirModalAprobar(id) {
     _solActiva = id;
@@ -710,9 +756,12 @@ async function confirmarRecepcion() {
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-// PROPUESTA DE NECESIDAD (Empleados)
-// ─────────────────────────────────────────────────────────────
+/* Propuestas de necesidad, el paso previo para los técnicos de campo.
+
+   El técnico no puede solicitar recursos por su cuenta, así que deja anotado
+   lo que hace falta y el supervisor decide si lo convierte en una solicitud
+   oficial. Así la obra puede avisar de lo que necesita sin saltarse la
+   cadena de aprobación. */
 
 function proponerNecesidad() {
     const errores = FormUtils.validar([
@@ -730,7 +779,7 @@ function proponerNecesidad() {
     showToast('Necesidad propuesta enviada al Supervisor de Campo', 'success');
     document.getElementById('modal-necesidad').classList.remove('open');
 
-    // Limpiar campos
+    // Se vacían los campos para que la siguiente propuesta arranque limpia.
     document.getElementById('need-proyecto').value = '';
     document.getElementById('need-desc').value = '';
     document.getElementById('need-cantidad').value = '';
@@ -738,9 +787,8 @@ function proponerNecesidad() {
     document.getElementById('need-justif').value = '';
 }
 
-// ─────────────────────────────────────────────────────────────
-// HELPERS: ARCHIVOS
-// ─────────────────────────────────────────────────────────────
+// Muestra los archivos que el usuario acaba de elegir, con su nombre y
+// tamaño, para que vea qué va a mandar antes de confirmar.
 
 function mostrarArchivos(containerId, files) {
     const c = document.getElementById(containerId);
@@ -770,9 +818,9 @@ function handleDropAprob(e) {
     mostrarArchivos('aprob-files', e.dataTransfer.files);
 }
 
-// ─────────────────────────────────────────────────────────────
-// TOAST
-// ─────────────────────────────────────────────────────────────
+// Aviso emergente de la esquina. El temporizador se guarda aparte para poder
+// cancelarlo: si salen dos mensajes seguidos, el segundo reinicia la cuenta y
+// no se va a medio leer.
 
 let _toastTimer;
 
@@ -788,9 +836,8 @@ function showToast(msg, tipo = 'success') {
     _toastTimer = setTimeout(() => t.classList.remove('show'), 4500);
 }
 
-// ─────────────────────────────────────────────────────────────
-// EXPORTAR FUNCIONES PARA EL HTML
-// ─────────────────────────────────────────────────────────────
+// Se cuelgan en window para que los onclick escritos en el HTML las
+// encuentren.
 
 window.abrirModalSol = abrirModalSol;
 window.cerrarModalSol = cerrarModalSol;
