@@ -117,6 +117,10 @@ router.patch('/:id/finalizar', async (req, res) => {
             return res.status(400).json({ error: 'El proyecto ya está finalizado' });
         }
 
+        if (proyecto.estado_proyecto === 'CANCELADO') {
+            return res.status(400).json({ error: 'El proyecto está cancelado y no se puede finalizar' });
+        }
+
         const estadoAnterior = proyecto.estado_proyecto;
 
         // Actualizar estado a FINALIZADO y guardar presupuesto ejecutado
@@ -345,6 +349,13 @@ router.put('/:id', async (req, res) => {
         );
         if (!anterior) {
             return res.status(404).json({ error: 'Proyecto no encontrado' });
+        }
+
+        // ── UN PROYECTO CANCELADO ES DEFINITIVO: NI SE EDITA NI SE REACTIVA ──
+        if (anterior.estado_proyecto === 'CANCELADO') {
+            return res.status(400).json({
+                error: 'El proyecto está cancelado y no se puede modificar ni reactivar'
+            });
         }
 
         // ── ACTUALIZAR CAMPOS ──

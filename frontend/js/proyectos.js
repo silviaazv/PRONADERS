@@ -20,6 +20,12 @@ const NOMBRE_USUARIO = sessionStorage.getItem('pron_nombre') || 'Usuario';
 const ROLE = sessionStorage.getItem('pron_role') || 'Supervisor de Campo';
 const esAdmin = (ROLE === 'admin_oficina' || ROLE === 'Administrador de Oficina');
 
+// Campos del modal de proyecto (nuevo/editar)
+const CAMPOS_MODAL_PROYECTO = [
+    'np-nombre', 'np-tipo', 'sel-depto', 'sel-municipio',
+    'np-inicio', 'np-fin', 'np-presupuesto', 'np-supervisor', 'np-desc'
+];
+
 
 // INICIALIZACIÓN
 
@@ -616,9 +622,9 @@ async function abrirDetalle(id) {
             ${esAdmin ? `
             <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:24px;padding-top:16px;border-top:1px solid var(--cream-dark)">
                 <button class="btn btn-outline btn-sm" onclick="abrirEditarProyecto(${p.id_proyecto})">
-                <span class="material-symbols-rounded" style="font-size:14px">edit</span> Editar
+                <span class="material-symbols-rounded" style="font-size:14px">${p.estado_proyecto === 'CANCELADO' ? 'visibility' : 'edit'}</span> ${p.estado_proyecto === 'CANCELADO' ? 'Ver datos' : 'Editar'}
                 </button>
-                ${p.estado_proyecto !== 'FINALIZADO' ? `
+                ${(p.estado_proyecto !== 'FINALIZADO' && p.estado_proyecto !== 'CANCELADO') ? `
                 <button class="btn btn-success btn-sm" onclick="abrirModalFinalizar(${p.id_proyecto})">
                 <span class="material-symbols-rounded" style="font-size:14px">check_circle</span> Finalizar
                 </button>` : ''}
@@ -638,6 +644,23 @@ async function abrirDetalle(id) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// MODO SOLO LECTURA DEL MODAL (proyectos cancelados)
+// ─────────────────────────────────────────────────────────────
+
+function setModoSoloLectura(activo) {
+    CAMPOS_MODAL_PROYECTO.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = activo;
+    });
+
+    const btnGuardar = document.getElementById('btn-guardar-proyecto');
+    if (btnGuardar) btnGuardar.style.display = activo ? 'none' : '';
+
+    const aviso = document.getElementById('np-aviso-cancelado');
+    if (aviso) aviso.style.display = activo ? 'flex' : 'none';
+}
+
+// ─────────────────────────────────────────────────────────────
 // MODAL NUEVO PROYECTO
 // ─────────────────────────────────────────────────────────────
 async function abrirModalNuevoProyecto() {
@@ -647,6 +670,7 @@ async function abrirModalNuevoProyecto() {
         console.log('Cargando datos para nuevo proyecto...');
 
     _proyectoEnEdicion = null;
+    setModoSoloLectura(false);
     document.querySelector('#modal-nuevo .modal-title').innerHTML = 'Nuevo <em style="font-style:italic">Proyecto</em>';
     FormUtils.limpiarErrores(document.getElementById('modal-nuevo'));
 
@@ -726,10 +750,14 @@ async function abrirEditarProyecto(id) {
             return;
         }
 
+        const esCancelado = p.estado_proyecto === 'CANCELADO';
+
         _proyectoEnEdicion = id;
         FormUtils.limpiarErrores(document.getElementById('modal-nuevo'));
-        document.querySelector('#modal-nuevo .modal-title').innerHTML =
-            `Editar <em style="font-style:italic">Proyecto</em> <span style="font-size:12px;color:var(--muted)">· ID: ${id}</span>`;
+        setModoSoloLectura(false);
+        document.querySelector('#modal-nuevo .modal-title').innerHTML = esCancelado
+            ? `Proyecto <em style="font-style:italic">Cancelado</em> <span style="font-size:12px;color:var(--muted)">· ID: ${id} · solo lectura</span>`
+            : `Editar <em style="font-style:italic">Proyecto</em> <span style="font-size:12px;color:var(--muted)">· ID: ${id}</span>`;
 
         //Cargar supervisores
         await cargarSupervisores();
@@ -764,6 +792,10 @@ async function abrirEditarProyecto(id) {
         document.getElementById('np-desc').value = p.descripcion_proyecto || '';
         if (p.id_supervisor) {
             document.getElementById('np-supervisor').value = p.id_supervisor; }
+
+        // Un proyecto cancelado no se puede modificar: solo se muestran sus datos
+        setModoSoloLectura(esCancelado);
+
         document.getElementById('modal-detalle').classList.remove('open');
         document.getElementById('modal-nuevo').classList.add('open');
 
@@ -778,6 +810,15 @@ async function abrirEditarProyecto(id) {
 // ─────────────────────────────────────────────────────────────
 
 async function guardarProyecto() {
+    // Un proyecto cancelado no se puede volver a guardar ni reactivar
+    if (_proyectoEnEdicion) {
+        const actual = proyectosCache.find(p => p.id_proyecto === _proyectoEnEdicion);
+        if (actual && actual.estado_proyecto === 'CANCELADO') {
+            showToast('El proyecto está cancelado y no se puede modificar', 'warning');
+            return;
+        }
+    }
+
     let errores = FormUtils.validar([
         { id: 'np-nombre', msg: 'El nombre del proyecto es obligatorio.' },
         { id: 'np-tipo', msg: 'Selecciona el tipo de proyecto.' },
@@ -820,10 +861,14 @@ async function guardarProyecto() {
         fecha_inicio: ini,
         fecha_fin: fin || null,
         presupuesto_inicial: parseFloat(document.getElementById('np-presupuesto').value),
-        estado_proyecto: 'ACTIVO',
         id_usuario: usuarioActual,
-        id_supervisor: supervisor ? parseInt(supervisor) : null, 
+        id_supervisor: supervisor ? parseInt(supervisor) : null,
     };
+
+    // Al editar se conserva el estado actual del proyecto; solo los nuevos nacen ACTIVO
+    if (!_proyectoEnEdicion) {
+        datos.estado_proyecto = 'ACTIVO';
+    }
 
     try {
         let result;
